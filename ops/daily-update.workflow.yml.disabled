@@ -1,0 +1,16 @@
+# DESIGNED BUT INACTIVE. This file is intentionally NOT in .github/workflows/ and Actions is disabled on the repo.
+# Do not move into .github/workflows/ until the owner approves rubric, visibility policy and publishing.
+name: daily-leaderboard-update (INACTIVE)
+on:
+  workflow_dispatch: {}
+  # schedule: - cron: "0 11 * * *"   # ~06:00 America/New_York — left commented on purpose
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node tests/run.mjs
+      # - run: node tools/export-roster.mjs --in "$RUNNER_TEMP/roster.json" --out data/roster.json --visibility optin
+      # Pages deploy step intentionally omitted.

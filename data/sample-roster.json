@@ -1,0 +1,850 @@
+{
+ "meta": {
+  "SYNTHETIC": true,
+  "note": "FAKE sample rows for layout/testing. Not real ONMX members; handles are placeholders.",
+  "generatedBy": "tools/make-sample-data.mjs seed=42/7",
+  "asOf": "2026-11-05"
+ },
+ "accounts": [
+  {
+   "account": "SYN-0001",
+   "handle": "sample_syn_0001",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0002",
+   "handle": "sample_syn_0002",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-16"
+  },
+  {
+   "account": "SYN-0003",
+   "handle": "sample_syn_0003",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0004",
+   "handle": "sample_syn_0004",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-27"
+  },
+  {
+   "account": "SYN-0005",
+   "handle": "sample_syn_0005",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-06"
+  },
+  {
+   "account": "SYN-0006",
+   "handle": "sample_syn_0006",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-19"
+  },
+  {
+   "account": "SYN-0007",
+   "handle": "sample_syn_0007",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0008",
+   "handle": "sample_syn_0008",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-01"
+  },
+  {
+   "account": "SYN-0009",
+   "handle": "sample_syn_0009",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-06"
+  },
+  {
+   "account": "SYN-0010",
+   "handle": "sample_syn_0010",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-01"
+  },
+  {
+   "account": "SYN-0011",
+   "handle": "sample_syn_0011",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-15"
+  },
+  {
+   "account": "SYN-0012",
+   "handle": "sample_syn_0012",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-14"
+  },
+  {
+   "account": "SYN-0013",
+   "handle": "sample_syn_0013",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-17"
+  },
+  {
+   "account": "SYN-0014",
+   "handle": "sample_syn_0014",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-20"
+  },
+  {
+   "account": "SYN-0015",
+   "handle": "sample_syn_0015",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-23"
+  },
+  {
+   "account": "SYN-0016",
+   "handle": "sample_syn_0016",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-07"
+  },
+  {
+   "account": "SYN-0017",
+   "handle": "sample_syn_0017",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-03"
+  },
+  {
+   "account": "SYN-0018",
+   "handle": "sample_syn_0018",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-21"
+  },
+  {
+   "account": "SYN-0019",
+   "handle": "sample_syn_0019",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-29"
+  },
+  {
+   "account": "SYN-0020",
+   "handle": "sample_syn_0020",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-05"
+  },
+  {
+   "account": "SYN-0021",
+   "handle": "sample_syn_0021",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0022",
+   "handle": "sample_syn_0022",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-27"
+  },
+  {
+   "account": "SYN-0023",
+   "handle": "sample_syn_0023",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-29"
+  },
+  {
+   "account": "SYN-0024",
+   "handle": "sample_syn_0024",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-06"
+  },
+  {
+   "account": "SYN-0025",
+   "handle": "sample_syn_0025",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-04"
+  },
+  {
+   "account": "SYN-0026",
+   "handle": "sample_syn_0026",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-28"
+  },
+  {
+   "account": "SYN-0027",
+   "handle": "sample_syn_0027",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0028",
+   "handle": "sample_syn_0028",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-22"
+  },
+  {
+   "account": "SYN-0029",
+   "handle": "sample_syn_0029",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0030",
+   "handle": "sample_syn_0030",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-27"
+  },
+  {
+   "account": "SYN-0031",
+   "handle": "sample_syn_0031",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-09"
+  },
+  {
+   "account": "SYN-0032",
+   "handle": "sample_syn_0032",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-10"
+  },
+  {
+   "account": "SYN-0033",
+   "handle": "sample_syn_0033",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-03"
+  },
+  {
+   "account": "SYN-0034",
+   "handle": "sample_syn_0034",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-04"
+  },
+  {
+   "account": "SYN-0035",
+   "handle": "sample_syn_0035",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-22"
+  },
+  {
+   "account": "SYN-0036",
+   "handle": "sample_syn_0036",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-13"
+  },
+  {
+   "account": "SYN-0037",
+   "handle": "sample_syn_0037",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0038",
+   "handle": "sample_syn_0038",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-27"
+  },
+  {
+   "account": "SYN-0039",
+   "handle": "sample_syn_0039",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-12"
+  },
+  {
+   "account": "SYN-0040",
+   "handle": "sample_syn_0040",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-12"
+  },
+  {
+   "account": "SYN-0041",
+   "handle": "sample_syn_0041",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-20"
+  },
+  {
+   "account": "SYN-0042",
+   "handle": "sample_syn_0042",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-07"
+  },
+  {
+   "account": "SYN-0043",
+   "handle": "sample_syn_0043",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-06"
+  },
+  {
+   "account": "SYN-0044",
+   "handle": "sample_syn_0044",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-22"
+  },
+  {
+   "account": "SYN-0045",
+   "handle": "sample_syn_0045",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0046",
+   "handle": "sample_syn_0046",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-30"
+  },
+  {
+   "account": "SYN-0047",
+   "handle": "sample_syn_0047",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-05"
+  },
+  {
+   "account": "SYN-0048",
+   "handle": "sample_syn_0048",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-09"
+  },
+  {
+   "account": "SYN-0049",
+   "handle": "sample_syn_0049",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-13"
+  },
+  {
+   "account": "SYN-0050",
+   "handle": "sample_syn_0050",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0051",
+   "handle": "sample_syn_0051",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-15"
+  },
+  {
+   "account": "SYN-0052",
+   "handle": "sample_syn_0052",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-18"
+  },
+  {
+   "account": "SYN-0053",
+   "handle": "sample_syn_0053",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-09"
+  },
+  {
+   "account": "SYN-0054",
+   "handle": "sample_syn_0054",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-07"
+  },
+  {
+   "account": "SYN-0055",
+   "handle": "sample_syn_0055",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-10"
+  },
+  {
+   "account": "SYN-0056",
+   "handle": "sample_syn_0056",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-02"
+  },
+  {
+   "account": "SYN-0057",
+   "handle": "sample_syn_0057",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-15"
+  },
+  {
+   "account": "SYN-0058",
+   "handle": "sample_syn_0058",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-28"
+  },
+  {
+   "account": "SYN-0059",
+   "handle": "sample_syn_0059",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-05"
+  },
+  {
+   "account": "SYN-0060",
+   "handle": "sample_syn_0060",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0061",
+   "handle": "sample_syn_0061",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-05"
+  },
+  {
+   "account": "SYN-0062",
+   "handle": "sample_syn_0062",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-07"
+  },
+  {
+   "account": "SYN-0063",
+   "handle": "sample_syn_0063",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-30"
+  },
+  {
+   "account": "SYN-0064",
+   "handle": "sample_syn_0064",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0065",
+   "handle": "sample_syn_0065",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-03"
+  },
+  {
+   "account": "SYN-0066",
+   "handle": "sample_syn_0066",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-21"
+  },
+  {
+   "account": "SYN-0067",
+   "handle": "sample_syn_0067",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-25"
+  },
+  {
+   "account": "SYN-0068",
+   "handle": "sample_syn_0068",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0069",
+   "handle": "sample_syn_0069",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-14"
+  },
+  {
+   "account": "SYN-0070",
+   "handle": "sample_syn_0070",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0071",
+   "handle": "sample_syn_0071",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-10"
+  },
+  {
+   "account": "SYN-0072",
+   "handle": "sample_syn_0072",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0073",
+   "handle": "sample_syn_0073",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-20"
+  },
+  {
+   "account": "SYN-0074",
+   "handle": "sample_syn_0074",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-27"
+  },
+  {
+   "account": "SYN-0075",
+   "handle": "sample_syn_0075",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-05"
+  },
+  {
+   "account": "SYN-0076",
+   "handle": "sample_syn_0076",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-02"
+  },
+  {
+   "account": "SYN-0077",
+   "handle": "sample_syn_0077",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-18"
+  },
+  {
+   "account": "SYN-0078",
+   "handle": "sample_syn_0078",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-24"
+  },
+  {
+   "account": "SYN-0079",
+   "handle": "sample_syn_0079",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-16"
+  },
+  {
+   "account": "SYN-0080",
+   "handle": "sample_syn_0080",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-14"
+  },
+  {
+   "account": "SYN-0081",
+   "handle": "sample_syn_0081",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-10"
+  },
+  {
+   "account": "SYN-0082",
+   "handle": "sample_syn_0082",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-09"
+  },
+  {
+   "account": "SYN-0083",
+   "handle": "sample_syn_0083",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-20"
+  },
+  {
+   "account": "SYN-0084",
+   "handle": "sample_syn_0084",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-01"
+  },
+  {
+   "account": "SYN-0085",
+   "handle": "sample_syn_0085",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-03"
+  },
+  {
+   "account": "SYN-0086",
+   "handle": "sample_syn_0086",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-16"
+  },
+  {
+   "account": "SYN-0087",
+   "handle": "sample_syn_0087",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-02"
+  },
+  {
+   "account": "SYN-0088",
+   "handle": "sample_syn_0088",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-22"
+  },
+  {
+   "account": "SYN-0089",
+   "handle": "sample_syn_0089",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-29"
+  },
+  {
+   "account": "SYN-0090",
+   "handle": "sample_syn_0090",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-24"
+  },
+  {
+   "account": "SYN-0091",
+   "handle": "sample_syn_0091",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-16"
+  },
+  {
+   "account": "SYN-0092",
+   "handle": "sample_syn_0092",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-03"
+  },
+  {
+   "account": "SYN-0093",
+   "handle": "sample_syn_0093",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-21"
+  },
+  {
+   "account": "SYN-0094",
+   "handle": "sample_syn_0094",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-30"
+  },
+  {
+   "account": "SYN-0095",
+   "handle": "sample_syn_0095",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0096",
+   "handle": "sample_syn_0096",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-17"
+  },
+  {
+   "account": "SYN-0097",
+   "handle": "sample_syn_0097",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-29"
+  },
+  {
+   "account": "SYN-0098",
+   "handle": "sample_syn_0098",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0099",
+   "handle": "sample_syn_0099",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-18"
+  },
+  {
+   "account": "SYN-0100",
+   "handle": "sample_syn_0100",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-15"
+  },
+  {
+   "account": "SYN-0101",
+   "handle": "sample_syn_0101",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-21"
+  },
+  {
+   "account": "SYN-0102",
+   "handle": "sample_syn_0102",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-30"
+  },
+  {
+   "account": "SYN-0103",
+   "handle": "sample_syn_0103",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-10"
+  },
+  {
+   "account": "SYN-0104",
+   "handle": "sample_syn_0104",
+   "synthetic": true,
+   "seedUsd": 50,
+   "verifierDate": "2026-10-26"
+  },
+  {
+   "account": "SYN-0105",
+   "handle": "sample_syn_0105",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-10"
+  },
+  {
+   "account": "SYN-0106",
+   "handle": "sample_syn_0106",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-11"
+  },
+  {
+   "account": "SYN-0107",
+   "handle": "sample_syn_0107",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-19"
+  },
+  {
+   "account": "SYN-0108",
+   "handle": "sample_syn_0108",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-05"
+  },
+  {
+   "account": "SYN-0109",
+   "handle": "sample_syn_0109",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-15"
+  },
+  {
+   "account": "SYN-0110",
+   "handle": "sample_syn_0110",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-24"
+  },
+  {
+   "account": "SYN-0111",
+   "handle": "sample_syn_0111",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-06"
+  },
+  {
+   "account": "SYN-0112",
+   "handle": "sample_syn_0112",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-17"
+  },
+  {
+   "account": "SYN-0113",
+   "handle": "sample_syn_0113",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-15"
+  },
+  {
+   "account": "SYN-0114",
+   "handle": "sample_syn_0114",
+   "synthetic": true,
+   "seedUsd": 100000,
+   "verifierDate": "2026-10-13"
+  },
+  {
+   "account": "SYN-0115",
+   "handle": "sample_syn_0115",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-22"
+  },
+  {
+   "account": "SYN-0116",
+   "handle": "sample_syn_0116",
+   "synthetic": true,
+   "seedUsd": 10,
+   "verifierDate": "2026-10-06"
+  },
+  {
+   "account": "SYN-0117",
+   "handle": "sample_syn_0117",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-12"
+  },
+  {
+   "account": "SYN-0118",
+   "handle": "sample_syn_0118",
+   "synthetic": true,
+   "seedUsd": 10000,
+   "verifierDate": "2026-10-21"
+  },
+  {
+   "account": "SYN-0119",
+   "handle": "sample_syn_0119",
+   "synthetic": true,
+   "seedUsd": 0,
+   "verifierDate": "2026-10-09"
+  },
+  {
+   "account": "SYN-0120",
+   "handle": "sample_syn_0120",
+   "synthetic": true,
+   "seedUsd": 1000,
+   "verifierDate": "2026-10-26"
+  }
+ ]
+}

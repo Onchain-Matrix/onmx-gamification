@@ -1,0 +1,338 @@
+{
+ "summary": {
+  "seed": 20261105,
+  "scenarios": 9,
+  "passed": 9,
+  "failed": 0,
+  "SYNTHETIC": true
+ },
+ "scenarios": [
+  {
+   "name": "S1 championship 10 races (300 fake accounts)",
+   "metrics": {
+    "distinctWinners": 6,
+    "maxConsecutiveWins": 2,
+    "headStartDecidedWins": 0,
+    "maxHeadStartShareOfWinnerScore": 0.0465,
+    "champion": {
+     "account": "SYN-0082",
+     "points": 99,
+     "wins": 2,
+     "rank": 1
+    },
+    "top3": [
+     {
+      "account": "SYN-0082",
+      "points": 99,
+      "wins": 2,
+      "rank": 1
+     },
+     {
+      "account": "SYN-0075",
+      "points": 92,
+      "wins": 3,
+      "rank": 2
+     },
+     {
+      "account": "SYN-0162",
+      "points": 78,
+      "wins": 2,
+      "rank": 3
+     }
+    ]
+   },
+   "checks": [
+    {
+     "cond": "head-start-decided wins <= 2 of 10",
+     "pass": true
+    },
+    {
+     "cond": "max head start <= 60 pts (bounded)",
+     "pass": true
+    },
+    {
+     "cond": "championship pts == sum of race pts",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "name": "S2 KOL surge (100k direct fake referrals, 8% synthetic retention)",
+   "metrics": {
+    "referralEnergyDay0": 0,
+    "referralEnergyDay30": 3967,
+    "referralEnergyDay60": 7934,
+    "kolRace1": {
+     "account": "KOL",
+     "own": 180,
+     "headStart": 0,
+     "score": 180,
+     "rank": 1,
+     "points": 25
+    },
+    "kolRace2": {
+     "account": "KOL",
+     "own": 10,
+     "headStart": 9,
+     "score": 19,
+     "rank": 2,
+     "points": 18
+    },
+    "grinderRace2": {
+     "account": "GRINDER",
+     "own": 120,
+     "headStart": 0,
+     "score": 120,
+     "rank": 1,
+     "points": 25
+    },
+    "runtimeMs": 456
+   },
+   "checks": [
+    {
+     "cond": "referral energy 0 before day-30 gate",
+     "pass": true
+    },
+    {
+     "cond": "KOL race score excludes referral energy",
+     "pass": true
+    },
+    {
+     "cond": "KOL does not repeat win in race 2 vs higher-effort grinder",
+     "pass": true
+    },
+    {
+     "cond": "100k bindings run < 10s",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "name": "S3 referral abuse (depth-10 chain, cycle, self, duplicate)",
+   "metrics": {
+    "rejected": [
+     "cycle",
+     "self",
+     "duplicate"
+    ],
+    "paidAccounts": [
+     "S8",
+     "S9"
+    ],
+    "totalPaid": 150
+   },
+   "checks": [
+    {
+     "cond": "only 2 ancestors paid (no L3+)",
+     "pass": true
+    },
+    {
+     "cond": "total payout = 15% of referee base",
+     "pass": true
+    },
+    {
+     "cond": "cycle/self/dup all rejected",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "name": "S4 freemium: Seed amplifies, never replaces effort",
+   "metrics": {
+    "whaleZeroEffort": 0,
+    "whale100Energy": 200,
+    "free201Energy": 201,
+    "effortRatioFreeNeedsToBeatMaxSeed": 2,
+    "plusSeedHeadStartPts": 20
+   },
+   "checks": [
+    {
+     "cond": "0 effort => 0 regardless of Seed",
+     "pass": true
+    },
+    {
+     "cond": "free player with >2x energy beats max-band Seed",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "name": "S5 energy decay of 1000 hoarded energy",
+   "metrics": {
+    "byIdleDays": {
+     "0": 1000,
+     "7": 1000,
+     "14": 868.13,
+     "30": 628.35,
+     "60": 342.75,
+     "90": 186.97
+    }
+   },
+   "checks": [
+    {
+     "cond": "monotonic non-increasing, never negative",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "name": "S6 treasury-linked recognition index",
+   "metrics": {
+    "points": [
+     {
+      "inflows": [],
+      "cumulativeRaised": 0,
+      "index": 100
+     },
+     {
+      "inflows": [
+       0
+      ],
+      "cumulativeRaised": 0,
+      "index": 100
+     },
+     {
+      "inflows": [
+       -10000
+      ],
+      "cumulativeRaised": 0,
+      "index": 100
+     },
+     {
+      "inflows": [
+       50000,
+       -40000
+      ],
+      "cumulativeRaised": 50000,
+      "index": 600
+     },
+     {
+      "inflows": [
+       1000000
+      ],
+      "cumulativeRaised": 1000000,
+      "index": 10100
+     },
+     {
+      "inflows": [
+       9990000
+      ],
+      "cumulativeRaised": 9990000,
+      "index": 100000
+     },
+     {
+      "inflows": [
+       50000000
+      ],
+      "cumulativeRaised": 50000000,
+      "index": 100000
+     }
+    ],
+    "capReachedAtCumulativeRaised": 9990000
+   },
+   "checks": [
+    {
+     "cond": "zero/negative => floor 100",
+     "pass": true
+    },
+    {
+     "cond": "outflow does not reduce index (cumulative, not balance)",
+     "pass": true
+    },
+    {
+     "cond": "bounded by cap",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "name": "S7 badge cohort instrumentation (synthetic: badges visible vs ranks only)",
+   "metrics": {
+    "note": "Effect is an INPUT to the fake return model; output only shows the pipeline recovers it. NOT evidence about real people.",
+    "nullEffect": {
+     "n": {
+      "badges": 1997,
+      "ranksOnly": 2003
+     },
+     "day30Return": {
+      "badges": 0.1968,
+      "ranksOnly": 0.2012
+     },
+     "diff": -0.0044,
+     "ci95": [
+      -0.0291,
+      0.0203
+     ]
+    },
+    "injectedEffect005": {
+     "n": {
+      "badges": 1974,
+      "ranksOnly": 2026
+     },
+     "day30Return": {
+      "badges": 0.2639,
+      "ranksOnly": 0.2004
+     },
+     "diff": 0.0635,
+     "ci95": [
+      0.0374,
+      0.0896
+     ]
+    }
+   },
+   "checks": [
+    {
+     "cond": "null run CI contains 0",
+     "pass": true
+    },
+    {
+     "cond": "injected +0.05 recovered within CI",
+     "pass": true
+    },
+    {
+     "cond": "cohorts balanced within 5%",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "name": "S9 classification calibration (sample board, 35 days)",
+   "metrics": {
+    "distribution": {
+     "Architect": 2,
+     "Node": 7,
+     "Verifier": 44,
+     "Signal": 47
+    },
+    "note": "absolute thresholds vs cumulative score"
+   },
+   "checks": [
+    {
+     "cond": "no single class > 60% of board",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "name": "S8 reproducibility",
+   "metrics": {
+    "sha256": "5659a9835bf9988ce4592dcdf7718c04716e2e8ffe2893798234cbf07c4ee47c"
+   },
+   "checks": [
+    {
+     "cond": "same seed => identical hash",
+     "pass": true
+    }
+   ],
+   "pass": true
+  }
+ ]
+}

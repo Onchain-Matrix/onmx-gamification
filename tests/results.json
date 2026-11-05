@@ -1,0 +1,118 @@
+{
+ "summary": {
+  "total": 27,
+  "passed": 27,
+  "failed": 0,
+  "engine": "provisional-0.1 (UNAPPROVED)"
+ },
+ "results": [
+  {
+   "name": "effort=0 => score 0 (even with max Seed)",
+   "pass": true
+  },
+  {
+   "name": "negative/NaN/Infinity effort => 0",
+   "pass": true
+  },
+  {
+   "name": "unknown task type => 0",
+   "pass": true
+  },
+  {
+   "name": "overflow clamps to MAX_VALUE",
+   "pass": true
+  },
+  {
+   "name": "Seed bands tiered not linear",
+   "pass": true
+  },
+  {
+   "name": "energy x bonus",
+   "pass": true
+  },
+  {
+   "name": "one-time video boost counted once",
+   "pass": true
+  },
+  {
+   "name": "decay: none within grace, compounds after",
+   "pass": true
+  },
+  {
+   "name": "referral: self-ref rejected",
+   "pass": true
+  },
+  {
+   "name": "referral: duplicate/stacking rejected, first wins",
+   "pass": true
+  },
+  {
+   "name": "referral: cycles rejected (2- and 3-cycle)",
+   "pass": true
+  },
+  {
+   "name": "referral: 10%/5%, no L3",
+   "pass": true
+  },
+  {
+   "name": "referral uses BASE energy, not Seed-amplified",
+   "pass": true
+  },
+  {
+   "name": "gate edges: day29 0, day30 0.5, day59 0.5, day60 1",
+   "pass": true
+  },
+  {
+   "name": "gate across leap day (2028-02-29) uses UTC day count",
+   "pass": true
+  },
+  {
+   "name": "referral energy excluded from race/championship",
+   "pass": true
+  },
+  {
+   "name": "head start bounded and next-race-only",
+   "pass": true
+  },
+  {
+   "name": "head start zero when no own effort (never a free win)",
+   "pass": true
+  },
+  {
+   "name": "F1 points top10 and championship sums",
+   "pass": true
+  },
+  {
+   "name": "treasury: cumulative raised ignores outflows; zero/negative => floor",
+   "pass": true
+  },
+  {
+   "name": "treasury index monotonic non-decreasing",
+   "pass": true
+  },
+  {
+   "name": "leaderboard: max 100 rows, ranks 1..100, x links valid",
+   "pass": true
+  },
+  {
+   "name": "leaderboard: gaps + target guidance correct",
+   "pass": true
+  },
+  {
+   "name": "xLink rejects injection / invalid handles",
+   "pass": true
+  },
+  {
+   "name": "exporter refuses while visibility UNDECIDED",
+   "pass": true
+  },
+  {
+   "name": "exporter optin filter + strips non-allowed fields + dedup",
+   "pass": true
+  },
+  {
+   "name": "determinism: same seed => identical leaderboard",
+   "pass": true
+  }
+ ]
+}

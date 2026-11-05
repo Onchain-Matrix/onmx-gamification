@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ONMX Contributor Board — PRIVATE DRAFT (synthetic data)</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0b0f0c;color:#d7f5dd;margin:0;padding:16px;max-width:1100px;margin:auto}
+h1{font-size:20px}.warn{background:#3a2a00;color:#ffd77a;padding:8px 12px;border-radius:6px;margin:8px 0}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}th,td{padding:6px 8px;border-bottom:1px solid #1f3326;text-align:left}
+td.rel{color:#8fb79a;font-size:12px;padding-top:0}a{color:#6fe39a}.tabs button{background:#14261a;color:#d7f5dd;border:1px solid #2b4a35;padding:6px 10px;cursor:pointer}
+.tabs button.on{background:#2b4a35}.syn{font-size:11px;color:#ffb36b}
+</style></head><body>
+<h1>ONCHAIN MATRIX · Contributor board <span class="syn">(PRIVATE DRAFT)</span></h1>
+<div class="warn">SYNTHETIC SAMPLE DATA ONLY — fake placeholder accounts, not real ONMX members. Provisional, unapproved scoring rules (see README / src/config.js). No $ or token values. Not published.</div>
+<div class="tabs"><button data-t="board" class="on">Leaderboard (1–100)</button><button data-t="champ">Championship standings</button><button data-t="race">Race results</button><button data-t="treasury">Treasury index</button></div>
+<label style="display:block;margin:8px 0">Target position for guidance: <input id="target" type="number" min="1" max="100" value="10" style="width:60px"></label>
+<div id="out"></div>
+<p style="font-size:12px;color:#8fb79a">Scores = contribution/verification activity, never follows/RTs/seed $ alone. Bonus amplifies effort, never replaces it (0 effort ⇒ 0). Visibility policy (everyone vs opt-in): UNDECIDED.</p>
+<script type="module">
+import * as E from "./src/engine.js";
+const [roster, tasks, tre] = await Promise.all(["data/sample-roster.json","data/sample-tasks.json","data/sample-treasury.json"].map(u => fetch(u).then(r => r.json())));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const out = document.getElementById("out"); let tab = "board";
+function render() {
+  const target = +document.getElementById("target").value || null;
+  if (tab === "board") {
+    const rows = E.leaderboard(roster.accounts, tasks.tasks, { asOf: "2026-11-06", targetRank: target });
+    out.innerHTML = "<table><tr><th>Rank</th><th>X account</th><th>Score</th><th>Classification</th><th>Reward (recognition)</th></tr>" + rows.map(r => {
+      const x = r.xUrl ? `<a href="${r.xUrl}" rel="noopener nofollow" target="_blank">@${esc(r.handle)}</a>` : esc(r.handle);
+      const rel = r.rank === 1 ? `Lead +${r.leadOverSecond ?? 0} over #2` : `${r.gapToAhead} pts to pass #${r.rank - 1} · ${r.gapToFirst} behind #1` + (r.gapToTarget ? ` · ${r.gapToTarget} to reach #${target}` : "");
+      return `<tr><td>${r.rank}</td><td>${x} ${r.synthetic ? '<span class="syn">SAMPLE</span>' : ""}</td><td>${r.score}</td><td>${r.classification}</td><td>${esc(r.reward)}</td></tr><tr><td></td><td class="rel" colspan="4">${rel} · Next: ${esc(r.next)}</td></tr>`;
+    }).join("") + "</table>";
+  } else if (tab === "champ" || tab === "race") {
+    const c = E.championship(tre.races, tasks.tasks, roster.accounts);
+    if (tab === "champ") out.innerHTML = "<table><tr><th>Pos</th><th>Account</th><th>Championship pts (F1)</th><th>Race wins</th></tr>" + c.standings.slice(0, 100).map(s => `<tr><td>${s.rank}</td><td>${esc(s.account)}</td><td>${s.points}</td><td>${s.wins}</td></tr>`).join("") + "</table>";
+    else out.innerHTML = c.results.map(r => `<h3>${r.id}</h3><table><tr><th>Pos</th><th>Account</th><th>Race score</th><th>Head start</th><th>Pts</th></tr>` + r.rows.slice(0, 10).map(x => `<tr><td>${x.rank}</td><td>${esc(x.account)}</td><td>${Math.round(x.score)}</td><td>${Math.round(x.headStart)}</td><td>${x.points}</td></tr>`).join("") + "</table>").join("");
+  } else {
+    const cum = E.cumulativeRaised(tre.inflows);
+    out.innerHTML = `<p>Cumulative raised (synthetic, positive inflows only): <b>${cum}</b><br>Provisional recognition index: <b>${E.treasuryIndex(cum)}</b> (unitless; not $, not tokens, not a commitment). Wallet balance is intentionally not used.</p>`;
+  }
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b)); render(); });
+document.getElementById("target").oninput = render; render();
+</script></body></html>

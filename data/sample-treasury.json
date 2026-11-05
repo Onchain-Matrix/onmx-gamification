@@ -1,0 +1,3 @@
+{"meta":{"SYNTHETIC":true,"note":"FAKE inflows for layout. Index uses CUMULATIVE RAISED only, never wallet balance. Unitless, not $ or tokens."},
+ "inflows":[{"date":"2026-10-02","amountUsd":12000},{"date":"2026-10-10","amountUsd":8000},{"date":"2026-10-20","amountUsd":-5000,"note":"outflow: ignored by design"},{"date":"2026-10-28","amountUsd":15000}],
+ "races":[{"id":"R1","from":"2026-10-01","to":"2026-10-15"},{"id":"R2","from":"2026-10-15","to":"2026-10-29"},{"id":"R3","from":"2026-10-29","to":"2026-11-06"}]}

@@ -1,0 +1,104 @@
+{
+ "STATUS": "ALL VALUES PROVISIONAL / UNAPPROVED — generated from src/config.js",
+ "version": "provisional-0.1 (UNAPPROVED)",
+ "MAX_VALUE": 1000000000000,
+ "TASK_WEIGHTS": {
+  "receipt_check": 10,
+  "verifier_checklist": 40,
+  "architect_ship": 60,
+  "circle_onboard": 25,
+  "video_watch": 5
+ },
+ "ONE_TIME_TASKS": [
+  "video_watch"
+ ],
+ "DECAY": {
+  "graceDays": 7,
+  "ratePerDay": 0.02
+ },
+ "SEED_BANDS": [
+  {
+   "minUsd": 0,
+   "mult": 1
+  },
+  {
+   "minUsd": 10,
+   "mult": 1.1
+  },
+  {
+   "minUsd": 1000,
+   "mult": 1.25
+  },
+  {
+   "minUsd": 10000,
+   "mult": 1.5
+  },
+  {
+   "minUsd": 100000,
+   "mult": 2
+  }
+ ],
+ "REFERRAL": {
+  "levels": [
+   0.1,
+   0.05
+  ]
+ },
+ "GATES": [
+  {
+   "day": 30,
+   "share": 0.5
+  },
+  {
+   "day": 60,
+   "share": 0.5
+  }
+ ],
+ "F1_POINTS": [
+  25,
+  18,
+  15,
+  12,
+  10,
+  8,
+  6,
+  4,
+  2,
+  1
+ ],
+ "HEADSTART": {
+  "winnerPct": 0.05,
+  "winnerCap": 50,
+  "seedFlat": 20,
+  "totalCap": 60
+ },
+ "TREASURY_CURVE": {
+  "floor": 100,
+  "pct": 0.01,
+  "cap": 100000
+ },
+ "CLASSES": [
+  {
+   "min": 2000,
+   "name": "Architect"
+  },
+  {
+   "min": 1200,
+   "name": "Node"
+  },
+  {
+   "min": 600,
+   "name": "Verifier"
+  },
+  {
+   "min": 1,
+   "name": "Signal"
+  },
+  {
+   "min": 0,
+   "name": "Unranked"
+  }
+ ],
+ "VISIBILITY": "UNDECIDED",
+ "BOARD_SIZE": 100
+}

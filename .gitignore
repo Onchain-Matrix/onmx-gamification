@@ -1,0 +1,5 @@
+node_modules/
+*.local.json
+roster.real.json
+data/roster.json
+.env*

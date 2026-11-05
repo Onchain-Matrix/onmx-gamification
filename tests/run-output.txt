@@ -1,0 +1,4 @@
+{"total":27,"passed":27,"failed":0,"engine":"provisional-0.1 (UNAPPROVED)"}
+exit=0
+{"seed":20261105,"scenarios":9,"passed":9,"failed":0,"SYNTHETIC":true}
+exit=0
