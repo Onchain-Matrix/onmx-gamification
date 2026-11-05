@@ -1,44 +1,83 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>ONMX Contributor Board — PRIVATE DRAFT (synthetic data)</title>
+<title>ONMX Contributor Energy Board (sample data)</title>
 <style>
-body{font-family:system-ui,sans-serif;background:#0b0f0c;color:#d7f5dd;margin:0;padding:16px;max-width:1100px;margin:auto}
-h1{font-size:20px}.warn{background:#3a2a00;color:#ffd77a;padding:8px 12px;border-radius:6px;margin:8px 0}
-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}th,td{padding:6px 8px;border-bottom:1px solid #1f3326;text-align:left}
-td.rel{color:#8fb79a;font-size:12px;padding-top:0}a{color:#6fe39a}.tabs button{background:#14261a;color:#d7f5dd;border:1px solid #2b4a35;padding:6px 10px;cursor:pointer}
-.tabs button.on{background:#2b4a35}.syn{font-size:11px;color:#ffb36b}
-</style></head><body>
-<h1>ONCHAIN MATRIX · Contributor board <span class="syn">(PRIVATE DRAFT)</span></h1>
-<div class="warn">SYNTHETIC SAMPLE DATA ONLY — fake placeholder accounts, not real ONMX members. Provisional, unapproved scoring rules (see README / src/config.js). No $ or token values. Not published.</div>
-<div class="tabs"><button data-t="board" class="on">Leaderboard (1–100)</button><button data-t="champ">Championship standings</button><button data-t="race">Race results</button><button data-t="treasury">Treasury index</button></div>
-<form id="sform" style="margin:8px 0" autocomplete="off"><label>Find your rank by X handle: <input id="q" type="search" placeholder="@handle" maxlength="40" style="width:180px"></label> <button type="submit">Search</button> <span style="font-size:12px;color:#8fb79a">(searches all contributors, not just the top 100 · no login)</span></form>
+:root{--bg:#07090f;--panel:rgba(18,22,34,.78);--line:rgba(140,160,210,.14);--txt:#e6e9f2;--mute:#8b93a8;--gold:#e8c27a;--teal:#5fd4c4;--violet:#9d8cff;--rose:#e58a9d}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--txt);background:var(--bg);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;background:radial-gradient(40% 35% at 20% 15%,rgba(157,140,255,.18),transparent 70%),radial-gradient(35% 30% at 85% 25%,rgba(95,212,196,.12),transparent 70%),radial-gradient(45% 40% at 60% 95%,rgba(232,194,122,.10),transparent 70%);animation:drift 28s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(3%,-2%,0) rotate(4deg) scale(1.05)}}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){body::before,.card,.row{animation:none!important}*{transition:none!important}}
+.wrap{max-width:1040px;margin:auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+h1{margin:0;font-size:clamp(18px,3vw,24px);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+h1 b{background:linear-gradient(90deg,var(--gold),var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pill{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(232,194,122,.4);border-radius:99px;padding:3px 10px}
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:18px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(10px)}
+nav button{all:unset;cursor:pointer;text-align:center;padding:10px 6px;border-radius:10px;color:var(--mute);font-weight:600;font-size:14px;transition:.2s}
+nav button:hover{color:var(--txt)}nav button.on{color:#0b0d14;background:linear-gradient(135deg,var(--gold),#d9a95a)}
+nav button:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;backdrop-filter:blur(10px);animation:rise .35s ease both}
+.tools{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}
+label{display:block;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+input{width:100%;background:#0d111b;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:15px}
+#target{width:90px}
+.btn{all:unset;cursor:pointer;background:linear-gradient(135deg,var(--violet),#6f5fe0);color:#fff;font-weight:600;padding:10px 16px;border-radius:10px}
+form.s{display:flex;gap:8px}
+.big{font-size:clamp(28px,6vw,44px);font-weight:800;font-variant-numeric:tabular-nums;color:var(--gold);line-height:1}
+.unit{font-size:12px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase}
+.row{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:12px 8px;border-bottom:1px solid var(--line);animation:rise .3s ease both}
+.row:last-child{border:0}.rk{font-weight:800;font-size:20px;color:var(--mute);text-align:center;font-variant-numeric:tabular-nums}
+.row.p1 .rk{color:var(--gold)}.row.p2 .rk{color:#cfd6e4}.row.p3 .rk{color:#d49a6a}
+.who a,.who span.h{color:var(--txt);text-decoration:none;font-weight:600}.who a:hover{color:var(--teal)}
+.sub{font-size:12px;color:var(--mute)}.cls{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--teal);margin-left:6px}
+.pts{text-align:right}.pts .n{font-size:22px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+.hero{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+h3{margin:0 0 8px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--violet)}
+.note{font-size:12px;color:var(--mute)}.warn{color:var(--gold)}
+footer{font-size:12px;color:var(--mute);margin-top:20px}
+@media (max-width:640px){.tools{grid-template-columns:1fr}nav button{font-size:12px;padding:9px 2px}.row{grid-template-columns:40px 1fr auto;gap:8px}.pts .n{font-size:18px}.hero{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<header><h1>ONCHAIN MATRIX · <b>Energy</b></h1><span class="pill" title="Placeholder accounts and provisional, unapproved rules">Sample data · provisional rules</span></header>
+<nav role="tablist" aria-label="Sections"><button role="tab" data-t="board" class="on" aria-selected="true">Leaderboard</button><button role="tab" data-t="champ" aria-selected="false">Championship</button><button role="tab" data-t="race" aria-selected="false">Energy results</button><button role="tab" data-t="treasury" aria-selected="false">Treasury</button></nav>
+<section class="card tools">
+  <div><label for="q">Find your rank — X handle</label><form id="sform" class="s" autocomplete="off"><input id="q" type="search" placeholder="@handle" maxlength="40"><button class="btn" type="submit">Search</button></form></div>
+  <div><label for="target">Your next target rank</label><input id="target" type="number" min="1" max="100" value="10"></div>
+</section>
 <div id="sres" aria-live="polite"></div>
-<label style="display:block;margin:8px 0">Target position for guidance: <input id="target" type="number" min="1" max="100" value="10" style="width:60px"></label>
-<div id="out"></div>
-<p style="font-size:12px;color:#8fb79a">Scores = contribution/verification activity, never follows/RTs/seed $ alone. Bonus amplifies effort, never replaces it (0 effort ⇒ 0). Visibility policy (everyone vs opt-in): UNDECIDED.</p>
+<main id="out"></main>
+<footer>Placeholder sample accounts, not real members. Energy is earned by contribution/verification work, never follows/RTs; seed bonus only amplifies effort (0 effort ⇒ 0). Rules are provisional. No $ or token values.</footer>
+</div>
 <script type="module">
 import * as E from "./src/engine.js";
 import { CONFIG } from "./src/config.js";
 const [roster, tasks, tre] = await Promise.all(["data/sample-roster.json","data/sample-tasks.json","data/sample-treasury.json"].map(u => fetch(u).then(r => r.json())));
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Number(n).toLocaleString("en-US");
 const out = document.getElementById("out"); let tab = "board";
+const ASOF = "2026-11-06";
+const handleOf = Object.fromEntries(roster.accounts.map(a => [a.account, a.handle]));
+const who = r => { const u = r.xUrl ?? E.xLink(r.handle); return u ? `<a href="${esc(u)}" rel="noopener nofollow" target="_blank">@${esc(r.handle)}</a>` : `<span class="h">${esc(r.handle ?? r.account)}</span>`; };
+const pc = i => i < 3 ? ` p${i + 1}` : "";
 function render() {
-  const target = +document.getElementById("target").value || null;
+  const target = Math.min(100, Math.max(1, Math.floor(+document.getElementById("target").value || 0))) || null;
   if (tab === "board") {
-    const rows = E.leaderboard(roster.accounts, tasks.tasks, { asOf: "2026-11-06", targetRank: target });
-    out.innerHTML = "<table><tr><th>Rank</th><th>X account</th><th>Score</th><th>Classification</th><th>Reward (recognition)</th></tr>" + rows.map(r => {
-      const x = r.xUrl ? `<a href="${r.xUrl}" rel="noopener nofollow" target="_blank">@${esc(r.handle)}</a>` : esc(r.handle);
-      const rel = r.rank === 1 ? `Lead +${r.leadOverSecond ?? 0} over #2` : `${r.gapToAhead} pts to pass #${r.rank - 1} · ${r.gapToFirst} behind #1` + (r.gapToTarget ? ` · ${r.gapToTarget} to reach #${target}` : "");
-      return `<tr><td>${r.rank}</td><td>${x} ${r.synthetic ? '<span class="syn">SAMPLE</span>' : ""}</td><td>${r.score}</td><td>${r.classification}</td><td>${esc(r.reward)}</td></tr><tr><td></td><td class="rel" colspan="4">${rel} · Next: ${esc(r.next)}</td></tr>`;
-    }).join("") + "</table>";
+    const rows = E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF, targetRank: target });
+    out.innerHTML = `<section class="card"><h3>Top 100 · energy score</h3>` + rows.map((r, i) => {
+      const g = r.rank === 1 ? `Leading by ${fmt(r.leadOverSecond ?? 0)}` : r.gapToTarget ? `+${fmt(r.gapToTarget)} → #${target} · next: ${esc(r.next)}` : `+${fmt(r.gapToAhead)} → #${r.rank - 1}`;
+      return `<div class="row${pc(i)}"><div class="rk">${r.rank}</div><div class="who">${who(r)}<span class="cls">${esc(r.classification)}</span><div class="sub">${g}</div></div><div class="pts"><div class="n">${fmt(r.score)}</div><div class="unit">energy</div></div></div>`;
+    }).join("") + "</section>";
   } else if (tab === "champ" || tab === "race") {
     const c = E.championship(tre.races, tasks.tasks, roster.accounts);
-    if (tab === "champ") out.innerHTML = "<table><tr><th>Pos</th><th>Account</th><th>Championship pts (F1)</th><th>Race wins</th></tr>" + c.standings.slice(0, 100).map(s => `<tr><td>${s.rank}</td><td>${esc(s.account)}</td><td>${s.points}</td><td>${s.wins}</td></tr>`).join("") + "</table>";
-    else out.innerHTML = c.results.map(r => `<h3>${r.id}</h3><table><tr><th>Pos</th><th>Account</th><th>Race score</th><th>Head start</th><th>Pts</th></tr>` + r.rows.slice(0, 10).map(x => `<tr><td>${x.rank}</td><td>${esc(x.account)}</td><td>${Math.round(x.score)}</td><td>${Math.round(x.headStart)}</td><td>${x.points}</td></tr>`).join("") + "</table>").join("");
+    if (tab === "champ") out.innerHTML = `<section class="card"><h3>Season championship</h3><p class="note">Season-long standings: each energy period ranks contributors by energy earned in that period; top 10 receive season points (25-18-15-12-10-8-6-4-2-1, provisional). Points add up across the season. Energy spending and decay of hoarded energy are <b>not yet applied</b> to these standings.</p>` +
+      c.standings.slice(0, 100).map((s, i) => `<div class="row${pc(i)}"><div class="rk">${s.rank}</div><div class="who">${who({ handle: handleOf[s.account], account: s.account })}</div><div class="pts"><div class="n">${fmt(s.points)}</div><div class="unit">season pts</div></div></div>`).join("") + "</section>";
+    else out.innerHTML = `<div class="grid">` + c.results.map((r, k) => `<section class="card"><h3>Energy period ${k + 1}</h3>` + r.rows.slice(0, 10).map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: handleOf[x.account], account: x.account })}<div class="sub">${Math.round(x.headStart) ? `incl. +${fmt(Math.round(x.headStart))} carry-in bonus` : ""}</div></div><div class="pts"><div class="n">${fmt(Math.round(x.score))}</div><div class="unit">energy · +${x.points} pts</div></div></div>`).join("") + "</section>").join("") + "</div>";
   } else {
     const cum = E.cumulativeRaised(tre.inflows);
-    out.innerHTML = `<p>Cumulative raised (synthetic, positive inflows only): <b>${cum}</b><br>Provisional recognition index: <b>${E.treasuryIndex(cum)}</b> (unitless; not $, not tokens, not a commitment). Wallet balance is intentionally not used.</p>`;
+    out.innerHTML = `<section class="card hero"><div><div class="big">${fmt(E.treasuryIndex(cum))}</div><div class="unit">Treasury index</div></div><p class="note">Based on cumulative raised (${fmt(cum)}, sample inflows only; outflows ignored). Unitless recognition index — not $, not tokens, not a commitment. Wallet balance is not used.</p></section>`;
   }
 }
 // SEARCH-BEGIN (pure; extracted by tests/run.mjs)
@@ -50,13 +89,12 @@ let allRows = null;
 const sres = document.getElementById("sres");
 document.getElementById("sform").onsubmit = ev => { ev.preventDefault();
   const q = document.getElementById("q").value;
-  allRows ??= E.leaderboard(roster.accounts, tasks.tasks, { asOf: "2026-11-06" }, { ...CONFIG, BOARD_SIZE: Infinity });
+  allRows ??= E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }, { ...CONFIG, BOARD_SIZE: Infinity });
   const hits = searchRows(allRows, q);
-  if (hits === null) { sres.textContent = "Enter an X handle to search."; return; }
-  if (!hits.length) { sres.textContent = `No contributor found with handle "${normHandle(q)}" (${allRows.length} contributors searched).`; return; }
-  sres.innerHTML = "<table><tr><th>Rank</th><th>X account</th><th>Score</th><th>Classification</th><th>Gap to #1</th></tr>" + hits.map(r =>
-    `<tr><td>${r.rank} of ${allRows.length}${r.rank > CONFIG.BOARD_SIZE ? " (outside top " + CONFIG.BOARD_SIZE + ")" : ""}</td><td>${r.xUrl ? `<a href="${esc(r.xUrl)}" rel="noopener nofollow" target="_blank">@${esc(r.handle)}</a>` : esc(r.handle)}</td><td>${r.score}</td><td>${esc(r.classification)}</td><td>${r.gapToFirst}</td></tr>`).join("") + "</table>" + (hits.length > 1 ? "<p class=\"syn\">Multiple accounts share this handle; all are shown.</p>" : "");
+  if (hits === null) { sres.innerHTML = `<section class="card note">Enter an X handle to search.</section>`; return; }
+  if (!hits.length) { sres.innerHTML = `<section class="card note">No contributor found for “${esc(normHandle(q))}” (${fmt(allRows.length)} searched).</section>`; return; }
+  sres.innerHTML = hits.map(r => `<section class="card hero"><div><div class="big">#${fmt(r.rank)}</div><div class="unit">of ${fmt(allRows.length)}${r.rank > CONFIG.BOARD_SIZE ? ` · outside top ${CONFIG.BOARD_SIZE}` : ""}</div></div><div class="who">${who(r)}<span class="cls">${esc(r.classification)}</span><div class="big" style="font-size:28px;margin-top:6px">${fmt(r.score)} <span class="unit">energy</span></div><div class="sub">${r.rank === 1 ? "You lead the board." : `+${fmt(allRows[r.rank - 2].score - r.score + 1)} energy → #${r.rank - 1} · next: ${esc(r.next)}`}</div></div></section>`).join("") + (hits.length > 1 ? `<p class="note">Multiple accounts share this handle; all shown.</p>` : "");
 };
-document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b)); render(); });
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("nav button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b); }); render(); });
 document.getElementById("target").oninput = render; render();
 </script></body></html>
