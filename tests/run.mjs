@@ -56,6 +56,23 @@ t("exporter optin filter + strips non-allowed fields + dedup", () => { const r =
   eq(r.accounts, [{ account: "A", handle: "a", optIn: true }]); eq(r.dropped.length, 2); });
 t("determinism: same seed => identical leaderboard", () => { const f = () => { const a = makeAccounts(50, 9); return JSON.stringify(E.leaderboard(a, makeTasks(a, "2026-10-01", 10, 3))); }; eq(f(), f()); });
 
+// --- Search regressions (search helper extracted from index.html; ranks via engine with display cap lifted) ---
+import { readFileSync } from "node:fs";
+const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const src = html.split("// SEARCH-BEGIN")[1].split("// SEARCH-END")[0].replace(/^.*\n/, "");
+const { searchRows } = new Function(src + "; return { searchRows, normHandle };")();
+const full = (a, tk, asOf) => E.leaderboard(a, tk, { asOf }, { ...CONFIG, BOARD_SIZE: Infinity });
+const roster = JSON.parse(readFileSync(new URL("../data/sample-roster.json", import.meta.url))); const stasks = JSON.parse(readFileSync(new URL("../data/sample-tasks.json", import.meta.url)));
+t("search: sample data full ranking matches top-100 board exactly and covers all accounts", () => { const top = E.leaderboard(roster.accounts, stasks.tasks, { asOf: "2026-11-06" }); const all = full(roster.accounts, stasks.tasks, "2026-11-06");
+  eq(all.length, roster.accounts.length); eq(top.length, Math.min(100, roster.accounts.length)); eq(all.slice(0, 100).map(r => [r.rank, r.handle, r.score]), top.map(r => [r.rank, r.handle, r.score]));
+  for (const r of all) { const h = searchRows(all, "  @" + r.handle.toUpperCase() + " "); eq(h.length, 1); eq([h[0].rank, h[0].score], [r.rank, r.score]); } });
+t("search: empty / whitespace / @ only => null; unknown => []", () => { const all = full(roster.accounts, stasks.tasks, "2026-11-06"); eq(searchRows(all, ""), null); eq(searchRows(all, "   "), null); eq(searchRows(all, "@"), null); eq(searchRows(all, "nobody_here"), []); eq(searchRows(all, "sample_syn_000"), [], "no partial match"); });
+t("search: synthetic 10001 accounts — rank > 100 found with correct global rank/score", () => { const a = makeAccounts(10001, 3); const tk = makeTasks(a, "2026-10-01", 20, 2); const all = full(a, tk, "2026-10-21");
+  eq(all.length, 10001); eq(E.leaderboard(a, tk, { asOf: "2026-10-21" }).length, 100); ok(all.every((r, i) => r.rank === i + 1 && (i === 0 || all[i - 1].score >= r.score)));
+  for (const k of [101, 5000, 10000, 10001]) { const r = all[k - 1]; const h = searchRows(all, "@" + r.handle.toUpperCase()); eq(h.length, 1); eq(h[0].rank, k); eq(h[0].score, Math.round(E.finalScore(E.baseEnergy(tk, { to: "2026-10-21" }).get(r.account) || 0, a.find(x => x.account === r.account).seedUsd))); } });
+t("search: duplicate handles return all exact matches; injection handle stays inert", () => { const a = [acc("A"), acc("B"), { account: "C", handle: "<img src=x onerror=alert(1)>", seedUsd: 0 }]; a[1].handle = "a";
+  const all = full(a, [], "2026-10-21"); eq(searchRows(all, "@A").length, 2); const x = searchRows(all, "<IMG src=x onerror=alert(1)>"); eq(x.length, 1); eq(x[0].xUrl, null); });
+
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };
 writeFileSync(new URL("./results.json", import.meta.url), JSON.stringify({ summary, results }, null, 1));
 console.log(JSON.stringify(summary)); for (const r of results) if (!r.pass) console.log("FAIL", r.name, r.error);

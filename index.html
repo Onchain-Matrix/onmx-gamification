@@ -12,11 +12,14 @@ td.rel{color:#8fb79a;font-size:12px;padding-top:0}a{color:#6fe39a}.tabs button{b
 <h1>ONCHAIN MATRIX · Contributor board <span class="syn">(PRIVATE DRAFT)</span></h1>
 <div class="warn">SYNTHETIC SAMPLE DATA ONLY — fake placeholder accounts, not real ONMX members. Provisional, unapproved scoring rules (see README / src/config.js). No $ or token values. Not published.</div>
 <div class="tabs"><button data-t="board" class="on">Leaderboard (1–100)</button><button data-t="champ">Championship standings</button><button data-t="race">Race results</button><button data-t="treasury">Treasury index</button></div>
+<form id="sform" style="margin:8px 0" autocomplete="off"><label>Find your rank by X handle: <input id="q" type="search" placeholder="@handle" maxlength="40" style="width:180px"></label> <button type="submit">Search</button> <span style="font-size:12px;color:#8fb79a">(searches all contributors, not just the top 100 · no login)</span></form>
+<div id="sres" aria-live="polite"></div>
 <label style="display:block;margin:8px 0">Target position for guidance: <input id="target" type="number" min="1" max="100" value="10" style="width:60px"></label>
 <div id="out"></div>
 <p style="font-size:12px;color:#8fb79a">Scores = contribution/verification activity, never follows/RTs/seed $ alone. Bonus amplifies effort, never replaces it (0 effort ⇒ 0). Visibility policy (everyone vs opt-in): UNDECIDED.</p>
 <script type="module">
 import * as E from "./src/engine.js";
+import { CONFIG } from "./src/config.js";
 const [roster, tasks, tre] = await Promise.all(["data/sample-roster.json","data/sample-tasks.json","data/sample-treasury.json"].map(u => fetch(u).then(r => r.json())));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const out = document.getElementById("out"); let tab = "board";
@@ -38,6 +41,22 @@ function render() {
     out.innerHTML = `<p>Cumulative raised (synthetic, positive inflows only): <b>${cum}</b><br>Provisional recognition index: <b>${E.treasuryIndex(cum)}</b> (unitless; not $, not tokens, not a commitment). Wallet balance is intentionally not used.</p>`;
   }
 }
+// SEARCH-BEGIN (pure; extracted by tests/run.mjs)
+const normHandle = q => String(q ?? "").trim().replace(/^@+/, "").toLowerCase();
+function searchRows(allRows, q) { const h = normHandle(q); if (!h) return null; return allRows.filter(r => String(r.handle ?? "").replace(/^@+/, "").toLowerCase() === h); }
+// SEARCH-END
+// Full global ranking: same engine leaderboard() + scoring, only the display cap lifted. Main board stays top 100.
+let allRows = null;
+const sres = document.getElementById("sres");
+document.getElementById("sform").onsubmit = ev => { ev.preventDefault();
+  const q = document.getElementById("q").value;
+  allRows ??= E.leaderboard(roster.accounts, tasks.tasks, { asOf: "2026-11-06" }, { ...CONFIG, BOARD_SIZE: Infinity });
+  const hits = searchRows(allRows, q);
+  if (hits === null) { sres.textContent = "Enter an X handle to search."; return; }
+  if (!hits.length) { sres.textContent = `No contributor found with handle "${normHandle(q)}" (${allRows.length} contributors searched).`; return; }
+  sres.innerHTML = "<table><tr><th>Rank</th><th>X account</th><th>Score</th><th>Classification</th><th>Gap to #1</th></tr>" + hits.map(r =>
+    `<tr><td>${r.rank} of ${allRows.length}${r.rank > CONFIG.BOARD_SIZE ? " (outside top " + CONFIG.BOARD_SIZE + ")" : ""}</td><td>${r.xUrl ? `<a href="${esc(r.xUrl)}" rel="noopener nofollow" target="_blank">@${esc(r.handle)}</a>` : esc(r.handle)}</td><td>${r.score}</td><td>${esc(r.classification)}</td><td>${r.gapToFirst}</td></tr>`).join("") + "</table>" + (hits.length > 1 ? "<p class=\"syn\">Multiple accounts share this handle; all are shown.</p>" : "");
+};
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b)); render(); });
 document.getElementById("target").oninput = render; render();
 </script></body></html>
