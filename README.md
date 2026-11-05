@@ -45,3 +45,9 @@ Owner specified #1 = 20 and top 10 > 0; the −2 steps are a provisional assumpt
 No head start in the first round; next round only (never compounds); requires own energy that round.
 This replaces the previous winner-5% (cap 50) and Seed-flat (+20) head start. The Seed multiplier is unchanged.
 Head start is back-end only; the dashboard explains the progression in "How the game works", never per row.
+
+### Revision 2 (2026-11-05, owner)
+Head start now: previous-round ranks 1-5 +25 raw points, ranks 6-10 +15, 11+ 0 (`HEADSTART.placement`). Replaces 20..2.
+Dashboard shows scores in **batteries** = raw points / 100 (display only; ranking unchanged). +25/+15 raw points = +0.25/+0.15 battery.
+Batteries may later convert to $ONMX at TGE at a rate TBD — no rate is advertised and nothing is guaranteed.
+Prize pool split shown on the dashboard (300/200/100 for top 3) is illustrative allocation weights of a BNB pool whose size is TBD; not a funded or committed prize.

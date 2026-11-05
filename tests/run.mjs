@@ -34,21 +34,22 @@ t("gate across leap day (2028-02-29) uses UTC day count", () => eq(E.gateShare("
 t("referral energy excluded from race/championship", () => { const accounts = [acc("A"), acc("B")];
   const tasks = [{ account: "A", type: "receipt_check", effort: 1, date: "2026-10-02" }, { account: "B", type: "receipt_check", effort: 2, date: "2026-10-02" }];
   const rows = E.scoreRace({ id: "R", from: "2026-10-01", to: "2026-10-15" }, tasks, accounts, null); eq(rows[0].account, "B"); eq(rows.find(r => r.account === "A").score, 10); });
-t("head start: placement progression 20..2 for prev #1..#10, 0 for #11+/none", () => { eq([1,2,3,4,5,6,7,8,9,10,11,100,0,null,undefined].map(r => E.headStart(r)), [20,18,16,14,12,10,8,6,4,2,0,0,0,0,0]); });
+t("head start: +25 for prev #1-5, +15 for #6-10, 0 for #11+/none (raw points)", () => { eq([1,4,5,6,9,10,11,100,0,null,undefined,5.5].map(r => E.headStart(r)), [25,25,25,15,15,15,0,0,0,0,0,25]); });
+t("battery display: 100 points = 1 battery", () => { eq(CONFIG.POINTS_PER_BATTERY, 100); eq([1400,3180,150,0,1,2453].map(v => v / CONFIG.POINTS_PER_BATTERY), [14,31.8,1.5,0,0.01,24.53]); });
 t("head start: first round none; next round from prev placement only; no compounding; Seed gives no head start", () => {
   const accounts = Array.from({ length: 12 }, (_, i) => acc("A" + String(i).padStart(2, "0"), i === 11 ? 1e6 : 0)); const races = [1, 2, 3].map(i => ({ id: "R" + i, from: `2026-10-${String(i * 10 - 9).padStart(2, "0")}`, to: `2026-10-${String(i * 10 + 1).padStart(2, "0")}` }));
   const tasks = []; for (const r of races) accounts.forEach((a, i) => tasks.push({ account: a.account, type: "receipt_check", effort: 100 - i * 5, date: r.from.replace(/\d\d$/, d => String(+d + 1).padStart(2, "0")) }));
   const c = E.championship(races, tasks, accounts); const r1 = c.results[0].rows, r2 = c.results[1].rows, r3 = c.results[2].rows;
   ok(r1.every(x => x.headStart === 0), "no head start in first round");
   for (const p of r1) eq(r2.find(x => x.account === p.account).headStart, E.headStart(p.rank), "R2 hs from R1 rank " + p.rank);
-  eq(r1.slice(0, 10).map(p => r2.find(x => x.account === p.account).headStart), [20,18,16,14,12,10,8,6,4,2]); ok(r1.slice(10).every(p => r2.find(x => x.account === p.account).headStart === 0));
+  eq(r1.slice(0, 10).map(p => r2.find(x => x.account === p.account).headStart), [25,25,25,25,25,15,15,15,15,15]); ok(r1.slice(10).every(p => r2.find(x => x.account === p.account).headStart === 0));
   for (const p of r2) eq(r3.find(x => x.account === p.account).headStart, E.headStart(p.rank), "R3 hs from R2 rank only (no carry)");
-  ok(Math.max(...c.results.flatMap(r => r.rows.map(x => x.headStart))) <= 20); });
+  ok(Math.max(...c.results.flatMap(r => r.rows.map(x => x.headStart))) <= 25); });
 t("head start zero when no own effort (never a free win)", () => { const rows = E.scoreRace({ id: "R", from: "2026-10-01", to: "2026-10-15" }, [], [acc("A", 1e6)], [{ account: "A", own: 1000, score: 1000, rank: 1 }]); eq(rows[0].score, 0); eq(rows[0].points, 0); eq(rows[0].headStart, 0); });
-t("sample data: round 2 head starts = 20..2 for round-1 top 10, 0 below", () => { const R = JSON.parse(readFileSync(new URL("../data/sample-roster.json", import.meta.url))), T = JSON.parse(readFileSync(new URL("../data/sample-tasks.json", import.meta.url))), TR = JSON.parse(readFileSync(new URL("../data/sample-treasury.json", import.meta.url)));
+t("sample data: round 2 head starts = 25 (top5) / 15 (6-10) from round 1, 0 below", () => { const R = JSON.parse(readFileSync(new URL("../data/sample-roster.json", import.meta.url))), T = JSON.parse(readFileSync(new URL("../data/sample-tasks.json", import.meta.url))), TR = JSON.parse(readFileSync(new URL("../data/sample-treasury.json", import.meta.url)));
   const c = E.championship(TR.races, T.tasks, R.accounts); const [r1, r2] = c.results.map(r => r.rows); ok(r1.every(x => x.headStart === 0));
   const own2 = new Set(r2.filter(x => x.own > 0).map(x => x.account)); for (const p of r1) eq(r2.find(x => x.account === p.account).headStart, own2.has(p.account) && p.own > 0 ? E.headStart(p.rank) : 0, p.account);
-  eq(E.headStart(r1[2].rank), 16, "rank 3 non-zero"); });
+  eq(E.headStart(r1[2].rank), 25, "rank 3 non-zero"); });
 t("F1 points top10 and championship sums", () => { const accounts = Array.from({ length: 12 }, (_, i) => acc("A" + String(i).padStart(2, "0")));
   const tasks = accounts.map((a, i) => ({ account: a.account, type: "receipt_check", effort: 12 - i, date: "2026-10-02" }));
   const c = E.championship([{ id: "R1", from: "2026-10-01", to: "2026-10-15" }], tasks, accounts); eq(c.results[0].rows.map(r => r.points), [25, 18, 15, 12, 10, 8, 6, 4, 2, 1, 0, 0]); eq(c.standings[0].points, 25); });

@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 33,
-  "passed": 33,
+  "total": 34,
+  "passed": 34,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -71,7 +71,11 @@
    "pass": true
   },
   {
-   "name": "head start: placement progression 20..2 for prev #1..#10, 0 for #11+/none",
+   "name": "head start: +25 for prev #1-5, +15 for #6-10, 0 for #11+/none (raw points)",
+   "pass": true
+  },
+  {
+   "name": "battery display: 100 points = 1 battery",
    "pass": true
   },
   {
@@ -83,7 +87,7 @@
    "pass": true
   },
   {
-   "name": "sample data: round 2 head starts = 20..2 for round-1 top 10, 0 below",
+   "name": "sample data: round 2 head starts = 25 (top5) / 15 (6-10) from round 1, 0 below",
    "pass": true
   },
   {

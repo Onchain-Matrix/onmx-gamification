@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>ONMX Contributor Energy Board (sample data)</title>
+<title>ONMX Contributor Battery Board (sample data)</title>
 <style>
 :root{--bg:#07090f;--panel:rgba(18,22,34,.78);--line:rgba(140,160,210,.14);--txt:#e6e9f2;--mute:#8b93a8;--gold:#e8c27a;--teal:#5fd4c4;--violet:#9d8cff;--rose:#e58a9d}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
@@ -43,45 +43,50 @@ h3{margin:0 0 8px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;co
 .how li{text-align:center;font-size:12px;color:var(--mute)}.how li b{display:block;margin:0 auto 4px;width:70%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#7dffa8,#2fbf6a)}
 .how li span{display:block;color:var(--txt);font-weight:700}
 @media (max-width:640px){.bar i{width:5px;height:14px}.bar{gap:2px;margin-right:6px}.how ol{gap:3px}.how li{font-size:10px}}
+.row .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:640px){.row .pts .unit{display:none}}
 footer{font-size:12px;color:var(--mute);margin-top:20px}
 @media (max-width:640px){.tools{grid-template-columns:1fr}nav button{font-size:12px;padding:9px 2px}.row{grid-template-columns:40px 1fr auto;gap:8px}.pts .n{font-size:18px}.hero{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
-<header><h1>ONCHAIN MATRIX · <b>Energy</b></h1><span class="pill" title="Placeholder accounts and provisional, unapproved rules">Sample data · provisional rules</span></header>
-<nav role="tablist" aria-label="Sections"><button role="tab" data-t="board" class="on" aria-selected="true">Leaderboard</button><button role="tab" data-t="champ" aria-selected="false">Championship</button><button role="tab" data-t="race" aria-selected="false">Energy results</button><button role="tab" data-t="treasury" aria-selected="false">Treasury</button></nav>
+<header><h1>ONCHAIN MATRIX · <b>Batteries</b></h1><span class="pill" title="Placeholder accounts and provisional, unapproved rules">Sample data · provisional rules</span></header>
+<nav role="tablist" aria-label="Sections"><button role="tab" data-t="board" class="on" aria-selected="true">Leaderboard</button><button role="tab" data-t="champ" aria-selected="false">Championship</button><button role="tab" data-t="race" aria-selected="false">Battery results</button><button role="tab" data-t="treasury" aria-selected="false">Treasury</button></nav>
 <section class="card tools">
   <div><label for="q">Find your rank — X handle (any rank)</label><form id="sform" class="s" autocomplete="off"><input id="q" type="search" placeholder="@handle" maxlength="40"><button class="btn" type="submit">Search</button></form></div>
 </section>
 <div id="sres" aria-live="polite"></div>
 <main id="out"></main>
 <section class="card how" id="how"><h3>How the game works</h3>
-<p class="note">Do contribution &amp; verification work → earn <b>energy</b>. Your energy score is your leaderboard rank. Each round, the top 10 by energy get a head start for the <b>next round only</b> (it never stacks); #11 and below start at zero. No head start in the very first round.</p>
-<ol aria-label="Next-round head start by placement"><li><b style="height:42px"></b><span>+20</span>#1</li><li><b style="height:38px"></b><span>+18</span>#2</li><li><b style="height:34px"></b><span>+16</span>#3</li><li><b style="height:30px"></b><span>+14</span>#4</li><li><b style="height:26px"></b><span>+12</span>#5</li><li><b style="height:22px"></b><span>+10</span>#6</li><li><b style="height:18px"></b><span>+8</span>#7</li><li><b style="height:14px"></b><span>+6</span>#8</li><li><b style="height:10px"></b><span>+4</span>#9</li><li><b style="height:6px"></b><span>+2</span>#10</li><li><b style="height:2px;background:rgba(120,140,130,.3)"></b><span>0</span>#11+</li></ol>
-<p class="note">#1 = +20 and top 10 &gt; 0 are the owner's rule; the steps in between (−2 each) are a provisional assumption. Season score: each round, the top 10 by energy also earn provisional season points (25, 18, 15, 12, 10, 8, 6, 4, 2, 1); the Championship ranks the season total. Spending energy on championships and decay of hoarded energy are planned but not yet applied.</p></section>
+<p class="note">Do contribution &amp; verification work → earn <b>batteries</b> (100 points = 1 battery). More batteries = higher rank. Each round, the top 10 get a head start for the <b>next round only</b> (never stacks, none in the first round, needs your own work that round):</p>
+<ol aria-label="Next-round head start by placement" style="grid-template-columns:repeat(3,1fr);max-width:420px"><li><b style="height:40px"></b><span>+25</span>#1–5</li><li><b style="height:24px"></b><span>+15</span>#6–10</li><li><b style="height:2px;background:rgba(120,140,130,.3)"></b><span>0</span>#11+</li></ol>
+<p class="note">Head start is in points: +25 = +0.25 battery, +15 = +0.15 battery.</p>
+<p class="note"><b>Prize pool (illustrative):</b> one BNB pool shared by the top 3 in a 300 : 200 : 100 split — #1 50%, #2 33.33%, #3 16.67%. Pool size is TBD; these are allocation weights, not a funded or promised prize.</p>
+<p class="note"><b>Later:</b> batteries may be convertible to $ONMX at TGE; the rate will be set then and nothing is guaranteed. Season points (Championship tab): each round's top 10 earn provisional season points (25, 18, 15, 12, 10, 8, 6, 4, 2, 1). Spending batteries on championships and decay of hoarded batteries are planned, not yet applied.</p></section>
 
-<footer>Sample data: placeholder accounts, not real members. Energy is earned by contribution/verification work, never follows/RTs; seed bonus only amplifies effort (0 effort ⇒ 0). Rules are provisional. No $ or token values.</footer>
+<footer>Sample data: placeholder accounts, not real members. Batteries are earned by contribution/verification work, never follows/RTs; seed bonus only amplifies effort (0 effort ⇒ 0). Rules are provisional. No $ values or token rates.</footer>
 </div>
 <script type="module">
 import * as E from "./src/engine.js";
 import { CONFIG } from "./src/config.js";
 const [roster, tasks, tre] = await Promise.all(["data/sample-roster.json","data/sample-tasks.json","data/sample-treasury.json"].map(u => fetch(u).then(r => r.json())));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtB = pts => (Math.round(Number(pts) / CONFIG.POINTS_PER_BATTERY * 100) / 100).toLocaleString("en-US", { maximumFractionDigits: 2 }); // raw points -> batteries (display only)
 const fmt = n => Number(n).toLocaleString("en-US");
 const out = document.getElementById("out"); let tab = "board";
 const ASOF = "2026-11-06"; const BOARD_SHOWN = 20; // display only; ranking math unchanged
 const handleOf = Object.fromEntries(roster.accounts.map(a => [a.account, a.handle]));
 const who = r => { const u = r.xUrl ?? E.xLink(r.handle); return u ? `<a href="${esc(u)}" rel="noopener nofollow" target="_blank">@${esc(r.handle)}</a>` : `<span class="h">${esc(r.handle ?? r.account)}</span>`; };
-const power = (v, max) => { const n = max > 0 ? Math.ceil(10 * Math.max(0, v) / max) : 0; return `<span class="bar" role="img" aria-label="${n} of 10 energy bars">${Array.from({ length: 10 }, (_, k) => `<i class="${k < n ? "f" : ""}"></i>`).join("")}</span>`; };
+const power = (v, max) => { const n = max > 0 ? Math.ceil(10 * Math.max(0, v) / max) : 0; return `<span class="bar" role="img" aria-label="${n} of 10 battery cells">${Array.from({ length: 10 }, (_, k) => `<i class="${k < n ? "f" : ""}"></i>`).join("")}</span>`; };
 const pc = i => i < 3 ? ` p${i + 1}` : "";
 function render() {
   if (tab === "board") {
     const rows = E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }).slice(0, BOARD_SHOWN);
-    out.innerHTML = `<section class="card"><h3>Top ${BOARD_SHOWN} · energy <span class="note" style="text-transform:none;letter-spacing:0">— rank ${BOARD_SHOWN + 1}+? search your handle</span></h3>` + rows.map((r, i) =>
-      `<div class="row${pc(i)}"><div class="rk">${r.rank}</div><div class="who">${who(r)} <span class="sub">${esc(r.account)}</span></div><div class="pts">${power(r.score, rows[0].score)}<span class="n">${fmt(r.score)}</span></div></div>`).join("") + "</section>";
+    out.innerHTML = `<section class="card"><h3>Top ${BOARD_SHOWN} · batteries <span class="note" style="text-transform:none;letter-spacing:0">— rank ${BOARD_SHOWN + 1}+? search your handle</span></h3>` + rows.map((r, i) =>
+      `<div class="row${pc(i)}"><div class="rk">${r.rank}</div><div class="who">${who(r)} <span class="sub">${esc(r.account)}</span></div><div class="pts">${power(r.score, rows[0].score)}<span class="n">${fmtB(r.score)}</span>&nbsp;<span class="unit">bat</span></div></div>`).join("") + "</section>";
   } else if (tab === "champ" || tab === "race") {
     const c = E.championship(tre.races, tasks.tasks, roster.accounts);
     if (tab === "champ") out.innerHTML = `<section class="card"><h3>Season championship · season points</h3>` +
       c.standings.slice(0, BOARD_SHOWN).map((s, i) => `<div class="row${pc(i)}"><div class="rk">${s.rank}</div><div class="who">${who({ handle: handleOf[s.account], account: s.account })} <span class="sub">${esc(s.account)}</span></div><div class="pts"><span class="n">${fmt(s.points)}</span>&nbsp;<span class="unit">season pts</span></div></div>`).join("") + "</section>";
-    else out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · energy</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: handleOf[x.account], account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmt(Math.round(x.score))}</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
+    else out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · batteries</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: handleOf[x.account], account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmtB(x.score)}</span>&nbsp;<span class="unit">bat</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
   } else {
     const cum = E.cumulativeRaised(tre.inflows);
     out.innerHTML = `<section class="card hero"><div><div class="big">${fmt(E.treasuryIndex(cum))}</div><div class="unit">Treasury index</div></div><p class="note">Based on cumulative raised (${fmt(cum)}, sample inflows only; outflows ignored). Unitless recognition index — not $, not tokens, not a commitment. Wallet balance is not used.</p></section>`;
@@ -100,7 +105,7 @@ document.getElementById("sform").onsubmit = ev => { ev.preventDefault();
   const hits = searchRows(allRows, q);
   if (hits === null) { sres.innerHTML = `<section class="card note">Enter an X handle to search.</section>`; return; }
   if (!hits.length) { sres.innerHTML = `<section class="card note">No contributor found for “${esc(normHandle(q))}” (${fmt(allRows.length)} searched).</section>`; return; }
-  sres.innerHTML = hits.map(r => `<section class="card hero"><div><div class="big">#${fmt(r.rank)}</div><div class="unit">of ${fmt(allRows.length)}${r.rank > BOARD_SHOWN ? ` · outside top ${BOARD_SHOWN}` : ""}</div></div><div class="who">${who(r)}<div class="pts" style="justify-content:flex-start;margin-top:6px">${power(r.score, allRows[0].score)}<span class="big" style="font-size:28px">${fmt(r.score)}</span>&nbsp;<span class="unit">energy</span></div></div></section>`).join("") + (hits.length > 1 ? `<p class="note">Multiple accounts share this handle; all shown.</p>` : "");
+  sres.innerHTML = hits.map(r => `<section class="card hero"><div><div class="big">#${fmt(r.rank)}</div><div class="unit">of ${fmt(allRows.length)}${r.rank > BOARD_SHOWN ? ` · outside top ${BOARD_SHOWN}` : ""}</div></div><div class="who">${who(r)}<div class="pts" style="justify-content:flex-start;margin-top:6px">${power(r.score, allRows[0].score)}<span class="big" style="font-size:28px">${fmtB(r.score)}</span>&nbsp;<span class="unit">batteries</span></div></div></section>`).join("") + (hits.length > 1 ? `<p class="note">Multiple accounts share this handle; all shown.</p>` : "");
 };
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("nav button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b); }); render(); });
 render();

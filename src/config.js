@@ -24,12 +24,13 @@ export const CONFIG = Object.freeze({
   GATES: [ { day: 30, share: 0.5 }, { day: 60, share: 0.5 } ],
   // Championship: F1-style points for top 10 of each race (ASSUMPTION: 2010+ F1 table).
   F1_POINTS: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1],
-  // Head start (owner rule, 2026-11-05): placement in the PREVIOUS round only. #1 gets +20 next round, decreasing
-  // to #10 (non-zero); #11+ get 0. Owner specified #1=20 and top10>0; intermediate steps are a PROVISIONAL
-  // ASSUMPTION (20,18,...,2). Applies to the next round only (never compounds), never in the first round, and only
-  // if the account earns own energy that round. Replaces the old winner-5%/Seed-flat head start; the Seed
-  // MULTIPLIER (SEED_BANDS) is unchanged.
-  HEADSTART: { placement: [20, 18, 16, 14, 12, 10, 8, 6, 4, 2] },
+  // Head start (owner rule, 2026-11-05 rev 2): placement in the PREVIOUS round only. Ranks 1-5 get +25 raw points
+  // next round, ranks 6-10 get +15, rank 11+ get 0. Units are RAW scoring points (= +0.25 / +0.15 battery on the
+  // dashboard, since 100 points = 1 battery). Next round only (never compounds), never in the first round, and only
+  // if the account earns own energy that round. Seed MULTIPLIER (SEED_BANDS) unchanged.
+  HEADSTART: { placement: [25, 25, 25, 25, 25, 15, 15, 15, 15, 15] },
+  // Display only: 100 raw points = 1 battery. Not a token rate or entitlement.
+  POINTS_PER_BATTERY: 100,
   // Treasury-linked recognition index, based on CUMULATIVE RAISED (sum of positive inflows), NEVER wallet balance.
   // ASSUMPTION: index = clamp(floor + pct * cumulativeRaised, floor, cap). Unitless — NOT $ or tokens.
   TREASURY_CURVE: { floor: 100, pct: 0.01, cap: 100000 },
