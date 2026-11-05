@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 31,
-  "passed": 31,
+  "total": 33,
+  "passed": 33,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -71,11 +71,19 @@
    "pass": true
   },
   {
-   "name": "head start bounded and next-race-only",
+   "name": "head start: placement progression 20..2 for prev #1..#10, 0 for #11+/none",
+   "pass": true
+  },
+  {
+   "name": "head start: first round none; next round from prev placement only; no compounding; Seed gives no head start",
    "pass": true
   },
   {
    "name": "head start zero when no own effort (never a free win)",
+   "pass": true
+  },
+  {
+   "name": "sample data: round 2 head starts = 20..2 for round-1 top 10, 0 below",
    "pass": true
   },
   {

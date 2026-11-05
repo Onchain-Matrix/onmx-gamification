@@ -38,3 +38,10 @@ Run: `node tests/run.mjs && node sim/run.mjs` (Node ≥ 18, no dependencies). Pr
 5. Whether `seedUsd` may be stored in the roster at all (used only for band; never displayed).
 6. Tie-break: earlier Verifier date, then handle (from sketch).
 7. Sample handles `sample_syn_####` link to x.com and could theoretically match real accounts — replace before any non-private use.
+
+## Head start rule change (2026-11-05, owner)
+Head start is now placement-based on the PREVIOUS round only: #1 +20, #2 +18, … #10 +2 (top 10 non-zero), #11+ 0.
+Owner specified #1 = 20 and top 10 > 0; the −2 steps are a provisional assumption (`HEADSTART.placement` in src/config.js).
+No head start in the first round; next round only (never compounds); requires own energy that round.
+This replaces the previous winner-5% (cap 50) and Seed-flat (+20) head start. The Seed multiplier is unchanged.
+Head start is back-end only; the dashboard explains the progression in "How the game works", never per row.

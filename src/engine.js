@@ -96,24 +96,25 @@ export function referralEnergy(tree, base, lastActive, asOf, cfg = CONFIG) {
   return out;
 }
 
-export function headStart({ wonPrev, prevWinScore, seedUsd }, cfg = CONFIG) {
-  const H = cfg.HEADSTART; let h = 0;
-  if (wonPrev) h += Math.min(safeNum(prevWinScore, cfg) * H.winnerPct, H.winnerCap);
-  if (safeNum(seedUsd, cfg) >= cfg.SEED_BANDS[1].minUsd) h += H.seedFlat;
-  return Math.min(h, H.totalCap);
+// Next-round head start from previous-round placement (1-based). Not cumulative; 0 outside top 10 or no prior round.
+export function headStart(prevRank, cfg = CONFIG) {
+  const r = Math.floor(Number(prevRank)); const P = cfg.HEADSTART.placement;
+  return r >= 1 && r <= P.length ? P[r - 1] : 0;
 }
 
 function rankSort(rows) {
   return rows.sort((a, b) => b.score - a.score || (a.tiebreak || "").localeCompare(b.tiebreak || "") || a.account.localeCompare(b.account));
 }
 
-// One race. Race score = finalScore(own energy in window, seed) + headStart (only if >0 own energy). Referral excluded.
-export function scoreRace(race, tasks, accounts, prevWinner, cfg = CONFIG) {
+// One round. Score = finalScore(own energy in window, seed) + headStart from PREVIOUS round placement (only if >0 own energy). Referral excluded.
+// prevRows: previous round's ranked rows (or null for the first round).
+export function scoreRace(race, tasks, accounts, prevRows, cfg = CONFIG) {
+  const prevRank = new Map((prevRows || []).filter(r => r.own > 0).map(r => [r.account, r.rank]));
   const base = baseEnergy(tasks, race, cfg);
   const rows = [];
   for (const a of accounts) {
     const own = finalScore(base.get(a.account) || 0, a.seedUsd, cfg);
-    const hs = own > 0 ? headStart({ wonPrev: prevWinner?.account === a.account, prevWinScore: prevWinner?.own, /* BUG-1 fix: use pre-head-start score so head start cannot compound */ seedUsd: a.seedUsd }, cfg) : 0;
+    const hs = own > 0 ? headStart(prevRank.get(a.account), cfg) : 0; // placement uses prev rank only => cannot compound
     rows.push({ account: a.account, own, headStart: hs, score: Math.min(own + hs, cfg.MAX_VALUE) });
   }
   rankSort(rows).forEach((r, i) => { r.rank = i + 1; r.points = r.score > 0 ? (cfg.F1_POINTS[i] || 0) : 0; });
@@ -126,7 +127,7 @@ export function championship(races, tasks, accounts, cfg = CONFIG) {
   for (const race of races) {
     const rows = scoreRace(race, tasks, accounts, prev, cfg);
     for (const r of rows) { const t = totals.get(r.account); t.points += r.points; if (r.rank === 1 && r.score > 0) t.wins++; }
-    prev = rows[0].score > 0 ? rows[0] : null;
+    prev = rows;
     results.push({ id: race.id, rows });
   }
   const standings = [...totals.values()].sort((a, b) => b.points - a.points || b.wins - a.wins || a.account.localeCompare(b.account));

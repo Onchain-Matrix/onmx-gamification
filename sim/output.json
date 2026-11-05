@@ -13,7 +13,7 @@
     "distinctWinners": 6,
     "maxConsecutiveWins": 2,
     "headStartDecidedWins": 0,
-    "maxHeadStartShareOfWinnerScore": 0.0465,
+    "maxHeadStartShareOfWinnerScore": 0.016,
     "champion": {
      "account": "SYN-0082",
      "points": 99,
@@ -29,7 +29,7 @@
      },
      {
       "account": "SYN-0075",
-      "points": 92,
+      "points": 90,
       "wins": 3,
       "rank": 2
      },
@@ -74,20 +74,20 @@
     "kolRace2": {
      "account": "KOL",
      "own": 10,
-     "headStart": 9,
-     "score": 19,
+     "headStart": 20,
+     "score": 30,
      "rank": 2,
      "points": 18
     },
     "grinderRace2": {
      "account": "GRINDER",
      "own": 120,
-     "headStart": 0,
-     "score": 120,
+     "headStart": 18,
+     "score": 138,
      "rank": 1,
      "points": 25
     },
-    "runtimeMs": 456
+    "runtimeMs": 468
    },
    "checks": [
     {
@@ -324,7 +324,7 @@
   {
    "name": "S8 reproducibility",
    "metrics": {
-    "sha256": "5659a9835bf9988ce4592dcdf7718c04716e2e8ffe2893798234cbf07c4ee47c"
+    "sha256": "397b786ea10ee500c2f6b511d75b46dc6305e97542a8380a0a1cf87d8c20f863"
    },
    "checks": [
     {

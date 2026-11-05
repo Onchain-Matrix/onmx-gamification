@@ -24,9 +24,12 @@ export const CONFIG = Object.freeze({
   GATES: [ { day: 30, share: 0.5 }, { day: 60, share: 0.5 } ],
   // Championship: F1-style points for top 10 of each race (ASSUMPTION: 2010+ F1 table).
   F1_POINTS: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1],
-  // Head start: race winner gets min(5% of winning race score, 50) points next race only, never stacks.
-  // Seed holders (any band >= $10) get flat 20 points head start. ASSUMPTIONS; bounded, "never a lock".
-  HEADSTART: { winnerPct: 0.05, winnerCap: 50, seedFlat: 20, totalCap: 60 },
+  // Head start (owner rule, 2026-11-05): placement in the PREVIOUS round only. #1 gets +20 next round, decreasing
+  // to #10 (non-zero); #11+ get 0. Owner specified #1=20 and top10>0; intermediate steps are a PROVISIONAL
+  // ASSUMPTION (20,18,...,2). Applies to the next round only (never compounds), never in the first round, and only
+  // if the account earns own energy that round. Replaces the old winner-5%/Seed-flat head start; the Seed
+  // MULTIPLIER (SEED_BANDS) is unchanged.
+  HEADSTART: { placement: [20, 18, 16, 14, 12, 10, 8, 6, 4, 2] },
   // Treasury-linked recognition index, based on CUMULATIVE RAISED (sum of positive inflows), NEVER wallet balance.
   // ASSUMPTION: index = clamp(floor + pct * cumulativeRaised, floor, cap). Unitless — NOT $ or tokens.
   TREASURY_CURVE: { floor: 100, pct: 0.01, cap: 100000 },
