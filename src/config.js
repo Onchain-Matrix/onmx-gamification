@@ -29,7 +29,7 @@ export const CONFIG = Object.freeze({
   // dashboard, since 100 points = 1 battery). Next round only (never compounds), never in the first round, and only
   // if the account earns own energy that round. Seed MULTIPLIER (SEED_BANDS) unchanged.
   HEADSTART: { placement: [25, 25, 25, 25, 25, 15, 15, 15, 15, 15] },
-  // Display only: 100 raw points = 1 battery. Not a token rate or entitlement.
+  // Display only: 100 raw scoring points = 1 Credit. Not an airdrop/token rate.
   POINTS_PER_BATTERY: 100,
   // Treasury-linked recognition index, based on CUMULATIVE RAISED (sum of positive inflows), NEVER wallet balance.
   // ASSUMPTION: index = clamp(floor + pct * cumulativeRaised, floor, cap). Unitless — NOT $ or tokens.

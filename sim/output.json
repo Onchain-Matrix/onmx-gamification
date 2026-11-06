@@ -15,26 +15,26 @@
     "headStartDecidedWins": 0,
     "maxHeadStartShareOfWinnerScore": 0.0199,
     "champion": {
-     "account": "SYN-0082",
+     "account": "@sample_syn_0082",
      "points": 99,
      "wins": 2,
      "rank": 1
     },
     "top3": [
      {
-      "account": "SYN-0082",
+      "account": "@sample_syn_0082",
       "points": 99,
       "wins": 2,
       "rank": 1
      },
      {
-      "account": "SYN-0075",
+      "account": "@sample_syn_0075",
       "points": 90,
       "wins": 3,
       "rank": 2
      },
      {
-      "account": "SYN-0162",
+      "account": "@sample_syn_0162",
       "points": 78,
       "wins": 2,
       "rank": 3
@@ -87,7 +87,7 @@
      "rank": 1,
      "points": 25
     },
-    "runtimeMs": 442
+    "runtimeMs": 451
    },
    "checks": [
     {
@@ -324,7 +324,7 @@
   {
    "name": "S8 reproducibility",
    "metrics": {
-    "sha256": "0d57f99e5f88515073b97500f64ee3199471511601ff58a96f74ad256d02c1bb"
+    "sha256": "5ed46c87da7bdf109d61f907de8fd6329e1b7694acc52d647c28150d048a712e"
    },
    "checks": [
     {

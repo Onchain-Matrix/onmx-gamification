@@ -7,840 +7,840 @@
  },
  "accounts": [
   {
-   "account": "SYN-0001",
+   "account": "@sample_syn_0001",
    "handle": "sample_syn_0001",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0002",
+   "account": "@sample_syn_0002",
    "handle": "sample_syn_0002",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-16"
   },
   {
-   "account": "SYN-0003",
+   "account": "@sample_syn_0003",
    "handle": "sample_syn_0003",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0004",
+   "account": "@sample_syn_0004",
    "handle": "sample_syn_0004",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-27"
   },
   {
-   "account": "SYN-0005",
+   "account": "@sample_syn_0005",
    "handle": "sample_syn_0005",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-06"
   },
   {
-   "account": "SYN-0006",
+   "account": "@sample_syn_0006",
    "handle": "sample_syn_0006",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-19"
   },
   {
-   "account": "SYN-0007",
+   "account": "@sample_syn_0007",
    "handle": "sample_syn_0007",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0008",
+   "account": "@sample_syn_0008",
    "handle": "sample_syn_0008",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-01"
   },
   {
-   "account": "SYN-0009",
+   "account": "@sample_syn_0009",
    "handle": "sample_syn_0009",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-06"
   },
   {
-   "account": "SYN-0010",
+   "account": "@sample_syn_0010",
    "handle": "sample_syn_0010",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-01"
   },
   {
-   "account": "SYN-0011",
+   "account": "@sample_syn_0011",
    "handle": "sample_syn_0011",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-15"
   },
   {
-   "account": "SYN-0012",
+   "account": "@sample_syn_0012",
    "handle": "sample_syn_0012",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-14"
   },
   {
-   "account": "SYN-0013",
+   "account": "@sample_syn_0013",
    "handle": "sample_syn_0013",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-17"
   },
   {
-   "account": "SYN-0014",
+   "account": "@sample_syn_0014",
    "handle": "sample_syn_0014",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-20"
   },
   {
-   "account": "SYN-0015",
+   "account": "@sample_syn_0015",
    "handle": "sample_syn_0015",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-23"
   },
   {
-   "account": "SYN-0016",
+   "account": "@sample_syn_0016",
    "handle": "sample_syn_0016",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-07"
   },
   {
-   "account": "SYN-0017",
+   "account": "@sample_syn_0017",
    "handle": "sample_syn_0017",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-03"
   },
   {
-   "account": "SYN-0018",
+   "account": "@sample_syn_0018",
    "handle": "sample_syn_0018",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-21"
   },
   {
-   "account": "SYN-0019",
+   "account": "@sample_syn_0019",
    "handle": "sample_syn_0019",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-29"
   },
   {
-   "account": "SYN-0020",
+   "account": "@sample_syn_0020",
    "handle": "sample_syn_0020",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-05"
   },
   {
-   "account": "SYN-0021",
+   "account": "@sample_syn_0021",
    "handle": "sample_syn_0021",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0022",
+   "account": "@sample_syn_0022",
    "handle": "sample_syn_0022",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-27"
   },
   {
-   "account": "SYN-0023",
+   "account": "@sample_syn_0023",
    "handle": "sample_syn_0023",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-29"
   },
   {
-   "account": "SYN-0024",
+   "account": "@sample_syn_0024",
    "handle": "sample_syn_0024",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-06"
   },
   {
-   "account": "SYN-0025",
+   "account": "@sample_syn_0025",
    "handle": "sample_syn_0025",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-04"
   },
   {
-   "account": "SYN-0026",
+   "account": "@sample_syn_0026",
    "handle": "sample_syn_0026",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-28"
   },
   {
-   "account": "SYN-0027",
+   "account": "@sample_syn_0027",
    "handle": "sample_syn_0027",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0028",
+   "account": "@sample_syn_0028",
    "handle": "sample_syn_0028",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-22"
   },
   {
-   "account": "SYN-0029",
+   "account": "@sample_syn_0029",
    "handle": "sample_syn_0029",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0030",
+   "account": "@sample_syn_0030",
    "handle": "sample_syn_0030",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-27"
   },
   {
-   "account": "SYN-0031",
+   "account": "@sample_syn_0031",
    "handle": "sample_syn_0031",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-09"
   },
   {
-   "account": "SYN-0032",
+   "account": "@sample_syn_0032",
    "handle": "sample_syn_0032",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-10"
   },
   {
-   "account": "SYN-0033",
+   "account": "@sample_syn_0033",
    "handle": "sample_syn_0033",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-03"
   },
   {
-   "account": "SYN-0034",
+   "account": "@sample_syn_0034",
    "handle": "sample_syn_0034",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-04"
   },
   {
-   "account": "SYN-0035",
+   "account": "@sample_syn_0035",
    "handle": "sample_syn_0035",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-22"
   },
   {
-   "account": "SYN-0036",
+   "account": "@sample_syn_0036",
    "handle": "sample_syn_0036",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-13"
   },
   {
-   "account": "SYN-0037",
+   "account": "@sample_syn_0037",
    "handle": "sample_syn_0037",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0038",
+   "account": "@sample_syn_0038",
    "handle": "sample_syn_0038",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-27"
   },
   {
-   "account": "SYN-0039",
+   "account": "@sample_syn_0039",
    "handle": "sample_syn_0039",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-12"
   },
   {
-   "account": "SYN-0040",
+   "account": "@sample_syn_0040",
    "handle": "sample_syn_0040",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-12"
   },
   {
-   "account": "SYN-0041",
+   "account": "@sample_syn_0041",
    "handle": "sample_syn_0041",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-20"
   },
   {
-   "account": "SYN-0042",
+   "account": "@sample_syn_0042",
    "handle": "sample_syn_0042",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-07"
   },
   {
-   "account": "SYN-0043",
+   "account": "@sample_syn_0043",
    "handle": "sample_syn_0043",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-06"
   },
   {
-   "account": "SYN-0044",
+   "account": "@sample_syn_0044",
    "handle": "sample_syn_0044",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-22"
   },
   {
-   "account": "SYN-0045",
+   "account": "@sample_syn_0045",
    "handle": "sample_syn_0045",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0046",
+   "account": "@sample_syn_0046",
    "handle": "sample_syn_0046",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-30"
   },
   {
-   "account": "SYN-0047",
+   "account": "@sample_syn_0047",
    "handle": "sample_syn_0047",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-05"
   },
   {
-   "account": "SYN-0048",
+   "account": "@sample_syn_0048",
    "handle": "sample_syn_0048",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-09"
   },
   {
-   "account": "SYN-0049",
+   "account": "@sample_syn_0049",
    "handle": "sample_syn_0049",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-13"
   },
   {
-   "account": "SYN-0050",
+   "account": "@sample_syn_0050",
    "handle": "sample_syn_0050",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0051",
+   "account": "@sample_syn_0051",
    "handle": "sample_syn_0051",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-15"
   },
   {
-   "account": "SYN-0052",
+   "account": "@sample_syn_0052",
    "handle": "sample_syn_0052",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-18"
   },
   {
-   "account": "SYN-0053",
+   "account": "@sample_syn_0053",
    "handle": "sample_syn_0053",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-09"
   },
   {
-   "account": "SYN-0054",
+   "account": "@sample_syn_0054",
    "handle": "sample_syn_0054",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-07"
   },
   {
-   "account": "SYN-0055",
+   "account": "@sample_syn_0055",
    "handle": "sample_syn_0055",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-10"
   },
   {
-   "account": "SYN-0056",
+   "account": "@sample_syn_0056",
    "handle": "sample_syn_0056",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-02"
   },
   {
-   "account": "SYN-0057",
+   "account": "@sample_syn_0057",
    "handle": "sample_syn_0057",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-15"
   },
   {
-   "account": "SYN-0058",
+   "account": "@sample_syn_0058",
    "handle": "sample_syn_0058",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-28"
   },
   {
-   "account": "SYN-0059",
+   "account": "@sample_syn_0059",
    "handle": "sample_syn_0059",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-05"
   },
   {
-   "account": "SYN-0060",
+   "account": "@sample_syn_0060",
    "handle": "sample_syn_0060",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0061",
+   "account": "@sample_syn_0061",
    "handle": "sample_syn_0061",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-05"
   },
   {
-   "account": "SYN-0062",
+   "account": "@sample_syn_0062",
    "handle": "sample_syn_0062",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-07"
   },
   {
-   "account": "SYN-0063",
+   "account": "@sample_syn_0063",
    "handle": "sample_syn_0063",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-30"
   },
   {
-   "account": "SYN-0064",
+   "account": "@sample_syn_0064",
    "handle": "sample_syn_0064",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0065",
+   "account": "@sample_syn_0065",
    "handle": "sample_syn_0065",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-03"
   },
   {
-   "account": "SYN-0066",
+   "account": "@sample_syn_0066",
    "handle": "sample_syn_0066",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-21"
   },
   {
-   "account": "SYN-0067",
+   "account": "@sample_syn_0067",
    "handle": "sample_syn_0067",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-25"
   },
   {
-   "account": "SYN-0068",
+   "account": "@sample_syn_0068",
    "handle": "sample_syn_0068",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0069",
+   "account": "@sample_syn_0069",
    "handle": "sample_syn_0069",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-14"
   },
   {
-   "account": "SYN-0070",
+   "account": "@sample_syn_0070",
    "handle": "sample_syn_0070",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0071",
+   "account": "@sample_syn_0071",
    "handle": "sample_syn_0071",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-10"
   },
   {
-   "account": "SYN-0072",
+   "account": "@sample_syn_0072",
    "handle": "sample_syn_0072",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0073",
+   "account": "@sample_syn_0073",
    "handle": "sample_syn_0073",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-20"
   },
   {
-   "account": "SYN-0074",
+   "account": "@sample_syn_0074",
    "handle": "sample_syn_0074",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-27"
   },
   {
-   "account": "SYN-0075",
+   "account": "@sample_syn_0075",
    "handle": "sample_syn_0075",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-05"
   },
   {
-   "account": "SYN-0076",
+   "account": "@sample_syn_0076",
    "handle": "sample_syn_0076",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-02"
   },
   {
-   "account": "SYN-0077",
+   "account": "@sample_syn_0077",
    "handle": "sample_syn_0077",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-18"
   },
   {
-   "account": "SYN-0078",
+   "account": "@sample_syn_0078",
    "handle": "sample_syn_0078",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-24"
   },
   {
-   "account": "SYN-0079",
+   "account": "@sample_syn_0079",
    "handle": "sample_syn_0079",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-16"
   },
   {
-   "account": "SYN-0080",
+   "account": "@sample_syn_0080",
    "handle": "sample_syn_0080",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-14"
   },
   {
-   "account": "SYN-0081",
+   "account": "@sample_syn_0081",
    "handle": "sample_syn_0081",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-10"
   },
   {
-   "account": "SYN-0082",
+   "account": "@sample_syn_0082",
    "handle": "sample_syn_0082",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-09"
   },
   {
-   "account": "SYN-0083",
+   "account": "@sample_syn_0083",
    "handle": "sample_syn_0083",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-20"
   },
   {
-   "account": "SYN-0084",
+   "account": "@sample_syn_0084",
    "handle": "sample_syn_0084",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-01"
   },
   {
-   "account": "SYN-0085",
+   "account": "@sample_syn_0085",
    "handle": "sample_syn_0085",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-03"
   },
   {
-   "account": "SYN-0086",
+   "account": "@sample_syn_0086",
    "handle": "sample_syn_0086",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-16"
   },
   {
-   "account": "SYN-0087",
+   "account": "@sample_syn_0087",
    "handle": "sample_syn_0087",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-02"
   },
   {
-   "account": "SYN-0088",
+   "account": "@sample_syn_0088",
    "handle": "sample_syn_0088",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-22"
   },
   {
-   "account": "SYN-0089",
+   "account": "@sample_syn_0089",
    "handle": "sample_syn_0089",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-29"
   },
   {
-   "account": "SYN-0090",
+   "account": "@sample_syn_0090",
    "handle": "sample_syn_0090",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-24"
   },
   {
-   "account": "SYN-0091",
+   "account": "@sample_syn_0091",
    "handle": "sample_syn_0091",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-16"
   },
   {
-   "account": "SYN-0092",
+   "account": "@sample_syn_0092",
    "handle": "sample_syn_0092",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-03"
   },
   {
-   "account": "SYN-0093",
+   "account": "@sample_syn_0093",
    "handle": "sample_syn_0093",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-21"
   },
   {
-   "account": "SYN-0094",
+   "account": "@sample_syn_0094",
    "handle": "sample_syn_0094",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-30"
   },
   {
-   "account": "SYN-0095",
+   "account": "@sample_syn_0095",
    "handle": "sample_syn_0095",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0096",
+   "account": "@sample_syn_0096",
    "handle": "sample_syn_0096",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-17"
   },
   {
-   "account": "SYN-0097",
+   "account": "@sample_syn_0097",
    "handle": "sample_syn_0097",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-29"
   },
   {
-   "account": "SYN-0098",
+   "account": "@sample_syn_0098",
    "handle": "sample_syn_0098",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0099",
+   "account": "@sample_syn_0099",
    "handle": "sample_syn_0099",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-18"
   },
   {
-   "account": "SYN-0100",
+   "account": "@sample_syn_0100",
    "handle": "sample_syn_0100",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-15"
   },
   {
-   "account": "SYN-0101",
+   "account": "@sample_syn_0101",
    "handle": "sample_syn_0101",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-21"
   },
   {
-   "account": "SYN-0102",
+   "account": "@sample_syn_0102",
    "handle": "sample_syn_0102",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-30"
   },
   {
-   "account": "SYN-0103",
+   "account": "@sample_syn_0103",
    "handle": "sample_syn_0103",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-10"
   },
   {
-   "account": "SYN-0104",
+   "account": "@sample_syn_0104",
    "handle": "sample_syn_0104",
    "synthetic": true,
    "seedUsd": 50,
    "verifierDate": "2026-10-26"
   },
   {
-   "account": "SYN-0105",
+   "account": "@sample_syn_0105",
    "handle": "sample_syn_0105",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-10"
   },
   {
-   "account": "SYN-0106",
+   "account": "@sample_syn_0106",
    "handle": "sample_syn_0106",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-11"
   },
   {
-   "account": "SYN-0107",
+   "account": "@sample_syn_0107",
    "handle": "sample_syn_0107",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-19"
   },
   {
-   "account": "SYN-0108",
+   "account": "@sample_syn_0108",
    "handle": "sample_syn_0108",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-05"
   },
   {
-   "account": "SYN-0109",
+   "account": "@sample_syn_0109",
    "handle": "sample_syn_0109",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-15"
   },
   {
-   "account": "SYN-0110",
+   "account": "@sample_syn_0110",
    "handle": "sample_syn_0110",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-24"
   },
   {
-   "account": "SYN-0111",
+   "account": "@sample_syn_0111",
    "handle": "sample_syn_0111",
    "synthetic": true,
    "seedUsd": 1000,
    "verifierDate": "2026-10-06"
   },
   {
-   "account": "SYN-0112",
+   "account": "@sample_syn_0112",
    "handle": "sample_syn_0112",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-17"
   },
   {
-   "account": "SYN-0113",
+   "account": "@sample_syn_0113",
    "handle": "sample_syn_0113",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-15"
   },
   {
-   "account": "SYN-0114",
+   "account": "@sample_syn_0114",
    "handle": "sample_syn_0114",
    "synthetic": true,
    "seedUsd": 100000,
    "verifierDate": "2026-10-13"
   },
   {
-   "account": "SYN-0115",
+   "account": "@sample_syn_0115",
    "handle": "sample_syn_0115",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-22"
   },
   {
-   "account": "SYN-0116",
+   "account": "@sample_syn_0116",
    "handle": "sample_syn_0116",
    "synthetic": true,
    "seedUsd": 10,
    "verifierDate": "2026-10-06"
   },
   {
-   "account": "SYN-0117",
+   "account": "@sample_syn_0117",
    "handle": "sample_syn_0117",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-12"
   },
   {
-   "account": "SYN-0118",
+   "account": "@sample_syn_0118",
    "handle": "sample_syn_0118",
    "synthetic": true,
    "seedUsd": 10000,
    "verifierDate": "2026-10-21"
   },
   {
-   "account": "SYN-0119",
+   "account": "@sample_syn_0119",
    "handle": "sample_syn_0119",
    "synthetic": true,
    "seedUsd": 0,
    "verifierDate": "2026-10-09"
   },
   {
-   "account": "SYN-0120",
+   "account": "@sample_syn_0120",
    "handle": "sample_syn_0120",
    "synthetic": true,
    "seedUsd": 1000,

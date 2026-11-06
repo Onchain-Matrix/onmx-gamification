@@ -4,7 +4,7 @@ const TYPES = ["receipt_check", "verifier_checklist", "architect_ship", "circle_
 export function addDays(iso, d) { return new Date(Date.parse(iso) + d * 86400000).toISOString().slice(0, 10); }
 export function makeAccounts(n, seed) {
   const r = rng(seed); const bands = [0, 0, 0, 0, 10, 50, 1000, 10000, 100000];
-  return Array.from({ length: n }, (_, i) => ({ account: "SYN-" + String(i + 1).padStart(4, "0"), handle: "sample_syn_" + String(i + 1).padStart(4, "0"),
+  return Array.from({ length: n }, (_, i) => ({ handle: "sample_syn_" + String(i + 1).padStart(4, "0"), account: "@sample_syn_" + String(i + 1).padStart(4, "0"),
     synthetic: true, seedUsd: bands[Math.floor(r() * bands.length)], activity: r(), verifierDate: addDays("2026-10-01", Math.floor(r() * 30)) }));
 }
 export function makeTasks(accounts, start, days, seed) {

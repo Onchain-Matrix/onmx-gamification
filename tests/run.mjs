@@ -35,7 +35,7 @@ t("referral energy excluded from race/championship", () => { const accounts = [a
   const tasks = [{ account: "A", type: "receipt_check", effort: 1, date: "2026-10-02" }, { account: "B", type: "receipt_check", effort: 2, date: "2026-10-02" }];
   const rows = E.scoreRace({ id: "R", from: "2026-10-01", to: "2026-10-15" }, tasks, accounts, null); eq(rows[0].account, "B"); eq(rows.find(r => r.account === "A").score, 10); });
 t("head start: +25 for prev #1-5, +15 for #6-10, 0 for #11+/none (raw points)", () => { eq([1,4,5,6,9,10,11,100,0,null,undefined,5.5].map(r => E.headStart(r)), [25,25,25,15,15,15,0,0,0,0,0,25]); });
-t("battery display: 100 points = 1 battery", () => { eq(CONFIG.POINTS_PER_BATTERY, 100); eq([1400,3180,150,0,1,2453].map(v => v / CONFIG.POINTS_PER_BATTERY), [14,31.8,1.5,0,0.01,24.53]); });
+t("credit display: 100 points = 1 credit", () => { eq(CONFIG.POINTS_PER_BATTERY, 100); eq([1400,3180,150,0,1,2453].map(v => v / CONFIG.POINTS_PER_BATTERY), [14,31.8,1.5,0,0.01,24.53]); });
 t("head start: first round none; next round from prev placement only; no compounding; Seed gives no head start", () => {
   const accounts = Array.from({ length: 12 }, (_, i) => acc("A" + String(i).padStart(2, "0"), i === 11 ? 1e6 : 0)); const races = [1, 2, 3].map(i => ({ id: "R" + i, from: `2026-10-${String(i * 10 - 9).padStart(2, "0")}`, to: `2026-10-${String(i * 10 + 1).padStart(2, "0")}` }));
   const tasks = []; for (const r of races) accounts.forEach((a, i) => tasks.push({ account: a.account, type: "receipt_check", effort: 100 - i * 5, date: r.from.replace(/\d\d$/, d => String(+d + 1).padStart(2, "0")) }));
@@ -81,6 +81,75 @@ t("search: synthetic 10001 accounts — rank > 100 found with correct global ran
   for (const k of [101, 5000, 10000, 10001]) { const r = all[k - 1]; const h = searchRows(all, "@" + r.handle.toUpperCase()); eq(h.length, 1); eq(h[0].rank, k); eq(h[0].score, Math.round(E.finalScore(E.baseEnergy(tk, { to: "2026-10-21" }).get(r.account) || 0, a.find(x => x.account === r.account).seedUsd))); } });
 t("search: duplicate handles return all exact matches; injection handle stays inert", () => { const a = [acc("A"), acc("B"), { account: "C", handle: "<img src=x onerror=alert(1)>", seedUsd: 0 }]; a[1].handle = "a";
   const all = full(a, [], "2026-10-21"); eq(searchRows(all, "@A").length, 2); const x = searchRows(all, "<IMG src=x onerror=alert(1)>"); eq(x.length, 1); eq(x[0].xUrl, null); });
+
+t("no user-facing battery/energy/race/F1 in index.html; Credits + Season 1 + airdrop after close", () => {
+  const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  ok(!/\bbatter(y|ies)\b/i.test(h), "no battery");
+  ok(!/\benergy\b/i.test(h.replace(/\/\*[\s\S]*?\*\//g,"").replace(/baseEnergy|finalScore|taskEnergy|POINTS_PER_BATTERY|energy bars/g,"")), "no energy user copy");
+  // allow internal CSS/JS identifiers carefully: check visible copy phrases
+  ok(!/\brace\b/i.test(h.replace(/data-t="race"|tab === "race"|tre\.races|scoreRace/g,"")), "no race labels");
+  ok(!/\bF1\b/.test(h), "no F1");
+  ok(/Credits/.test(h) && /Season \$\{CURRENT_SEASON\}|Season 1/.test(h));
+  ok(/after Season 1 closes/.test(h));
+  ok(/Credits earned during the campaign convert into airdrops/.test(h));
+  ok(!/10,?000/.test(h) && !/rate TBD at TGE/i.test(h) && !/rate will be set then/i.test(h));
+  ok(/assets\/onchainmatrix-logo\.png/.test(h));
+  ok(/SEASON = Object\.freeze\(\{/.test(h) && /number: 1/.test(h) && /start: "2026-11-09T12:00:00"/.test(h) && /end: "2026-11-23T12:00:00"/.test(h) && /lifetimeStart: "2026-11-09T12:00:00-05:00"/.test(h));
+  ok(/CURRENT_SEASON/.test(h));
+  ok(/Season \$\{CURRENT_SEASON\} credits · vs season leader|No Season 1 activity yet/.test(h));
+  ok(/Lifetime credits · vs lifetime leader/.test(h));
+});
+const fmtCredits = pts => String((Math.round(Number(pts) / CONFIG.POINTS_PER_BATTERY * 100) / 100));
+t("sample roster: account id is @handle; no SYN- ids; ranks/scores preserved vs handle map", () => {
+  ok(roster.accounts.every(a => a.account === "@" + a.handle && !String(a.account).includes("SYN-")));
+  ok(stasks.tasks.every(t => String(t.account).startsWith("@") && !String(t.account).includes("SYN-")));
+  const all = full(roster.accounts, stasks.tasks, "2026-11-06");
+  eq(all[0].handle, "sample_syn_0103"); eq(all[0].account, "@sample_syn_0103"); eq(all[0].score, 3180);
+  eq(all[100].handle, "sample_syn_0053"); eq(all[100].score, 150);
+  eq(fmtCredits(150), "1.5"); eq(fmtCredits(3180), "31.8");
+});
+t("season vs lifetime: prelaunch fixture => both 0; no NaN; lifetimeStart excludes prelaunch", () => {
+  const lifeBase = E.baseEnergy(stasks.tasks, { from: "2026-11-09", to: "2026-11-06" }); // empty window when asOf before launch
+  const lifeFromLaunch = E.baseEnergy(stasks.tasks, { from: "2026-11-09", to: "2026-12-01" });
+  const seaBase = E.baseEnergy(stasks.tasks, { from: "2026-11-09", to: "2026-11-23" });
+  let lifePos = 0, seaPos = 0;
+  for (const a of roster.accounts) {
+    const L = Math.round(E.finalScore(lifeFromLaunch.get(a.account) || 0, a.seedUsd));
+    const S = Math.round(E.finalScore(seaBase.get(a.account) || 0, a.seedUsd));
+    ok(Number.isFinite(L) && Number.isFinite(S) && L >= 0 && S >= 0 && !Number.isNaN(L) && !Number.isNaN(S));
+    if (L > 0) lifePos++; if (S > 0) seaPos++;
+  }
+  eq(seaPos, 0, "no sample tasks inside Season 1 window");
+  eq(lifePos, 0, "sample tasks are all prelaunch — lifetime from Nov 9 also 0");
+  ok(html.includes('lifetimeStart: "2026-11-09T12:00:00-05:00"'));
+  ok(html.includes("LIFETIME_START"));
+});
+t("season/lifetime boundaries: prelaunch excluded from both; launch included; season end excluded from season but in lifetime; lifetimeStart fixed if season moves", () => {
+  const tk = [
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-08" }, // prelaunch
+    { account: "@u", type: "receipt_check", effort: 2, date: "2026-11-09" }, // launch day
+    { account: "@u", type: "receipt_check", effort: 3, date: "2026-11-22" },
+    { account: "@u", type: "receipt_check", effort: 4, date: "2026-11-23" }, // season end (excluded from season)
+    { account: "@u", type: "receipt_check", effort: 5, date: "2026-12-01" }  // after season 1
+  ];
+  const lifetimeStart = "2026-11-09";
+  const sea = E.baseEnergy(tk, { from: "2026-11-09", to: "2026-11-23" });
+  const life = E.baseEnergy(tk, { from: lifetimeStart, to: "2026-12-02" });
+  eq(sea.get("@u"), E.taskEnergy(tk[1]) + E.taskEnergy(tk[2]));
+  eq(life.get("@u"), E.taskEnergy(tk[1]) + E.taskEnergy(tk[2]) + E.taskEnergy(tk[3]) + E.taskEnergy(tk[4]));
+  ok(!life.get("@u") || !tk.some(() => false));
+  ok(!(E.baseEnergy(tk, { from: lifetimeStart, to: "2026-11-09" }).get("@u"))); // empty if asOf==start
+  // future season bump moves season start; lifetimeStart stays fixed in HTML config
+  ok(/lifetimeStart: "2026-11-09T12:00:00-05:00"/.test(html));
+  const bumpedSeasonStart = "2026-12-07";
+  const sea2 = E.baseEnergy(tk, { from: bumpedSeasonStart, to: "2026-12-21" });
+  eq(sea2.get("@u"), undefined, "Dec 1 task is before a bumped Season 2 start");
+  const lifeStill = E.baseEnergy(tk, { from: lifetimeStart, to: "2026-12-02" });
+  eq(lifeStill.get("@u"), life.get("@u"), "lifetime unchanged when season window moves");
+  // post-season2 activity still accrues to fixed lifetimeStart
+  const lifeLater = E.baseEnergy(tk.concat([{ account: "@u", type: "receipt_check", effort: 6, date: "2026-12-10" }]), { from: lifetimeStart, to: "2026-12-11" });
+  ok(lifeLater.get("@u") > life.get("@u"));
+});
 
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };
 writeFileSync(new URL("./results.json", import.meta.url), JSON.stringify({ summary, results }, null, 1));

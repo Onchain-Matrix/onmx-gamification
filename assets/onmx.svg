@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="-47 -5 600 600" role="img" aria-labelledby="title">
+  <title id="title">Onchain Matrix</title>
+  <defs>
+    <linearGradient id="brand" x1="95" y1="170" x2="355" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00eee8"/>
+      <stop offset=".34" stop-color="#00c7e9"/>
+      <stop offset=".66" stop-color="#4f83ff"/>
+      <stop offset="1" stop-color="#a740ff"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#brand)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M253 30C190 72 123 95 40 113C37 329 62 444 253 557C444 444 469 329 466 113C383 95 316 72 253 30Z"/>
+    <path d="M187 184C147 208 126 247 126 290C126 361 183 418 253 418C323 418 380 361 380 290C380 247 359 208 319 184"/>
+    <path d="M253 125V278"/>
+  </g>
+</svg>

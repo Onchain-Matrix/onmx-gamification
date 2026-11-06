@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 34,
-  "passed": 34,
+  "total": 38,
+  "passed": 38,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -75,7 +75,7 @@
    "pass": true
   },
   {
-   "name": "battery display: 100 points = 1 battery",
+   "name": "credit display: 100 points = 1 credit",
    "pass": true
   },
   {
@@ -140,6 +140,22 @@
   },
   {
    "name": "search: duplicate handles return all exact matches; injection handle stays inert",
+   "pass": true
+  },
+  {
+   "name": "no user-facing battery/energy/race/F1 in index.html; Credits + Season 1 + airdrop after close",
+   "pass": true
+  },
+  {
+   "name": "sample roster: account id is @handle; no SYN- ids; ranks/scores preserved vs handle map",
+   "pass": true
+  },
+  {
+   "name": "season vs lifetime: prelaunch fixture => both 0; no NaN; lifetimeStart excludes prelaunch",
+   "pass": true
+  },
+  {
+   "name": "season/lifetime boundaries: prelaunch excluded from both; launch included; season end excluded from season but in lifetime; lifetimeStart fixed if season moves",
    "pass": true
   }
  ]
