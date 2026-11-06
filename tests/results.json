@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 47,
-  "passed": 47,
+  "total": 50,
+  "passed": 50,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -143,7 +143,7 @@
    "pass": true
   },
   {
-   "name": "no user-facing battery/energy/race/F1 in index.html; Credits + Season 1 + airdrop after close",
+   "name": "no user-facing battery in index.html; Credits + Season 1 + airdrop after close",
    "pass": true
   },
   {
@@ -187,11 +187,23 @@
    "pass": true
   },
   {
-   "name": "treasuryBuyPoints boundaries 99.99/100/999.99/1000/10000/10000.01",
+   "name": "treasuryBuyPoints continuous exp-v1: cap 250, 2dp, finite",
    "pass": true
   },
   {
-   "name": "Treasury tab copy + brackets from SEASON; index formula sample 35000 => 450",
+   "name": "treasury buy claim freeze + next-season queue; season cap 250",
+   "pass": true
+  },
+  {
+   "name": "Treasury UI continuous formula + growth; verification not live; no old brackets",
+   "pass": true
+  },
+  {
+   "name": "referral UI raw: no maxlength 15 truncation; self @sample_syn_0103 rejects; never silent @sample_syn_010",
+   "pass": true
+  },
+  {
+   "name": "referral pending welcome on stats; launch activate 10/5 idempotent",
    "pass": true
   }
  ]

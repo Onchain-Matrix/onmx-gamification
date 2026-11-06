@@ -13,9 +13,11 @@ export const SEASON = Object.freeze({
   lifetimeStart: "2026-11-09T12:00:00-05:00",
   // Owner-configured Season 1 prize: 1 BNB total. USD figures are illustrative only (not a funding verification).
   prizes: Object.freeze({
-    bnbTotal: 1,
-    usdIllustrativeSplit: Object.freeze([300, 200, 100]), // places 1–3
-    usdIllustrativeBand: Object.freeze([600, 700]) // illustrative total USD band for the 1 BNB pool
+    bnbTotal: 1, // owner base display (BNB) — not auto-mixed with USD growth
+    usdIllustrativeSplit: Object.freeze([300, 200, 100]), // places 1–3 illustrative USD for the base 1 BNB
+    usdIllustrativeBand: Object.freeze([600, 700]),
+    // PROPOSED (not final): separate USD growth = growthPct × cumulative raised USD. Not converted to BNB here.
+    growthPctOfRaisedUsd: 0.01
   }),
   // Scoring points per effort unit (effort=1 on a verified task ⇒ these points). Not Credits / not airdrop rates.
   tasks: Object.freeze([
@@ -33,16 +35,19 @@ export const SEASON = Object.freeze({
     welcomeCredits: 5,
     campaignId: "onmx-campaign"
   }),
-  // Treasury buy-in bonus SCORING POINTS (not Credits). Half-open then closed at top of mid band:
-  // 100 <= usd < 1000 => 10; 1000 <= usd <= 10000 => 100; usd > 10000 => 250; usd < 100 => 0.
-  // INTEGRATION UNDECIDED: these points are displayed as a schedule only — not auto-applied to
-  // leaderboard / season / BNB ranking until owner chooses the scoring destination.
+  // PROPOSED / PROVISIONAL treasury buy-in bonus (raw SCORING POINTS, not Credits).
+  // Continuous bounded formula (no bracket cliffs): points = cap * (1 - exp(-USD / scaleUsd)),
+  // then round to 2 decimals, clamp [0, cap]. Cap is per player per season.
+  // Claim is frozen ONCE at purchase (see freezeTreasuryBuyClaim). Later config/fund changes do NOT retro-score.
+  // Additional purchases in the same season do NOT raise the current claim — they queue for the NEXT configured season
+  // as a distinct claim (new tx id). No verified purchase feed / identity linking is live yet.
   treasuryBuy: Object.freeze({
-    brackets: Object.freeze([
-      Object.freeze({ minUsd: 100, maxUsd: 1000, maxInclusive: false, points: 10, label: "$100–under $1,000" }),
-      Object.freeze({ minUsd: 1000, maxUsd: 10000, maxInclusive: true, points: 100, label: "$1,000–$10,000" }),
-      Object.freeze({ minUsd: 10000, maxUsd: null, maxInclusive: false, points: 250, label: "Over $10,000", exclusiveMin: true })
-    ])
+    status: "proposed", // not final owner terms
+    formulaVersion: "exp-v1",
+    capPoints: 250, // max raw scoring points / player / season
+    scaleUsd: 1000, // adjustable; larger ⇒ slower approach to cap
+    minUsd: 0, // formula defined for usd > 0; non-finite / <=0 ⇒ 0
+    // INTEGRATION: ranking destination undecided — schedule + pure helpers only until verification backend exists.
   })
 });
 
@@ -145,12 +150,104 @@ export function inHalfOpenWindow(iso, from, to) {
   return true;
 }
 
-/** Treasury buy-in bonus scoring points from SEASON.treasuryBuy. usd < 100 => 0. */
+/**
+ * PROPOSED continuous buy-in points: cap * (1 - exp(-usd/scaleUsd)), 2dp, clamped to [0, cap].
+ * Never uses Seed multipliers. Not Credits (100 pts = 1 Credit only for display).
+ */
 export function treasuryBuyPoints(usd, season = SEASON) {
+  const tb = season.treasuryBuy || {};
+  const cap = Number(tb.capPoints) || 0;
+  const scale = Number(tb.scaleUsd) || 0;
   const x = Number(usd);
-  if (!Number.isFinite(x) || x < 100) return 0;
-  // Higher bracket wins at exact 1000 and exact 10000.
-  if (x > 10000) return 250;
-  if (x >= 1000) return 100; // 1000 <= x <= 10000
-  return 10; // 100 <= x < 1000
+  if (!Number.isFinite(x) || x <= 0 || !(cap > 0) || !(scale > 0)) return 0;
+  const raw = cap * (1 - Math.exp(-x / scale));
+  if (!Number.isFinite(raw) || raw <= 0) return 0;
+  const rounded = Math.round(raw * 100) / 100;
+  return Math.min(cap, Math.max(0, rounded));
 }
+
+/** Proposed prize growth in USD (not BNB): growthPct × cumulativeRaisedUsd. */
+export function proposedPrizeGrowthUsd(cumulativeRaisedUsd, season = SEASON) {
+  const pct = Number(season.prizes?.growthPctOfRaisedUsd) || 0;
+  const raised = Number(cumulativeRaisedUsd);
+  if (!Number.isFinite(raised) || raised <= 0 || pct <= 0) return 0;
+  return Math.round(raised * pct * 100) / 100;
+}
+
+/**
+ * Freeze a buy-in claim snapshot at purchase time (pure; no I/O).
+ * pointsAtPurchase is locked; later formula/config edits must not rewrite this object.
+ * Additional same-season purchases should call queueTreasuryBuyForNextSeason instead of mutating this claim.
+ */
+export function freezeTreasuryBuyClaim({
+  seasonNumber,
+  canonicalHandle,
+  purchaseTxId,
+  amountUsd,
+  purchaseAt,
+  season = SEASON
+}) {
+  const handle = String(canonicalHandle || "");
+  const tx = String(purchaseTxId || "").trim();
+  const usd = Number(amountUsd);
+  if (!handle || !tx || !Number.isFinite(usd) || usd <= 0) {
+    return { ok: false, error: "invalid claim fields" };
+  }
+  const points = treasuryBuyPoints(usd, season);
+  return {
+    ok: true,
+    claim: Object.freeze({
+      season: Number(seasonNumber),
+      canonicalHandle: handle,
+      purchaseTxId: tx,
+      amountUsd: usd,
+      formulaVersion: season.treasuryBuy?.formulaVersion || "unknown",
+      pointsAtPurchase: points,
+      purchaseAt: purchaseAt || null,
+      status: "proposed-fixture", // not production-enforced
+      scoringApplied: false // ranking integration not live
+    })
+  };
+}
+
+/**
+ * Policy assumption (PROPOSED): a further purchase while a season claim already exists
+ * does not increase that season's points; it queues a distinct claim for nextSeasonNumber.
+ */
+export function queueTreasuryBuyForNextSeason({
+  existingClaim,
+  nextSeasonNumber,
+  purchaseTxId,
+  amountUsd,
+  purchaseAt,
+  season = SEASON
+}) {
+  if (!existingClaim || existingClaim.purchaseTxId === String(purchaseTxId || "").trim()) {
+    return { ok: false, error: "duplicate or missing prior claim" };
+  }
+  if (Number(nextSeasonNumber) <= Number(existingClaim.season)) {
+    return { ok: false, error: "next season must be greater than current claim season" };
+  }
+  return freezeTreasuryBuyClaim({
+    seasonNumber: nextSeasonNumber,
+    canonicalHandle: existingClaim.canonicalHandle,
+    purchaseTxId,
+    amountUsd,
+    purchaseAt,
+    season
+  });
+}
+
+/** Season cap check: sum of frozen pointsAtPurchase for one handle in one season, capped at capPoints. */
+export function seasonBuyPointsTotal(claims, canonicalHandle, seasonNumber, season = SEASON) {
+  const cap = Number(season.treasuryBuy?.capPoints) || 0;
+  const h = String(canonicalHandle || "");
+  const sn = Number(seasonNumber);
+  let sum = 0;
+  for (const c of claims || []) {
+    if (!c || c.canonicalHandle !== h || Number(c.season) !== sn) continue;
+    sum += Number(c.pointsAtPurchase) || 0;
+  }
+  return Math.min(cap, Math.round(sum * 100) / 100);
+}
+

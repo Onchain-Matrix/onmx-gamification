@@ -1,7 +1,7 @@
 // Deterministic tests for the shared engine (src/engine.js). Writes tests/results.json.
 import { writeFileSync, readFileSync } from "node:fs";
 import * as E from "../src/engine.js";
-import { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints } from "../src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal } from "../src/config.js";
 import * as Ref from "../src/referral.js";
 import { transform } from "../tools/export-roster.mjs";
 import { makeAccounts, makeTasks } from "../sim/synth.js";
@@ -83,14 +83,13 @@ t("search: synthetic 10001 accounts — rank > 100 found with correct global ran
 t("search: duplicate handles return all exact matches; injection handle stays inert", () => { const a = [acc("A"), acc("B"), { account: "C", handle: "<img src=x onerror=alert(1)>", seedUsd: 0 }]; a[1].handle = "a";
   const all = full(a, [], "2026-10-21"); eq(searchRows(all, "@A").length, 2); const x = searchRows(all, "<IMG src=x onerror=alert(1)>"); eq(x.length, 1); eq(x[0].xUrl, null); });
 
-t("no user-facing battery/energy/race/F1 in index.html; Credits + Season 1 + airdrop after close", () => {
+t("no user-facing battery in index.html; Credits + Season 1 + airdrop after close", () => {
   const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   ok(!/batter(y|ies)/i.test(h), "no battery");
-  ok(!/F1/.test(h), "no F1");
   ok(/Credits/.test(h) && /CURRENT_SEASON/.test(h));
   ok(/after Season 1 closes/.test(h));
   ok(/Credits earned during the campaign convert into airdrops/.test(h));
-  ok(!/10,?000/.test(h) && !/rate TBD at TGE/i.test(h));
+  ok(!/10,?000 energy = 1 token/i.test(h));
   ok(/assets\/onchainmatrix-logo\.png/.test(h));
   ok(/import \{ CONFIG, SEASON/.test(h));
   ok(/counting begins/.test(h));
@@ -245,27 +244,60 @@ t("index Results + Championship tabs; Treasury branch unchanged", () => {
   ok(/data-t="treasury"/.test(h));
 });
 
-t("treasuryBuyPoints boundaries 99.99/100/999.99/1000/10000/10000.01", () => {
-  eq(treasuryBuyPoints(99.99), 0);
-  eq(treasuryBuyPoints(100), 10);
-  eq(treasuryBuyPoints(999.99), 10);
-  eq(treasuryBuyPoints(1000), 100);
-  eq(treasuryBuyPoints(10000), 100);
-  eq(treasuryBuyPoints(10000.01), 250);
-  eq(treasuryBuyPoints(-1), 0);
-  eq(treasuryBuyPoints("x"), 0);
+t("treasuryBuyPoints continuous exp-v1: cap 250, 2dp, finite", () => {
+  eq(SEASON.treasuryBuy.formulaVersion, "exp-v1");
+  eq(SEASON.treasuryBuy.capPoints, 250);
+  eq(treasuryBuyPoints(0), 0);
+  eq(treasuryBuyPoints(100), 23.79);
+  eq(treasuryBuyPoints(1000), 158.03);
+  eq(treasuryBuyPoints(10000), 249.99);
+  eq(treasuryBuyPoints(1e12), 250);
+  eq(proposedPrizeGrowthUsd(35000), 350);
 });
-t("Treasury tab copy + brackets from SEASON; index formula sample 35000 => 450", () => {
+t("treasury buy claim freeze + next-season queue; season cap 250", () => {
+  const a = freezeTreasuryBuyClaim({ seasonNumber: 1, canonicalHandle: "@a", purchaseTxId: "0x1", amountUsd: 1000, purchaseAt: "2026-11-10" });
+  eq(a.ok, true); eq(a.claim.pointsAtPurchase, 158.03);
+  const locked = a.claim.pointsAtPurchase;
+  const q = queueTreasuryBuyForNextSeason({ existingClaim: a.claim, nextSeasonNumber: 2, purchaseTxId: "0x2", amountUsd: 5000, purchaseAt: "2026-11-11" });
+  eq(q.ok, true); eq(q.claim.season, 2);
+  eq(a.claim.pointsAtPurchase, locked);
+  eq(seasonBuyPointsTotal([a.claim, { ...a.claim, purchaseTxId: "extra", pointsAtPurchase: 200 }], "@a", 1), 250);
+});
+t("Treasury UI continuous formula + growth; verification not live; no old brackets", () => {
   eq(E.treasuryIndex(35000), 450);
-  eq(SEASON.treasuryBuy.brackets.map(b => [b.label, b.points]), [
-    ["$100–under $1,000", 10], ["$1,000–$10,000", 100], ["Over $10,000", 250]
-  ]);
   const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   ok(/Unitless recognition metric/.test(h));
-  ok(/BNB prize pool/.test(h));
-  ok(/SEASON\.treasuryBuy\.brackets/.test(h));
-  ok(/Ranking integration is undecided/.test(h));
-  ok(/bonus scoring points/.test(h));
+  ok(/capPoints/.test(h) && /formulaVersion/.test(h));
+  ok(/Proposed/.test(h) && /growth/.test(h));
+  ok(/Purchase verification/.test(h));
+  ok(!/treasuryBuy\.brackets/.test(h));
+});
+t("referral UI raw: no maxlength 15 truncation; self @sample_syn_0103 rejects; never silent @sample_syn_010", () => {
+  const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  ok(/id="newh"[^>]*maxlength="64"/.test(h));
+  ok(!/id="newh"[^>]*maxlength="15"/.test(h));
+  ok(/\^@\?\[A-Za-z0-9_\]\{1,15\}\$/.test(h));
+  const raw = "@sample_syn_0103";
+  ok(raw.length === 16);
+  ok(/^@?[A-Za-z0-9_]{1,15}$/.test(raw.trim()));
+  eq(Ref.canonHandle(raw), "@sample_syn_0103");
+  ok(Ref.canonHandle(raw) !== Ref.canonHandle("@sample_syn_010"));
+  const mem = () => { let s=null; return { get:()=>s, set:v=>{s=v;} }; };
+  const store = mem();
+  eq(Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: raw, rosterAccounts: ["@sample_syn_0103"], cfg: SEASON, now: "2026-11-10T12:00:00-05:00", storeApi: store }).ok, false);
+  ok(!Ref.listLocalHandles(store).includes("@sample_syn_010"));
+});
+t("referral pending welcome on stats; launch activate 10/5 idempotent", () => {
+  const mem = () => { let s=null; return { get:()=>s, set:v=>{s=v;} }; };
+  const store = mem();
+  const pre = Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "onmx_test_1105b", rosterAccounts: ["@sample_syn_0103"], cfg: SEASON, now: "2026-11-05T12:00:00-05:00", storeApi: store });
+  eq(pre.status, "pending");
+  eq(Ref.statsFor("@onmx_test_1105b", store).asReferred.welcomeCredits, 5);
+  eq(Ref.lifetimeReferralRaw("@onmx_test_1105b", store, 100), 0);
+  eq(Ref.activatePending({ cfg: SEASON, now: "2026-11-09T12:00:00-05:00", storeApi: store }).activated, 1);
+  eq(Ref.activatePending({ cfg: SEASON, now: "2026-11-10T12:00:00-05:00", storeApi: store }).activated, 0);
+  eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 1000);
+  eq(Ref.lifetimeReferralRaw("@onmx_test_1105b", store, 100), 500);
 });
 
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };
