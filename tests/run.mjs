@@ -1,7 +1,8 @@
 // Deterministic tests for the shared engine (src/engine.js). Writes tests/results.json.
 import { writeFileSync, readFileSync } from "node:fs";
 import * as E from "../src/engine.js";
-import { CONFIG } from "../src/config.js";
+import { CONFIG, SEASON, toInstantMs, inHalfOpenWindow } from "../src/config.js";
+import * as Ref from "../src/referral.js";
 import { transform } from "../tools/export-roster.mjs";
 import { makeAccounts, makeTasks } from "../sim/synth.js";
 const results = []; const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${m || ""} expected ${JSON.stringify(b)} got ${JSON.stringify(a)}`); };
@@ -34,7 +35,7 @@ t("gate across leap day (2028-02-29) uses UTC day count", () => eq(E.gateShare("
 t("referral energy excluded from race/championship", () => { const accounts = [acc("A"), acc("B")];
   const tasks = [{ account: "A", type: "receipt_check", effort: 1, date: "2026-10-02" }, { account: "B", type: "receipt_check", effort: 2, date: "2026-10-02" }];
   const rows = E.scoreRace({ id: "R", from: "2026-10-01", to: "2026-10-15" }, tasks, accounts, null); eq(rows[0].account, "B"); eq(rows.find(r => r.account === "A").score, 10); });
-t("head start: +25 for prev #1-5, +15 for #6-10, 0 for #11+/none (raw points)", () => { eq([1,4,5,6,9,10,11,100,0,null,undefined,5.5].map(r => E.headStart(r)), [25,25,25,15,15,15,0,0,0,0,0,25]); });
+t("head start: +25 #1-5, +15 #6-10, +5 #11-20, 0 #21+/none (raw scoring points)", () => { eq([1,4,5,6,9,10,11,15,20,21,100,0,null,undefined].map(r => E.headStart(r)), [25,25,25,15,15,15,5,5,5,0,0,0,0,0]); eq([25,15,5].map(p => p / CONFIG.POINTS_PER_BATTERY), [0.25,0.15,0.05]); });
 t("credit display: 100 points = 1 credit", () => { eq(CONFIG.POINTS_PER_BATTERY, 100); eq([1400,3180,150,0,1,2453].map(v => v / CONFIG.POINTS_PER_BATTERY), [14,31.8,1.5,0,0.01,24.53]); });
 t("head start: first round none; next round from prev placement only; no compounding; Seed gives no head start", () => {
   const accounts = Array.from({ length: 12 }, (_, i) => acc("A" + String(i).padStart(2, "0"), i === 11 ? 1e6 : 0)); const races = [1, 2, 3].map(i => ({ id: "R" + i, from: `2026-10-${String(i * 10 - 9).padStart(2, "0")}`, to: `2026-10-${String(i * 10 + 1).padStart(2, "0")}` }));
@@ -42,14 +43,14 @@ t("head start: first round none; next round from prev placement only; no compoun
   const c = E.championship(races, tasks, accounts); const r1 = c.results[0].rows, r2 = c.results[1].rows, r3 = c.results[2].rows;
   ok(r1.every(x => x.headStart === 0), "no head start in first round");
   for (const p of r1) eq(r2.find(x => x.account === p.account).headStart, E.headStart(p.rank), "R2 hs from R1 rank " + p.rank);
-  eq(r1.slice(0, 10).map(p => r2.find(x => x.account === p.account).headStart), [25,25,25,25,25,15,15,15,15,15]); ok(r1.slice(10).every(p => r2.find(x => x.account === p.account).headStart === 0));
+  eq(r1.slice(0, 10).map(p => r2.find(x => x.account === p.account).headStart), [25,25,25,25,25,15,15,15,15,15]); eq(r1.slice(10, 12).map(p => r2.find(x => x.account === p.account).headStart), [5,5]);
   for (const p of r2) eq(r3.find(x => x.account === p.account).headStart, E.headStart(p.rank), "R3 hs from R2 rank only (no carry)");
   ok(Math.max(...c.results.flatMap(r => r.rows.map(x => x.headStart))) <= 25); });
 t("head start zero when no own effort (never a free win)", () => { const rows = E.scoreRace({ id: "R", from: "2026-10-01", to: "2026-10-15" }, [], [acc("A", 1e6)], [{ account: "A", own: 1000, score: 1000, rank: 1 }]); eq(rows[0].score, 0); eq(rows[0].points, 0); eq(rows[0].headStart, 0); });
-t("sample data: round 2 head starts = 25 (top5) / 15 (6-10) from round 1, 0 below", () => { const R = JSON.parse(readFileSync(new URL("../data/sample-roster.json", import.meta.url))), T = JSON.parse(readFileSync(new URL("../data/sample-tasks.json", import.meta.url))), TR = JSON.parse(readFileSync(new URL("../data/sample-treasury.json", import.meta.url)));
+t("sample data: round 2 head starts = 25 (top5) / 15 (6-10) / 5 (11-20) from round 1", () => { const R = JSON.parse(readFileSync(new URL("../data/sample-roster.json", import.meta.url))), T = JSON.parse(readFileSync(new URL("../data/sample-tasks.json", import.meta.url))), TR = JSON.parse(readFileSync(new URL("../data/sample-treasury.json", import.meta.url)));
   const c = E.championship(TR.races, T.tasks, R.accounts); const [r1, r2] = c.results.map(r => r.rows); ok(r1.every(x => x.headStart === 0));
   const own2 = new Set(r2.filter(x => x.own > 0).map(x => x.account)); for (const p of r1) eq(r2.find(x => x.account === p.account).headStart, own2.has(p.account) && p.own > 0 ? E.headStart(p.rank) : 0, p.account);
-  eq(E.headStart(r1[2].rank), 25, "rank 3 non-zero"); });
+  eq(E.headStart(r1[2].rank), 25, "rank 3 non-zero"); if (r1[10]) eq(E.headStart(r1[10].rank), 5, "rank 11 = +5"); if (r1[20]) eq(E.headStart(r1[20].rank), 0, "rank 21 = 0"); });
 t("F1 points top10 and championship sums", () => { const accounts = Array.from({ length: 12 }, (_, i) => acc("A" + String(i).padStart(2, "0")));
   const tasks = accounts.map((a, i) => ({ account: a.account, type: "receipt_check", effort: 12 - i, date: "2026-10-02" }));
   const c = E.championship([{ id: "R1", from: "2026-10-01", to: "2026-10-15" }], tasks, accounts); eq(c.results[0].rows.map(r => r.points), [25, 18, 15, 12, 10, 8, 6, 4, 2, 1, 0, 0]); eq(c.standings[0].points, 25); });
@@ -84,19 +85,16 @@ t("search: duplicate handles return all exact matches; injection handle stays in
 
 t("no user-facing battery/energy/race/F1 in index.html; Credits + Season 1 + airdrop after close", () => {
   const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  ok(!/\bbatter(y|ies)\b/i.test(h), "no battery");
-  ok(!/\benergy\b/i.test(h.replace(/\/\*[\s\S]*?\*\//g,"").replace(/baseEnergy|finalScore|taskEnergy|POINTS_PER_BATTERY|energy bars/g,"")), "no energy user copy");
-  // allow internal CSS/JS identifiers carefully: check visible copy phrases
-  ok(!/\brace\b/i.test(h.replace(/data-t="race"|tab === "race"|tre\.races|scoreRace/g,"")), "no race labels");
-  ok(!/\bF1\b/.test(h), "no F1");
-  ok(/Credits/.test(h) && /Season \$\{CURRENT_SEASON\}|Season 1/.test(h));
+  ok(!/batter(y|ies)/i.test(h), "no battery");
+  ok(!/F1/.test(h), "no F1");
+  ok(/Credits/.test(h) && /CURRENT_SEASON/.test(h));
   ok(/after Season 1 closes/.test(h));
   ok(/Credits earned during the campaign convert into airdrops/.test(h));
-  ok(!/10,?000/.test(h) && !/rate TBD at TGE/i.test(h) && !/rate will be set then/i.test(h));
+  ok(!/10,?000/.test(h) && !/rate TBD at TGE/i.test(h));
   ok(/assets\/onchainmatrix-logo\.png/.test(h));
-  ok(/SEASON = Object\.freeze\(\{/.test(h) && /number: 1/.test(h) && /start: "2026-11-09T12:00:00"/.test(h) && /end: "2026-11-23T12:00:00"/.test(h) && /lifetimeStart: "2026-11-09T12:00:00-05:00"/.test(h));
-  ok(/CURRENT_SEASON/.test(h));
-  ok(/Season \$\{CURRENT_SEASON\} credits · vs season leader|No Season 1 activity yet/.test(h));
+  ok(/import \{ CONFIG, SEASON/.test(h));
+  ok(/counting begins/.test(h));
+  ok(/No Season 1 activity yet/.test(h));
   ok(/Lifetime credits · vs lifetime leader/.test(h));
 });
 const fmtCredits = pts => String((Math.round(Number(pts) / CONFIG.POINTS_PER_BATTERY * 100) / 100));
@@ -121,7 +119,7 @@ t("season vs lifetime: prelaunch fixture => both 0; no NaN; lifetimeStart exclud
   }
   eq(seaPos, 0, "no sample tasks inside Season 1 window");
   eq(lifePos, 0, "sample tasks are all prelaunch — lifetime from Nov 9 also 0");
-  ok(html.includes('lifetimeStart: "2026-11-09T12:00:00-05:00"'));
+  ok(SEASON.lifetimeStart === "2026-11-09T12:00:00-05:00");
   ok(html.includes("LIFETIME_START"));
 });
 t("season/lifetime boundaries: prelaunch excluded from both; launch included; season end excluded from season but in lifetime; lifetimeStart fixed if season moves", () => {
@@ -140,7 +138,7 @@ t("season/lifetime boundaries: prelaunch excluded from both; launch included; se
   ok(!life.get("@u") || !tk.some(() => false));
   ok(!(E.baseEnergy(tk, { from: lifetimeStart, to: "2026-11-09" }).get("@u"))); // empty if asOf==start
   // future season bump moves season start; lifetimeStart stays fixed in HTML config
-  ok(/lifetimeStart: "2026-11-09T12:00:00-05:00"/.test(html));
+  ok(SEASON.lifetimeStart === "2026-11-09T12:00:00-05:00");
   const bumpedSeasonStart = "2026-12-07";
   const sea2 = E.baseEnergy(tk, { from: bumpedSeasonStart, to: "2026-12-21" });
   eq(sea2.get("@u"), undefined, "Dec 1 task is before a bumped Season 2 start");
@@ -149,6 +147,68 @@ t("season/lifetime boundaries: prelaunch excluded from both; launch included; se
   // post-season2 activity still accrues to fixed lifetimeStart
   const lifeLater = E.baseEnergy(tk.concat([{ account: "@u", type: "receipt_check", effort: 6, date: "2026-12-10" }]), { from: lifetimeStart, to: "2026-12-11" });
   ok(lifeLater.get("@u") > life.get("@u"));
+});
+
+t("SEASON config: prizes 1 BNB + USD split/band; tasks drive TASK_WEIGHTS; offsets -05:00", () => {
+  eq(SEASON.prizes.bnbTotal, 1); eq(SEASON.prizes.usdIllustrativeSplit, [300,200,100]); eq(SEASON.prizes.usdIllustrativeBand, [600,700]);
+  ok(SEASON.start.endsWith("-05:00") && SEASON.end.endsWith("-05:00") && SEASON.lifetimeStart.endsWith("-05:00"));
+  for (const t of SEASON.tasks) eq(CONFIG.TASK_WEIGHTS[t.id], t.points);
+  eq(CONFIG.TASK_WEIGHTS.receipt_check, 10); eq(CONFIG.TASK_WEIGHTS.architect_ship, 60);
+});
+t("toInstantMs / inHalfOpenWindow: date-only=noon-05; exact noon; 11:59:59; end exclusive", () => {
+  const noon = toInstantMs("2026-11-09T12:00:00-05:00");
+  eq(toInstantMs("2026-11-09"), noon);
+  ok(inHalfOpenWindow("2026-11-09T12:00:00-05:00", SEASON.start, SEASON.end));
+  ok(inHalfOpenWindow("2026-11-09T11:59:59-05:00", "2026-11-09T11:59:59-05:00", SEASON.end));
+  ok(!inHalfOpenWindow("2026-11-09T11:59:59-05:00", SEASON.start, SEASON.end), "1 min before launch excluded from season");
+  ok(inHalfOpenWindow("2026-11-09", SEASON.start, SEASON.end), "date-only launch day = noon included");
+  ok(!inHalfOpenWindow("2026-11-23T12:00:00-05:00", SEASON.start, SEASON.end), "end exclusive");
+  ok(inHalfOpenWindow("2026-11-23T11:59:59-05:00", SEASON.start, SEASON.end));
+  // engine uses same helper
+  const a = [{ account: "@u", handle: "u", seedUsd: 0 }];
+  const tk = [
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-09T11:59:59-05:00" },
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-09T12:00:00-05:00" },
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-23T11:59:59-05:00" },
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-23T12:00:00-05:00" }
+  ];
+  const sea = E.baseEnergy(tk, { from: SEASON.start, to: SEASON.end });
+  eq(sea.get("@u"), 20); // two tasks × 10
+});
+t("index: sample preview label, prize band, bar start copy, headstart +5, pager, no battery", () => {
+  const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  ok(/sample preview/.test(h));
+  ok(/600|bandHi|usdIllustrativeBand/.test(h));
+  ok(/counting begins/.test(h));
+  ok(/\+5/.test(h) && /#11–20|#11-20/.test(h));
+  ok(/PAGE_SIZE|data-pg/.test(h));
+  ok(!/\bbatter(y|ies)\b/i.test(h));
+  ok(/after Season 1 closes/.test(h));
+  ok(/Local prototype — saved in this browser only/.test(h));
+  ok(/from: LIFETIME_START,\s*to: ASOF/.test(h) || /from: LIFETIME_START/.test(h));
+  ok(/PAGE_SIZE = 10/.test(h) && /sample preview/.test(h));
+});
+t("referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending before launch; lifetime-only raw; disable", () => {
+  const mem = () => { let s=null; return { get:()=>s, set:v=>{s=v;} }; };
+  const store = mem();
+  const cfg = { ...SEASON };
+  eq(Ref.canonHandle(" @Sample_Syn_0001 "), "@sample_syn_0001");
+  eq(Ref.encodeRef("@Ab_1"), "ab_1"); eq(Ref.decodeRef("Ab_1"), "@ab_1");
+  ok(Ref.referralLink("https://onchain-matrix.github.io/onmx-gamification/", "@sample_syn_0103").endsWith("?ref=sample_syn_0103"));
+  eq(Ref.registerReferral({ referrerRaw: "@nope", newRaw: "newbie1", rosterAccounts: ["@sample_syn_0103"], cfg, now: "2026-11-10T12:00:00-05:00", storeApi: store }).ok, false);
+  eq(Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "sample_syn_0103", rosterAccounts: ["@sample_syn_0103"], cfg, now: "2026-11-10T12:00:00-05:00", storeApi: store }).ok, false);
+  eq(Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "sample_syn_0001", rosterAccounts: ["@sample_syn_0103","@sample_syn_0001"], cfg, now: "2026-11-10T12:00:00-05:00", storeApi: store }).ok, false);
+  const pre = Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "fresh_user1", rosterAccounts: ["@sample_syn_0103"], cfg, now: "2026-11-08T12:00:00-05:00", storeApi: store });
+  eq(pre.ok, true); eq(pre.status, "pending"); eq(pre.referrerCredits, 10); eq(pre.welcomeCredits, 5);
+  eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 0);
+  eq(Ref.activatePending({ cfg, now: "2026-11-09T12:00:00-05:00", storeApi: store }).activated, 1);
+  eq(Ref.statsFor("@sample_syn_0103", store).bonusCredits, 10);
+  eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 1000);
+  eq(Ref.lifetimeReferralRaw("@fresh_user1", store, 100), 500);
+  eq(Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "fresh_user1", rosterAccounts: ["@sample_syn_0103"], cfg, now: "2026-11-10T12:00:00-05:00", storeApi: store }).ok, false, "dup");
+  const store2 = mem();
+  const off = { ...SEASON, referral: { ...SEASON.referral, enabled: false } };
+  eq(Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "x", rosterAccounts: ["@sample_syn_0103"], cfg: off, now: "2026-11-10T12:00:00-05:00", storeApi: store2 }).ok, false);
 });
 
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };

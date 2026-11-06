@@ -87,7 +87,7 @@
      "rank": 1,
      "points": 25
     },
-    "runtimeMs": 451
+    "runtimeMs": 568
    },
    "checks": [
     {
@@ -324,7 +324,7 @@
   {
    "name": "S8 reproducibility",
    "metrics": {
-    "sha256": "5ed46c87da7bdf109d61f907de8fd6329e1b7694acc52d647c28150d048a712e"
+    "sha256": "8088a57700f569d4145d511f677a4108dec0f6742324ac62521237acc3558f24"
    },
    "checks": [
     {

@@ -13,63 +13,74 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opa
 @keyframes drift{to{transform:translate3d(2.5%,-1.5%,0) scale(1.04)}}
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){body::before,.card,.row{animation:none!important}*{transition:none!important}}
-.wrap{max-width:1040px;margin:auto;padding:16px 16px 48px}
-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}.brand img{height:44px;width:auto;display:block}
+.wrap{max-width:1040px;margin:auto;padding:14px 16px 40px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}.brand img{height:40px;width:auto;display:block}
 .brand .tag{font-family:Orbitron,Inter,sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
 .pill{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(232,217,168,.35);border-radius:99px;padding:4px 10px}
-.rewards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-.rewards .card{margin:0;padding:14px 16px}
-.rewards h2{margin:0 0 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);font-family:Orbitron,Inter,sans-serif}
+.rewards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.rewards .card{margin:0;padding:12px 14px}
+.rewards h2{margin:0 0 4px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);font-family:Orbitron,Inter,sans-serif}
 .rewards p{margin:0;font-size:13px;color:var(--mute)}.rewards b{color:var(--txt)}
-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(10px)}
-nav button{all:unset;cursor:pointer;text-align:center;padding:10px 6px;border-radius:10px;color:var(--mute);font-weight:600;font-size:14px}
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(10px)}
+nav button{all:unset;cursor:pointer;text-align:center;padding:9px 6px;border-radius:10px;color:var(--mute);font-weight:600;font-size:14px}
 nav button:hover{color:var(--txt)}nav button.on{color:var(--bg0);background:linear-gradient(135deg,var(--cyan),var(--blue))}
 nav button:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:10px 0;backdrop-filter:blur(10px);animation:rise .35s ease both}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:8px 0;backdrop-filter:blur(10px);animation:rise .35s ease both}
 .tools{display:grid;grid-template-columns:1fr;gap:8px}
 label{display:block;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-input{width:100%;background:#0a1220;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 12px;font-size:15px}
-.btn{all:unset;cursor:pointer;background:linear-gradient(135deg,var(--violet),#6f5fe0);color:#fff;font-weight:700;padding:11px 16px;border-radius:10px}
+input{width:100%;background:#0a1220;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:15px}
+.btn{all:unset;cursor:pointer;background:linear-gradient(135deg,var(--violet),#6f5fe0);color:#fff;font-weight:700;padding:10px 14px;border-radius:10px}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
 form.s{display:flex;gap:8px}
-.big{font-size:clamp(28px,6vw,44px);font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan);line-height:1;font-family:Orbitron,Inter,sans-serif}
+.big{font-size:clamp(26px,5vw,40px);font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan);line-height:1;font-family:Orbitron,Inter,sans-serif}
 .unit{font-size:11px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase}
-.row{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.06);animation:rise .3s ease both}
-.row:last-child{border:0}.rk{font-weight:800;font-size:17px;color:var(--mute);text-align:center;font-variant-numeric:tabular-nums;font-family:Orbitron,Inter,sans-serif}
+.row{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:3px 6px;border-bottom:1px solid rgba(255,255,255,.06)}
+.row:last-child{border:0}.rk{font-weight:800;font-size:16px;color:var(--mute);text-align:center;font-variant-numeric:tabular-nums;font-family:Orbitron,Inter,sans-serif}
 .row.p1 .rk{color:var(--cyan)}.row.p2 .rk{color:#B8F7FF}.row.p3 .rk{color:var(--violet)}
 .who a,.who span.h{color:var(--txt);text-decoration:none;font-weight:600}.who a:hover{color:var(--cyan)}
 .row .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sub{font-size:12px;color:var(--mute)}
-.bar{display:inline-flex;gap:3px;vertical-align:middle;margin-right:10px}.bar i{width:9px;height:16px;border-radius:2px;background:rgba(120,140,160,.18)}.bar i.f{background:linear-gradient(180deg,var(--cyan),var(--blue));box-shadow:0 0 6px rgba(7,233,251,.45)}
+.bar{display:inline-flex;gap:2px;vertical-align:middle;margin-right:8px}.bar i{width:8px;height:14px;border-radius:2px;background:rgba(120,140,160,.18)}.bar i.f{background:linear-gradient(180deg,var(--cyan),var(--blue));box-shadow:0 0 6px rgba(7,233,251,.45)}
 .pts{display:flex;align-items:center;justify-content:flex-end;white-space:nowrap}
-.pts .n{font-size:20px;font-weight:800;color:var(--cyan);font-variant-numeric:tabular-nums;font-family:Orbitron,Inter,sans-serif}
-.hero{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
-h3{margin:0 0 8px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);font-family:Orbitron,Inter,sans-serif}
+.pts .n{font-size:18px;font-weight:800;color:var(--cyan);font-variant-numeric:tabular-nums;font-family:Orbitron,Inter,sans-serif}
+.hero{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);font-family:Orbitron,Inter,sans-serif}
 .note{font-size:12px;color:var(--mute)}
-.season{margin:10px 0}.season summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.season summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .season summary::-webkit-details-marker{display:none}
-.season .badge{font-family:Orbitron,Inter,sans-serif;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--bg0);background:linear-gradient(135deg,var(--cyan),var(--mint));border-radius:8px;padding:6px 12px;font-weight:700}
-.season .when{font-size:13px;color:var(--mute)}.season .body{margin-top:10px;font-size:13px;color:var(--mute)}
-.prog{margin-top:12px;display:grid;gap:10px}.prog .lab{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--mute);margin-bottom:4px}.prog .lab b{color:var(--txt)}
-.track{height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}.track>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--violet));width:0}
-.how ol{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;list-style:none;padding:0;margin:10px 0 6px;max-width:420px;align-items:end}
-.how li{text-align:center;font-size:12px;color:var(--mute)}.how li b{display:block;margin:0 auto 4px;width:70%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--cyan),var(--blue))}
-.how li span{display:block;color:var(--txt);font-weight:700}
-footer{font-size:12px;color:var(--mute);margin-top:20px}
-@media (max-width:640px){.rewards{grid-template-columns:1fr}nav button{font-size:12px;padding:9px 2px}.row{grid-template-columns:40px 1fr auto;gap:8px}.pts .n{font-size:18px}.row .pts .unit{display:none}.hero{grid-template-columns:1fr}.brand img{height:36px}.bar i{width:5px;height:14px}.bar{gap:2px;margin-right:6px}}
-</style></head><body><div class="wrap">
+.season .badge{font-family:Orbitron,Inter,sans-serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--bg0);background:linear-gradient(135deg,var(--cyan),var(--mint));border-radius:8px;padding:5px 10px;font-weight:700}
+.season .when{font-size:13px;color:var(--mute)}.season .body{margin-top:8px;font-size:13px;color:var(--mute)}
+.prog{margin-top:10px;display:grid;gap:8px}.prog .lab{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--mute);margin-bottom:3px}.prog .lab b{color:var(--txt)}
+.track{height:9px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}.track>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--violet))}
+.board-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.pager{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pager button{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--txt);font-size:12px;font-weight:600}
+.pager button:disabled{opacity:.35;cursor:default}.pager button.on{background:linear-gradient(135deg,var(--cyan),var(--blue));color:var(--bg0);border-color:transparent}
+.pager .meta{font-size:12px;color:var(--mute)}
+.refbox{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);font-size:13px}
+.refbox .rowline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.refbox input[readonly]{flex:1;min-width:160px;font-size:12px}
+.warnproto{font-size:11px;color:var(--gold);margin-top:6px}
+.how ol.hs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;list-style:none;padding:0;margin:10px 0;max-width:520px;align-items:end}
+.how ol.hs li{text-align:center;font-size:11px;color:var(--mute)}.how ol.hs li b{display:block;margin:0 auto 4px;width:70%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--cyan),var(--blue))}
+.how ol.hs li span{display:block;color:var(--txt);font-weight:700}
+.how ul.tasks{margin:6px 0;padding-left:18px;color:var(--mute);font-size:13px}.how ul.tasks b{color:var(--txt)}
+.extra{transition:opacity .2s}.compact .extra{display:none}
+footer{font-size:12px;color:var(--mute);margin-top:16px}
+@media (max-width:640px){.rewards{grid-template-columns:1fr}nav button{font-size:12px;padding:8px 2px}.row{grid-template-columns:36px 1fr auto;gap:6px}.pts .n{font-size:16px}.row .pts .unit{display:none}.hero{grid-template-columns:1fr}.brand img{height:34px}.bar i{width:5px;height:12px}}
+</style></head><body><div class="wrap" id="app">
 <header>
-  <div class="brand"><img src="assets/onchainmatrix-logo.png" width="180" height="61" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
+  <div class="brand"><img src="assets/onchainmatrix-logo.png" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
   <span class="pill">Sample data · provisional rules</span>
 </header>
-<section class="card season" id="season"><details open>
+<section class="card season"><details open>
   <summary><span class="badge" id="seasonBadge">Season 1</span><span class="when" id="seasonWhen"></span></summary>
-  <div class="body" id="seasonBody"></div>
+  <div class="body extra" id="seasonBody"></div>
 </details></section>
-<section class="rewards" aria-label="Two rewards">
-  <div class="card"><h2>Two rewards</h2><p><b>BNB prizes</b> for the Season 1 top 3, plus <b>Credits</b> earned during the campaign that convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.</p></div>
-  <div class="card"><h2>Season 1 BNB pool</h2><p>Illustrative 1 BNB pool · top 3 split ≈ <b>$300 / $200 / $100</b> (#1 50%, #2 33.33%, #3 16.67%). Pool size and USD figures are illustrative — not a funded or promised prize.</p></div>
+<section class="rewards extra" aria-label="Two rewards" id="rewards">
+  <div class="card"><h2>Two rewards</h2><p id="rewardCopy"></p></div>
+  <div class="card"><h2>Season 1 BNB pool</h2><p id="prizeCopy"></p></div>
 </section>
 <nav role="tablist" aria-label="Sections">
   <button role="tab" data-t="board" class="on" aria-selected="true">Leaderboard</button>
@@ -80,106 +91,220 @@ footer{font-size:12px;color:var(--mute);margin-top:20px}
 <section class="card tools"><div><label for="q">Find your rank — X handle (any rank)</label>
 <form id="sform" class="s" autocomplete="off"><input id="q" type="search" placeholder="@handle" maxlength="40"><button class="btn" type="submit">Search</button></form></div></section>
 <div id="sres" aria-live="polite"></div>
+<div id="refSignup" class="card" hidden></div>
 <main id="out"></main>
-<section class="card how" id="how"><h3>How the game works</h3>
-<p class="note">Do contribution &amp; verification work → earn <b>Credits</b> (100 scoring points = 1 Credit — display only, not an airdrop rate). More Credits = higher rank.</p>
-<p class="note"><b>Two rewards:</b> (1) Season 1 BNB prizes for the top 3 — illustrative 1 BNB pool, ≈$300 / $200 / $100 split (allocation weights 50% / 33.33% / 16.67%; not funded or promised). (2) Credits earned during the campaign convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.</p>
-<p class="note">Each round, the top 10 get a head start for the <b>next round only</b> (never stacks, none in the first round, needs your own work that round):</p>
-<ol aria-label="Next-round head start by placement">
-  <li><b style="height:40px"></b><span>+25</span>#1–5</li>
-  <li><b style="height:24px"></b><span>+15</span>#6–10</li>
-  <li><b style="height:2px;background:rgba(120,140,160,.3)"></b><span>0</span>#11+</li>
-</ol>
-<p class="note">Head start is in points: +25 = +0.25 Credit, +15 = +0.15 Credit. Season points (Championship tab): each round’s top 10 earn provisional season points (25, 18, 15, 12, 10, 8, 6, 4, 2, 1). Spending Credits on championships and decay of hoarded Credits are planned, not yet applied.</p>
+<section class="card how extra" id="how"><h3>How the game works</h3>
+<div id="howBody"></div>
 </section>
 <footer>Sample data: placeholder accounts, not real members. Credits are earned by contribution/verification work, never follows/RTs; seed bonus only amplifies effort (0 effort ⇒ 0). Rules are provisional. Onchain Matrix project dashboard — not affiliated with Warner Bros. or The Matrix films.</footer>
 </div>
 <script type="module">
 import * as E from "./src/engine.js";
-import { CONFIG } from "./src/config.js";
-/** Bump SEASON for Season 2+. lifetimeStart is the immutable campaign launch — do not retie it to SEASON.start. */
-const SEASON = Object.freeze({
-  number: 1,
-  start: "2026-11-09T12:00:00",
-  end: "2026-11-23T12:00:00",
-  timeZone: "America/New_York",
-  lifetimeStart: "2026-11-09T12:00:00-05:00" // FIXED campaign launch; both bars count from here, never from prelaunch
-});
+import { CONFIG, SEASON, toInstantMs } from "./src/config.js";
+import * as R from "./src/referral.js";
+
 const CURRENT_SEASON = SEASON.number;
-const LIFETIME_START = SEASON.lifetimeStart; // immutable alias — keep when bumping SEASON.number/start/end
-const ASOF = "2026-11-06";
+const LIFETIME_START = SEASON.lifetimeStart;
+const ASOF = "2026-11-06"; // sample roster as-of (prelaunch) — board is a sample preview
 const BOARD_SHOWN = 20;
+const PAGE_SIZE = 10; // 2 pages × 10 = top 20
+let boardPage = 0;
+let compact = false;
+
 const [roster, tasks, tre] = await Promise.all(["data/sample-roster.json","data/sample-tasks.json","data/sample-treasury.json"].map(u => fetch(u).then(r => r.json())));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = n => Number(n).toLocaleString("en-US");
 const fmtB = pts => (Math.round(Number(pts) / CONFIG.POINTS_PER_BATTERY * 100) / 100).toLocaleString("en-US", { maximumFractionDigits: 2 });
 const out = document.getElementById("out"); let tab = "board";
-function fmtSeasonInstant(isoLocal) {
-  const [d] = isoLocal.split("T"); const [y, m, day] = d.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, day, 17, 0, 0)); // noon EST (UTC-5) in November
+const storeApi = {
+  get: () => { try { return localStorage.getItem("onmx_referral_v1"); } catch { return null; } },
+  set: (v) => { try { localStorage.setItem("onmx_referral_v1", v); } catch {} }
+};
+const rosterSet = roster.accounts.map(a => a.account);
+
+function fmtSeasonInstant(iso) {
+  const dt = new Date(toInstantMs(iso));
   return new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: SEASON.timeZone, timeZoneName: "short" }).format(dt);
 }
+const launchLabel = fmtSeasonInstant(LIFETIME_START);
+const seasonStartLabel = fmtSeasonInstant(SEASON.start);
+const seasonEndLabel = fmtSeasonInstant(SEASON.end);
+const [u1,u2,u3] = SEASON.prizes.usdIllustrativeSplit;
+const [bandLo, bandHi] = SEASON.prizes.usdIllustrativeBand;
+
 document.getElementById("seasonBadge").textContent = `Season ${CURRENT_SEASON}`;
-document.getElementById("seasonWhen").textContent = `${fmtSeasonInstant(SEASON.start)} → ${fmtSeasonInstant(SEASON.end)}`;
-document.getElementById("seasonBody").innerHTML = `Season ${CURRENT_SEASON} runs <b>${esc(fmtSeasonInstant(SEASON.start))}</b> through <b>${esc(fmtSeasonInstant(SEASON.end))}</b> (${esc(SEASON.timeZone)}). Board below uses synthetic sample data for layout (activity before campaign launch is excluded from Season/Lifetime credit bars). Not live Season ${CURRENT_SEASON} players.`;
+document.getElementById("seasonWhen").textContent = `${seasonStartLabel} → ${seasonEndLabel}`;
+document.getElementById("seasonBody").innerHTML = `Season ${CURRENT_SEASON} runs <b>${esc(seasonStartLabel)}</b> through <b>${esc(seasonEndLabel)}</b> (${esc(SEASON.timeZone)}). Season &amp; lifetime credit bars both begin counting at campaign launch <b>${esc(launchLabel)}</b>. Board below is a <b>sample preview</b> (synthetic prelaunch fixtures) — not live Season ${CURRENT_SEASON} standings.`;
+document.getElementById("rewardCopy").innerHTML = `<b>BNB prizes</b> for the Season ${CURRENT_SEASON} top 3, plus <b>Credits</b> earned during the campaign that convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.`;
+document.getElementById("prizeCopy").innerHTML = `Configured pool: <b>${SEASON.prizes.bnbTotal} BNB</b> total · illustrative USD split ≈ <b>$${fmt(u1)} / $${fmt(u2)} / $${fmt(u3)}</b> (about $${fmt(bandLo)}–$${fmt(bandHi)} total). USD is illustrative; on-chain funding is not verified here.`;
+
+document.getElementById("howBody").innerHTML = `
+<p class="note">Do contribution &amp; verification work → earn <b>Credits</b> (100 scoring points = 1 Credit — display only, not an airdrop rate).</p>
+<p class="note"><b>Two rewards:</b> (1) Season ${CURRENT_SEASON} pool of <b>${SEASON.prizes.bnbTotal} BNB</b> for the top 3 — illustrative ≈ $${fmt(u1)} / $${fmt(u2)} / $${fmt(u3)} (about $${fmt(bandLo)}–$${fmt(bandHi)}). (2) Credits earned during the campaign convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.</p>
+<p class="note"><b>Task scoring points</b> (per effort unit; effort=1 on a verified task ⇒ these points). Not Credits:</p>
+<ul class="tasks">${SEASON.tasks.map(t => `<li><b>${esc(t.label)}</b> — ${t.points} scoring points / effort</li>`).join("")}</ul>
+<p class="note">Each round, placement gives a <b>scoring-point</b> head start for the <b>next round only</b> (never stacks, none in the first round, needs your own work that round):</p>
+<ol class="hs" aria-label="Next-round head start by placement">
+  <li><b style="height:40px"></b><span>+25</span>#1–5</li>
+  <li><b style="height:24px"></b><span>+15</span>#6–10</li>
+  <li><b style="height:12px"></b><span>+5</span>#11–20</li>
+  <li><b style="height:2px;background:rgba(120,140,160,.3)"></b><span>0</span>#21+</li>
+</ol>
+<p class="note">Head starts are scoring points: +25 = +0.25 Credit, +15 = +0.15 Credit, +5 = +0.05 Credit. Referral Credits (prototype) count toward <b>lifetime only</b>, never season/BNB ranking. Spending Credits on championships and decay of hoarded Credits are planned, not yet applied.</p>`;
+
 const who = r => { const handle = String(r.handle || "").replace(/^@+/, "") || String(r.account || "").replace(/^@+/, ""); const u = r.xUrl ?? E.xLink(handle); const label = handle ? `@${handle}` : esc(r.account); return u ? `<a href="${esc(u)}" rel="noopener nofollow" target="_blank">${esc(label)}</a>` : `<span class="h">${esc(label)}</span>`; };
 const pc = i => i < 3 ? ` p${i + 1}` : "";
 const power = (v, max) => { const n = max > 0 ? Math.ceil(10 * Math.max(0, v) / max) : 0; return `<span class="bar" role="img" aria-label="${n} of 10 credit cells">${Array.from({ length: 10 }, (_, k) => `<i class="${k < n ? "f" : ""}"></i>`).join("")}</span>`; };
+
 function scoreBoard(window) {
   const base = E.baseEnergy(tasks.tasks, window, CONFIG);
   const rows = roster.accounts.map(a => ({ account: a.account, handle: a.handle, score: Math.round(E.finalScore(base.get(a.account) || 0, a.seedUsd, CONFIG)) }));
   rows.sort((a, b) => b.score - a.score || String(a.account).localeCompare(String(b.account)));
-  const lead = rows[0]?.score || 0;
-  return { rows, lead, byAccount: Object.fromEntries(rows.map(r => [r.account, r])) };
+  return { rows, lead: rows[0]?.score || 0, byAccount: Object.fromEntries(rows.map(r => [r.account, r])) };
 }
-const lifeBoard = () => scoreBoard({ from: LIFETIME_START.slice(0, 10), to: ASOF }); // [campaign launch, asOf) — excludes prelaunch; does not reset on Season 2+
-const seasonBoard = () => scoreBoard({ from: SEASON.start.slice(0, 10), to: SEASON.end.slice(0, 10) }); // [season start, season end)
+// Full ISO boundaries — no .slice(0,10). Date-only ASOF ⇒ noon -05:00 via toInstantMs inside engine.
+const lifeBoard = () => scoreBoard({ from: LIFETIME_START, to: ASOF });
+const seasonBoard = () => scoreBoard({ from: SEASON.start, to: SEASON.end });
+
 function progRow(label, pts, lead, emptyNote) {
-  const pct = lead > 0 ? Math.min(100, Math.round(1000 * pts / lead) / 10) : 0;
-  const val = Number.isFinite(pts) ? pts : 0;
+  const pct = lead > 0 ? Math.min(100, Math.round(1000 * Math.max(0, pts) / lead) / 10) : 0;
+  const val = Number.isFinite(pts) ? Math.max(0, pts) : 0;
   const note = val === 0 && emptyNote ? ` · ${emptyNote}` : "";
   return `<div><div class="lab"><span>${esc(label)}${esc(note)}</span><b>${fmtB(val)} credits</b></div><div class="track" aria-label="${esc(label)} ${fmtB(val)} credits, ${pct}% of period leader"><i style="width:${pct}%"></i></div></div>`;
 }
+
+function pagerHtml(page, pages, where) {
+  return `<div class="pager" role="navigation" aria-label="Top 20 pages ${where}">
+    <button type="button" data-pg="prev" ${page<=0?"disabled":""} aria-label="Previous page">Prev</button>
+    ${Array.from({length: pages}, (_,i)=>`<button type="button" data-pg="${i}" class="${i===page?"on":""}" aria-label="Page ${i+1}" aria-current="${i===page?"page":"false"}">${i+1}</button>`).join("")}
+    <button type="button" data-pg="next" ${page>=pages-1?"disabled":""} aria-label="Next page">Next</button>
+    <span class="meta">Ranks ${page*PAGE_SIZE+1}–${Math.min(BOARD_SHOWN,(page+1)*PAGE_SIZE)} of ${BOARD_SHOWN}</span>
+    <button type="button" data-pg="compact" class="ghost" aria-pressed="${compact}">${compact?"Show details":"Compact board"}</button>
+  </div>`;
+}
+
+function bindPager(root) {
+  root.querySelectorAll("[data-pg]").forEach(b => b.onclick = () => {
+    const v = b.dataset.pg;
+    const pages = Math.ceil(BOARD_SHOWN / PAGE_SIZE);
+    if (v === "prev") boardPage = Math.max(0, boardPage - 1);
+    else if (v === "next") boardPage = Math.min(pages - 1, boardPage + 1);
+    else if (v === "compact") { compact = !compact; document.getElementById("app").classList.toggle("compact", compact); }
+    else boardPage = +v;
+    render();
+  });
+}
+
 function render() {
+  document.getElementById("app").classList.toggle("compact", compact);
   if (tab === "board") {
-    const rows = E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }).slice(0, BOARD_SHOWN);
-    out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN} · Credits <span class="note" style="text-transform:none;letter-spacing:0;font-family:Inter,sans-serif">— rank ${BOARD_SHOWN + 1}+? search your handle</span></h3>` + rows.map((r, i) =>
-      `<div class="row${pc(i)}"><div class="rk">${r.rank}</div><div class="who">${who(r)}</div><div class="pts">${power(r.score, rows[0].score)}<span class="n">${fmtB(r.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`).join("") + "</section>";
+    const all = E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }).slice(0, BOARD_SHOWN);
+    const pages = Math.ceil(all.length / PAGE_SIZE) || 1;
+    boardPage = Math.min(boardPage, pages - 1);
+    const slice = all.slice(boardPage * PAGE_SIZE, (boardPage + 1) * PAGE_SIZE);
+    out.innerHTML = `<section class="card"><div class="board-head"><h3 style="margin:0">Season ${CURRENT_SEASON} · sample preview · Top ${BOARD_SHOWN}</h3>${pagerHtml(boardPage, pages, "top")}</div>
+      <p class="note">Synthetic sample — not live Season ${CURRENT_SEASON} standings. Rank ${BOARD_SHOWN + 1}+? search your handle.</p>
+      ${slice.map((r, i) => { const gi = boardPage * PAGE_SIZE + i; return `<div class="row${pc(gi)}"><div class="rk">${r.rank}</div><div class="who">${who(r)}</div><div class="pts">${power(r.score, all[0].score)}<span class="n">${fmtB(r.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`; }).join("")}
+      ${pagerHtml(boardPage, pages, "bottom")}</section>`;
+    bindPager(out);
   } else if (tab === "champ" || tab === "race") {
     const c = E.championship(tre.races, tasks.tasks, roster.accounts);
-    if (tab === "champ") out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} championship · season points</h3>` +
+    if (tab === "champ") out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} championship · season points (sample)</h3>` +
       c.standings.slice(0, BOARD_SHOWN).map((s, i) => `<div class="row${pc(i)}"><div class="rk">${s.rank}</div><div class="who">${who({ handle: String(s.account).replace(/^@+/, ""), account: s.account })}</div><div class="pts"><span class="n">${fmt(s.points)}</span>&nbsp;<span class="unit">season pts</span></div></div>`).join("") + "</section>";
-    else out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · Credits</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: String(x.account).replace(/^@+/, ""), account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmtB(x.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
+    else out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · Credits (sample)</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: String(x.account).replace(/^@+/, ""), account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmtB(x.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
   } else {
     const cum = E.cumulativeRaised(tre.inflows);
-    out.innerHTML = `<section class="card hero"><div><div class="big">${fmt(E.treasuryIndex(cum))}</div><div class="unit">Treasury index</div></div><p class="note">Based on cumulative raised (${fmt(cum)}, sample inflows only; outflows ignored). Unitless recognition index — not $, not tokens, not a commitment. Wallet balance is not used.</p></section>`;
+    out.innerHTML = `<section class="card hero"><div><div class="big">${fmt(E.treasuryIndex(cum))}</div><div class="unit">Treasury index</div></div><p class="note">Based on cumulative raised (${fmt(cum)}, sample inflows only; outflows ignored). Unitless recognition index — not $, not tokens, not a commitment.</p></section>`;
   }
 }
-// SEARCH-BEGIN (pure; extracted by tests/run.mjs)
+
+// SEARCH-BEGIN
 const normHandle = q => String(q ?? "").trim().replace(/^@+/, "").toLowerCase();
 function searchRows(allRows, q) { const h = normHandle(q); if (!h) return null; return allRows.filter(r => String(r.handle ?? "").replace(/^@+/, "").toLowerCase() === h || String(r.account ?? "").replace(/^@+/, "").toLowerCase() === h); }
 // SEARCH-END
+
+function memStore() { let s = null; return { get: () => s, set: v => { s = v; } }; }
+
+R.activatePending({ cfg: SEASON, now: Date.now(), storeApi });
+
+function referralPanel(handle) {
+  const link = R.referralLink(location.origin + location.pathname.replace(/index\.html$/, ""), handle);
+  const st = R.statsFor(handle, storeApi);
+  const rawBonus = R.lifetimeReferralRaw(handle, storeApi, CONFIG.POINTS_PER_BATTERY);
+  return `<div class="refbox"><div><b>Referral link</b> (Season ${CURRENT_SEASON} prototype)</div>
+    <div class="rowline"><input readonly id="reflink" value="${esc(link || "")}" aria-label="Referral link"><button type="button" class="btn" id="refcopy">Copy</button></div>
+    <div class="note">Referrals: <b>${st.referrals}</b> · Lifetime bonus earned: <b>${fmt(st.bonusCredits)}</b> credits${st.pendingBonusCredits ? ` · <b>${fmt(st.pendingBonusCredits)}</b> pending until ${esc(launchLabel)}` : ""}${rawBonus ? ` (${fmtB(rawBonus)} credits from referrals in lifetime bar)` : ""}</div>
+    <p class="warnproto">Local prototype — saved in this browser only; no verified accounts or payout entitlement. Referral Credits count toward lifetime only — not Season ${CURRENT_SEASON} / BNB ranking.</p></div>`;
+}
+
 let allRows = null;
 const sres = document.getElementById("sres");
-document.getElementById("sform").onsubmit = ev => { ev.preventDefault();
-  const q = document.getElementById("q").value;
+function runSearch(q) {
   allRows ??= E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }, { ...CONFIG, BOARD_SIZE: Infinity });
-  const hits = searchRows(allRows, q);
+  // Include locally registered referred handles as synthetic zero-activity rows for search
+  const local = R.listLocalHandles(storeApi);
+  const extras = local.filter(h => !allRows.some(r => r.account === h)).map(h => ({ account: h, handle: h.slice(1), score: 0, rank: null, xUrl: E.xLink(h.slice(1)) }));
+  const pool = allRows.concat(extras.map((r, i) => ({ ...r, rank: "—", classification: "Unranked", next: "—" })));
+  const hits = searchRows(pool, q);
   if (hits === null) { sres.innerHTML = `<section class="card note">Enter an X handle to search.</section>`; return; }
-  if (!hits.length) { sres.innerHTML = `<section class="card note">No contributor found for “${esc(normHandle(q))}” (${fmt(allRows.length)} searched).</section>`; return; }
+  if (!hits.length) { sres.innerHTML = `<section class="card note">No contributor found for “${esc(normHandle(q))}”.</section>`; return; }
   const life = lifeBoard(); const sea = seasonBoard();
+  // Lead for lifetime bar includes referral raw among locals+roster for scale (roster tasks only for lead from life.lead; add max referral)
   sres.innerHTML = hits.map(r => {
-    const L = life.byAccount[r.account]?.score || 0; const S = sea.byAccount[r.account]?.score || 0;
-    return `<section class="card hero"><div><div class="big">#${fmt(r.rank)}</div><div class="unit">of ${fmt(allRows.length)}${r.rank > BOARD_SHOWN ? ` · outside top ${BOARD_SHOWN}` : ""}</div></div>
+    const taskLife = life.byAccount[r.account]?.score || 0;
+    const refRaw = R.lifetimeReferralRaw(r.account, storeApi, CONFIG.POINTS_PER_BATTERY);
+    const L = taskLife + refRaw;
+    const S = sea.byAccount[r.account]?.score || 0;
+    const lifeLead = Math.max(life.lead, L, 1);
+    const seaLead = Math.max(sea.lead, 1);
+    const rankLabel = r.rank == null || r.rank === "—" ? "—" : `#${fmt(r.rank)}`;
+    const outside = typeof r.rank === "number" && r.rank > BOARD_SHOWN;
+    return `<section class="card hero"><div><div class="big">${rankLabel}</div><div class="unit">${typeof r.rank === "number" ? `of ${fmt(allRows.length)}${outside ? ` · outside top ${BOARD_SHOWN}` : ""}` : "local signup · no season rank yet"}</div></div>
       <div class="who">${who(r)}
-        <div class="pts" style="justify-content:flex-start;margin-top:6px">${power(r.score, allRows[0].score)}<span class="big" style="font-size:28px">${fmtB(r.score)}</span>&nbsp;<span class="unit">credits</span></div>
+        <div class="pts" style="justify-content:flex-start;margin-top:6px">${typeof r.score === "number" && r.rank !== "—" ? power(r.score, allRows[0].score) : ""}<span class="big" style="font-size:26px">${fmtB((r.score||0) + refRaw)}</span>&nbsp;<span class="unit">credits</span></div>
         <div class="prog">
-          ${progRow(`Season ${CURRENT_SEASON} credits · vs season leader`, S, sea.lead, "No Season 1 activity yet")}
-          ${progRow("Lifetime credits · vs lifetime leader", L, life.lead, "No campaign activity yet")}
+          ${progRow(`Season ${CURRENT_SEASON} credits · vs season leader (counting begins ${seasonStartLabel})`, S, seaLead, "No Season 1 activity yet")}
+          ${progRow(`Lifetime credits · vs lifetime leader (counting begins ${launchLabel})`, L, lifeLead, "No campaign activity yet")}
         </div>
+        ${referralPanel(r.account)}
       </div></section>`;
-  }).join("") + (hits.length > 1 ? `<p class="note">Multiple accounts share this handle; all shown.</p>` : "");
-};
+  }).join("");
+  sres.querySelectorAll("#refcopy").forEach(btn => btn.onclick = async () => {
+    const inp = btn.parentElement.querySelector("#reflink");
+    try { await navigator.clipboard.writeText(inp.value); btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1200); } catch { inp.select(); }
+  });
+}
+
+document.getElementById("sform").onsubmit = ev => { ev.preventDefault(); runSearch(document.getElementById("q").value); };
+
+// Referral landing: ?ref=handle
+(function referralLanding() {
+  const ref = R.decodeRef(new URLSearchParams(location.search).get("ref"));
+  const box = document.getElementById("refSignup");
+  if (!ref) return;
+  box.hidden = false;
+  box.innerHTML = `<h3>Join via referral</h3>
+    <p class="note">Referrer <b>${esc(ref)}</b>. Enter your X handle to register in this browser only.</p>
+    <form id="join" class="s"><input id="newh" maxlength="15" placeholder="your_handle" aria-label="Your X handle"><button class="btn" type="submit">Sign up</button></form>
+    <p class="warnproto">Local prototype — saved in this browser only; no verified accounts or payout entitlement. Welcome + referrer Credits are lifetime-only; before ${esc(launchLabel)} they show as pending.</p>
+    <div id="joinMsg" class="note"></div>`;
+  box.querySelector("#join").onsubmit = ev => {
+    ev.preventDefault();
+    const res = R.registerReferral({ referrerRaw: ref, newRaw: box.querySelector("#newh").value, rosterAccounts: rosterSet.concat(R.listLocalHandles(storeApi)), cfg: SEASON, now: Date.now(), storeApi });
+    const msg = box.querySelector("#joinMsg");
+    if (!res.ok) { msg.textContent = res.error; return; }
+    msg.innerHTML = res.status === "pending"
+      ? `Registered <b>${esc(res.handle)}</b>. Bonuses pending until campaign launch (${esc(launchLabel)}): referrer +${res.referrerCredits} / you +${res.welcomeCredits} Credits (lifetime only).`
+      : `Registered <b>${esc(res.handle)}</b>. Lifetime Credits granted: referrer +${res.referrerCredits} / you +${res.welcomeCredits}.`;
+    runSearch(res.handle);
+  };
+})();
+
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("nav button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b); }); render(); });
+document.addEventListener("keydown", e => {
+  if (tab !== "board") return;
+  if (e.key === "ArrowLeft") { boardPage = Math.max(0, boardPage - 1); render(); }
+  if (e.key === "ArrowRight") { boardPage = Math.min(Math.ceil(BOARD_SHOWN / PAGE_SIZE) - 1, boardPage + 1); render(); }
+});
 render();
 </script></body></html>

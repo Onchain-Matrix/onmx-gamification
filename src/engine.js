@@ -1,7 +1,7 @@
 // ONMX Gamification shared scoring engine — PROVISIONAL, NEW, UNAPPROVED LOGIC.
 // No existing production scoring source was found (read-only check of OnchainNeo GitHub + /workspace).
 // Used by BOTH the dashboard (index.html) and the simulation (sim/) — one implementation.
-import { CONFIG } from "./config.js";
+import { CONFIG, inHalfOpenWindow } from "./config.js";
 
 const DAY_MS = 86400000;
 export function safeNum(x, cfg = CONFIG) {
@@ -25,10 +25,10 @@ export function taskEnergy(task, cfg = CONFIG) {
 
 // Base (own) energy per account from tasks, optional date window [from, to). One-time tasks dedup.
 export function baseEnergy(tasks, { from, to } = {}, cfg = CONFIG) {
+  // Window is [from, to) in real ms. Date-only fixtures count as noon -05:00 (see toInstantMs).
   const out = new Map(); const seenOnce = new Set();
   for (const t of tasks) {
-    if (from && utcDay(t.date) < utcDay(from)) continue;
-    if (to && utcDay(t.date) >= utcDay(to)) continue;
+    if (!inHalfOpenWindow(t.date, from, to)) continue;
     if (cfg.ONE_TIME_TASKS.includes(t.type)) { const k = t.account + "|" + t.type; if (seenOnce.has(k)) continue; seenOnce.add(k); }
     out.set(t.account, Math.min((out.get(t.account) || 0) + taskEnergy(t, cfg), cfg.MAX_VALUE));
   }
@@ -96,7 +96,7 @@ export function referralEnergy(tree, base, lastActive, asOf, cfg = CONFIG) {
   return out;
 }
 
-// Next-round head start from previous-round placement (1-based). Not cumulative; 0 outside top 10 or no prior round.
+// Next-round head start from previous-round placement (1-based). Not cumulative; 0 outside top 20 or no prior round.
 export function headStart(prevRank, cfg = CONFIG) {
   const r = Math.floor(Number(prevRank)); const P = cfg.HEADSTART.placement;
   return r >= 1 && r <= P.length ? P[r - 1] : 0;

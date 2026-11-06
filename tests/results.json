@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 38,
-  "passed": 38,
+  "total": 42,
+  "passed": 42,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -71,7 +71,7 @@
    "pass": true
   },
   {
-   "name": "head start: +25 for prev #1-5, +15 for #6-10, 0 for #11+/none (raw points)",
+   "name": "head start: +25 #1-5, +15 #6-10, +5 #11-20, 0 #21+/none (raw scoring points)",
    "pass": true
   },
   {
@@ -87,7 +87,7 @@
    "pass": true
   },
   {
-   "name": "sample data: round 2 head starts = 25 (top5) / 15 (6-10) from round 1, 0 below",
+   "name": "sample data: round 2 head starts = 25 (top5) / 15 (6-10) / 5 (11-20) from round 1",
    "pass": true
   },
   {
@@ -156,6 +156,22 @@
   },
   {
    "name": "season/lifetime boundaries: prelaunch excluded from both; launch included; season end excluded from season but in lifetime; lifetimeStart fixed if season moves",
+   "pass": true
+  },
+  {
+   "name": "SEASON config: prizes 1 BNB + USD split/band; tasks drive TASK_WEIGHTS; offsets -05:00",
+   "pass": true
+  },
+  {
+   "name": "toInstantMs / inHalfOpenWindow: date-only=noon-05; exact noon; 11:59:59; end exclusive",
+   "pass": true
+  },
+  {
+   "name": "index: sample preview label, prize band, bar start copy, headstart +5, pager, no battery",
+   "pass": true
+  },
+  {
+   "name": "referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending before launch; lifetime-only raw; disable",
    "pass": true
   }
  ]
