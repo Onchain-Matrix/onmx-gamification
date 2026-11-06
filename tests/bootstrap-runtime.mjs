@@ -74,6 +74,17 @@ t("Node DOM harness: bootstrap fills season/prize/out and referral with ?ref=", 
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 globalThis.fetch = async (u) => {
+  const href = String(u);
+  if (/onmx-gamification-claims\.onmx\.workers\.dev/.test(href)) {
+    const body = JSON.stringify({
+      ok: true,
+      policyVersion: "claims-policy-v1",
+      readiness: { xLoginEnabled: false, productionGrantsEnabled: false, receiptVerification: "decoder_implemented_grants_off", sessionSecrets: true },
+      receipts: { available: true, acceptsFakeFixtures: false, productionGrantsEnabled: false },
+      blockers: ["X OAuth app secrets not configured (X_CLIENT_ID / X_CLIENT_SECRET / X_REDIRECT_URI)"]
+    });
+    return { ok: true, status: 200, json: async () => JSON.parse(body), text: async () => body };
+  }
   const url = new URL(u, pathToFileURL(${JSON.stringify(root + "/")}).href);
   const path = url.protocol === "file:" ? decodeURIComponent(url.pathname) : url.pathname;
   const body = readFileSync(path, "utf8");
@@ -86,6 +97,7 @@ const el = () => {
     setAttribute(){}, onclick: null, onsubmit: null, oninput: null,
     querySelector(){ return el(); }, querySelectorAll(){ return []; },
     prepend(n){ this.innerHTML = ((n && n.innerHTML) || "") + this.innerHTML; },
+    appendChild(n){ this.innerHTML += (n && n.innerHTML) || ""; this._kids = this._kids || []; this._kids.push(n); },
     select(){},
   };
   return o;
