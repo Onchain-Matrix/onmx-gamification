@@ -2,30 +2,26 @@
 
 Private durable ledger API for optional seed-claim identity bridge.
 
-- **URL:** `https://onmx-gamification-claims.onmx.workers.dev`
-- **Account:** Cloudflare account bound to Onchain Matrix (workers.dev subdomain `onmx`)
-- **D1:** `onmx-gamification-claims`
+- **URL:** https://onmx-gamification-claims.onmx.workers.dev
+- **D1:** `onmx-gamification-claims` (`15b34c40-9980-4d8b-833c-59f20ec02825`)
 - Ordinary play does **not** require a wallet.
-- X login / production grants / receipt credits stay **fail-closed** until product X OAuth secrets, verified seed ABI/events, and RPC are configured.
-- Do **not** reuse Grok Bot X connector tokens.
+- Prefer **Bearer** sessions for Pages→workers.dev (cookies unreliable cross-site).
+- X OAuth 2.0 PKCE implemented; fail-closed until `X_CLIENT_ID` / `X_CLIENT_SECRET` / `X_REDIRECT_URI` Worker secrets exist.
+- Receipt decoder implemented (dApp m0 ABI); ETH+BNB mined fixtures cross-checked. **Production grants OFF**.
+- USD from `SeedPurchaseCompleted.paymentAmount` + USDT decimals/transfer — never calldata `tokenAmount` (ONMX qty).
 
-## Endpoints
+## Product X OAuth config needed (parent/owner)
 
-| Method | Path | Notes |
-|--------|------|-------|
-| GET | `/health` | Liveness |
-| GET | `/v1/config` | Public policy + readiness/blockers (no secrets) |
-| POST | `/v1/auth/x/start` | 503 until X_CLIENT_* secrets exist |
-| POST | `/v1/auth/wallet/challenge` | SIWE challenge (CORS: Pages origin) |
-| POST | `/v1/auth/wallet/verify` | EIP-191 verify; HttpOnly session cookie |
-| GET | `/v1/me` | Authenticated identity |
-| GET | `/v1/claims` | Authenticated claims list |
-| POST | `/v1/claims/receipt` | Fail-closed without ABI; fixtures only when `ALLOW_TEST_FIXTURE_RECEIPTS=1` (never in production) |
+| Secret | Purpose |
+|--------|---------|
+| `X_CLIENT_ID` | X developer app client id |
+| `X_CLIENT_SECRET` | X developer app client secret |
+| `X_REDIRECT_URI` | Must be `https://onmx-gamification-claims.onmx.workers.dev/v1/auth/x/callback` |
+
+Do **not** reuse Grok Bot X connector tokens.
 
 ## Tests
 
 ```bash
 npm test
 ```
-
-Uses Vitest + `@cloudflare/vitest-pool-workers` (Miniflare/workerd), not a real browser.

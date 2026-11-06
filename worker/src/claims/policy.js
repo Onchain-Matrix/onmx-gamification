@@ -134,7 +134,8 @@ export function publicConfig(env) {
       xLoginUiSafe: xConfigured, // parent still must supply product app secrets
       sessionModes: ["bearer", "cookie"],
       preferredCrossSiteSession: "bearer",
-      receiptVerification: "see_receipts_block",
+      // Human/derived; nested `receipts` on /v1/config carries full decoder status.
+      receiptVerification: "decoder_implemented_grants_off",
       rpc: rpcConfigured,
       productionGrantsEnabled: false,
       ordinaryPlayRequiresWallet: false,
@@ -143,8 +144,8 @@ export function publicConfig(env) {
     blockers: [
       !sessionConfigured && "SESSION_SECRET missing or too short",
       !xConfigured && "X OAuth app secrets not configured (X_CLIENT_ID / X_CLIENT_SECRET / X_REDIRECT_URI)",
-      "Seed sale decoder implemented from dApp ABI; production grants OFF until X OAuth + owner prelaunch policy + mined crosscheck",
-      !rpcConfigured && "Chain RPC URLs optional for future EIP-1271/receipts — grants still blocked without ABI",
+      "Seed sale decoder implemented (ETH+BNB mined cross-checked); production grants OFF until X OAuth secrets + owner prelaunch policy",
+      !rpcConfigured && "BNB_RPC_URL / ETH_RPC_URL unset — public RPC defaults used for receipts; EIP-1271 optional eth_call needs reachable RPC",
     ].filter(Boolean),
     contracts: POLICY.contracts,
     corsOrigin: env.ALLOWED_ORIGIN || "https://onchain-matrix.github.io",
