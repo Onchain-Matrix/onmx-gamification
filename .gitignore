@@ -9,3 +9,4 @@ worker/_mcp_deploy.js
 worker/.wrangler/
 tests/bootstrap-runtime-results.json
 .deploy-bundle/
+tests/claims-client-results.json
