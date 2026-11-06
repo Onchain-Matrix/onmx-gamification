@@ -1,7 +1,7 @@
 // Deterministic tests for the shared engine (src/engine.js). Writes tests/results.json.
 import { writeFileSync, readFileSync } from "node:fs";
 import * as E from "../src/engine.js";
-import { CONFIG, SEASON, toInstantMs, inHalfOpenWindow } from "../src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship } from "../src/config.js";
 import * as Ref from "../src/referral.js";
 import { transform } from "../tools/export-roster.mjs";
 import { makeAccounts, makeTasks } from "../sim/synth.js";
@@ -209,6 +209,40 @@ t("referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending
   const store2 = mem();
   const off = { ...SEASON, referral: { ...SEASON.referral, enabled: false } };
   eq(Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "x", rosterAccounts: ["@sample_syn_0103"], cfg: off, now: "2026-11-10T12:00:00-05:00", storeApi: store2 }).ok, false);
+});
+
+t("season status boundaries + completed list only configured", () => {
+  const s1 = SEASON_HISTORY[0];
+  eq(seasonStatus(s1, toInstantMs("2026-11-09T11:59:59-05:00")), "upcoming");
+  eq(seasonStatus(s1, toInstantMs("2026-11-09T12:00:00-05:00")), "active");
+  eq(seasonStatus(s1, toInstantMs("2026-11-23T11:59:59-05:00")), "active");
+  eq(seasonStatus(s1, toInstantMs("2026-11-23T12:00:00-05:00")), "completed");
+  eq(completedSeasons(SEASON_HISTORY, toInstantMs("2026-11-05T12:00:00-05:00")).length, 0);
+  eq(completedSeasons(SEASON_HISTORY, toInstantMs("2026-11-23T12:00:00-05:00")).map(s => s.number), [1]);
+  ok(SEASON_HISTORY.every(s => s.number === 1), "no invented future seasons in config");
+});
+t("cumulative championship: S1=20 skip S2 => 20; S3 adds; empty fixtures ignored; referral excluded", () => {
+  const hist = [
+    { number: 1, start: "2026-11-09T12:00:00-05:00", end: "2026-11-23T12:00:00-05:00", results: [{ account: "@a", handle: "a", score: 100, seasonPoints: 20 }] },
+    { number: 2, start: "2026-12-07T12:00:00-05:00", end: "2026-12-21T12:00:00-05:00", results: null },
+    { number: 3, start: "2027-01-04T12:00:00-05:00", end: "2027-01-18T12:00:00-05:00", results: [{ account: "@a", handle: "a", score: 10, seasonPoints: 15 }, { account: "@c", handle: "c", score: 9, seasonPoints: 12 }] },
+    { number: 4, start: "2027-02-01T12:00:00-05:00", end: "2027-02-14T12:00:00-05:00", results: [{ account: "@z", handle: "z", score: 0, seasonPoints: 0 }] }
+  ];
+  const mid = toInstantMs("2026-12-22T12:00:00-05:00");
+  eq(cumulativeChampionship(hist, mid).map(r => [r.account, r.points]), [["@a", 20]]);
+  const late = toInstantMs("2027-02-15T12:00:00-05:00");
+  const stand = cumulativeChampionship(hist, late);
+  eq(stand.find(r => r.account === "@a").points, 35);
+  eq(stand.find(r => r.account === "@c").points, 12);
+  ok(!stand.find(r => r.account === "@z"), "all-zero season ignored");
+  ok(!stand.some(r => r.referralCredits), "no referral field");
+});
+t("index Results + Championship tabs; Treasury branch unchanged", () => {
+  const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  ok(/data-t="results"/.test(h) && /cumulativeChampionship/.test(h));
+  ok(/upcoming \/ sample preview|upcoming\/sample preview|upcoming \/ sample/.test(h) || /upcoming/.test(h) && /not final winners/.test(h));
+  ok(/const cum = E\.cumulativeRaised\(tre\.inflows\)/.test(h));
+  ok(/data-t="treasury"/.test(h));
 });
 
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };

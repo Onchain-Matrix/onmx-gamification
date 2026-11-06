@@ -35,6 +35,65 @@ export const SEASON = Object.freeze({
   })
 });
 
+/**
+ * Retained season definitions for Results history + cumulative Championship.
+ * SEASON above is the active/editable current season; prior seasons are appended here when closed.
+ * Do not invent future seasons — only configured entries. Static Pages derives views at load time.
+ * status: "upcoming" | "active" | "completed" (derived from now vs start/end at runtime if omitted).
+ * results: optional retained top rows [{account, handle, score, seasonPoints}] after a season closes with real data.
+ * Empty/all-zero fixtures must NOT be treated as winners (see seasonStandings).
+ */
+export const SEASON_HISTORY = Object.freeze([
+  Object.freeze({
+    number: 1,
+    start: SEASON.start,
+    end: SEASON.end,
+    timeZone: SEASON.timeZone,
+    // No retained final results yet — Season 1 has not closed; UI shows sample preview only.
+    results: null
+  })
+]);
+
+export function seasonStatus(def, nowMs = Date.now()) {
+  const a = toInstantMs(def.start), b = toInstantMs(def.end), t = nowMs;
+  if (t < a) return "upcoming";
+  if (t >= b) return "completed";
+  return "active";
+}
+
+/** Completed seasons only (now >= end), newest first. */
+export function completedSeasons(history = SEASON_HISTORY, nowMs = Date.now()) {
+  return history.filter(s => seasonStatus(s, nowMs) === "completed").sort((x, y) => y.number - x.number);
+}
+
+/**
+ * Cumulative championship: SUM of retained per-season points across seasons played.
+ * Skipping a season adds 0 (no penalty/decay). Referral/airdrop credits excluded.
+ * Only counts seasons with real retained results (non-null, with positive seasonPoints somewhere).
+ */
+export function cumulativeChampionship(history = SEASON_HISTORY, nowMs = Date.now()) {
+  const totals = new Map();
+  for (const s of history) {
+    if (seasonStatus(s, nowMs) !== "completed") continue;
+    const rows = s.results;
+    if (!Array.isArray(rows) || !rows.length) continue;
+    if (!rows.some(r => (Number(r.seasonPoints) || 0) > 0)) continue; // ignore all-zero empty fixtures
+    for (const r of rows) {
+      const id = String(r.account || "");
+      if (!id) continue;
+      const cur = totals.get(id) || { account: id, handle: r.handle || id.replace(/^@/, ""), points: 0, seasonsPlayed: 0 };
+      cur.points += Number(r.seasonPoints) || 0;
+      cur.seasonsPlayed += 1;
+      if (r.handle) cur.handle = r.handle;
+      totals.set(id, cur);
+    }
+  }
+  const standings = [...totals.values()].filter(r => r.points > 0).sort((a, b) => b.points - a.points || String(a.account).localeCompare(String(b.account)));
+  standings.forEach((r, i) => { r.rank = i + 1; });
+  return standings;
+}
+
+
 const TASK_WEIGHTS = Object.freeze(Object.fromEntries(SEASON.tasks.map(t => [t.id, t.points])));
 
 export const CONFIG = Object.freeze({

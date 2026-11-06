@@ -22,7 +22,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 .rewards .card{margin:0;padding:12px 14px}
 .rewards h2{margin:0 0 4px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);font-family:Orbitron,Inter,sans-serif}
 .rewards p{margin:0;font-size:13px;color:var(--mute)}.rewards b{color:var(--txt)}
-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(10px)}
+nav{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(10px)}
 nav button{all:unset;cursor:pointer;text-align:center;padding:9px 6px;border-radius:10px;color:var(--mute);font-weight:600;font-size:14px}
 nav button:hover{color:var(--txt)}nav button.on{color:var(--bg0);background:linear-gradient(135deg,var(--cyan),var(--blue))}
 nav button:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
@@ -84,6 +84,7 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 </section>
 <nav role="tablist" aria-label="Sections">
   <button role="tab" data-t="board" class="on" aria-selected="true">Leaderboard</button>
+  <button role="tab" data-t="results" aria-selected="false">Results</button>
   <button role="tab" data-t="champ" aria-selected="false">Championship</button>
   <button role="tab" data-t="race" aria-selected="false">Credit results</button>
   <button role="tab" data-t="treasury" aria-selected="false">Treasury</button>
@@ -100,7 +101,7 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 </div>
 <script type="module">
 import * as E from "./src/engine.js";
-import { CONFIG, SEASON, toInstantMs } from "./src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship } from "./src/config.js";
 import * as R from "./src/referral.js";
 
 const CURRENT_SEASON = SEASON.number;
@@ -110,6 +111,7 @@ const BOARD_SHOWN = 20;
 const PAGE_SIZE = 10; // 2 pages × 10 = top 20
 let boardPage = 0;
 let compact = false;
+let resultsSeasonNum = null; // selected season in Results tab
 
 const [roster, tasks, tre] = await Promise.all(["data/sample-roster.json","data/sample-tasks.json","data/sample-treasury.json"].map(u => fetch(u).then(r => r.json())));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -207,11 +209,64 @@ function render() {
       ${slice.map((r, i) => { const gi = boardPage * PAGE_SIZE + i; return `<div class="row${pc(gi)}"><div class="rk">${r.rank}</div><div class="who">${who(r)}</div><div class="pts">${power(r.score, all[0].score)}<span class="n">${fmtB(r.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`; }).join("")}
       ${pagerHtml(boardPage, pages, "bottom")}</section>`;
     bindPager(out);
-  } else if (tab === "champ" || tab === "race") {
+  } else if (tab === "results") {
+    const now = Date.now();
+    const defs = SEASON_HISTORY;
+    const list = defs.map(s => ({ ...s, status: seasonStatus(s, now) }));
+    if (resultsSeasonNum == null) {
+      out.innerHTML = `<section class="card"><h3>Season results</h3>
+        <p class="note">Derived at page load from retained season config (static Pages — not a live server archive). Only configured seasons appear. Completed seasons list after their end time; winners require retained non-zero results.</p>
+        ${list.map(s => {
+          const st = s.status;
+          const label = st === "upcoming" ? "upcoming / sample preview — not final winners"
+            : st === "active" ? "in progress — not final winners"
+            : (Array.isArray(s.results) && s.results.some(r => (r.seasonPoints||0) > 0) ? "completed" : "completed — no retained winners yet");
+          return `<button type="button" class="btn ghost" data-rsn="${s.number}" style="display:block;width:100%;text-align:left;margin:6px 0;padding:12px">Season ${s.number} — ${esc(label)}</button>`;
+        }).join("")}</section>`;
+      out.querySelectorAll("[data-rsn]").forEach(b => b.onclick = () => { resultsSeasonNum = +b.dataset.rsn; render(); });
+    } else {
+      const s = defs.find(x => x.number === resultsSeasonNum) || SEASON_HISTORY[0];
+      const st = seasonStatus(s, now);
+      const pages = Math.ceil(BOARD_SHOWN / PAGE_SIZE) || 1;
+      boardPage = Math.min(boardPage, pages - 1);
+      let rows = [];
+      let banner = "";
+      if (st !== "completed") {
+        // Upcoming/active: synthetic sample preview top 20 — not final winners
+        rows = E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }).slice(0, BOARD_SHOWN);
+        banner = `<p class="note"><b>Season ${s.number} — ${st === "upcoming" ? "upcoming" : "in progress"} / sample preview; not final winners.</b> Showing synthetic sample top ${BOARD_SHOWN} for layout testing only.</p>`;
+      } else if (Array.isArray(s.results) && s.results.some(r => (Number(r.seasonPoints)||0) > 0)) {
+        rows = [...s.results].sort((a,b) => (b.score-a.score) || String(a.account).localeCompare(b.account)).slice(0, BOARD_SHOWN)
+          .map((r,i) => ({ ...r, rank: i+1 }));
+        banner = `<p class="note">Retained Season ${s.number} results (static snapshot).</p>`;
+      } else {
+        banner = `<p class="note"><b>Season ${s.number} is completed, but no eligible retained winners are stored.</b> All-zero / empty fixtures are not awarded as winners.</p>`;
+        rows = [];
+      }
+      const slice = rows.slice(boardPage * PAGE_SIZE, (boardPage + 1) * PAGE_SIZE);
+      const maxScore = rows[0]?.score || 1;
+      out.innerHTML = `<section class="card"><div class="board-head"><button type="button" class="btn ghost" id="rsBack">← Seasons</button><h3 style="margin:0">Season ${s.number} · Top ${BOARD_SHOWN}</h3>${rows.length?pagerHtml(boardPage, pages, "results"):""}</div>
+        ${banner}
+        ${slice.map((r,i) => { const gi = boardPage*PAGE_SIZE+i; return `<div class="row${pc(gi)}"><div class="rk">${r.rank}</div><div class="who">${who(r)}</div><div class="pts">${power(r.score||0, maxScore)}<span class="n">${fmtB(r.score||0)}</span>&nbsp;<span class="unit">credits</span></div></div>`; }).join("") || "<p class=\"note\">No rows.</p>"}
+        ${rows.length?pagerHtml(boardPage, pages, "results-bottom"):""}</section>`;
+      const back = out.querySelector("#rsBack"); if (back) back.onclick = () => { resultsSeasonNum = null; render(); };
+      bindPager(out);
+    }
+  } else if (tab === "champ") {
+    const now = Date.now();
+    const standings = cumulativeChampionship(SEASON_HISTORY, now);
+    const pages = Math.max(1, Math.ceil(Math.max(standings.length, 1) / PAGE_SIZE));
+    boardPage = Math.min(boardPage, pages - 1);
+    const slice = standings.slice(boardPage * PAGE_SIZE, (boardPage + 1) * PAGE_SIZE);
+    out.innerHTML = `<section class="card"><div class="board-head"><h3 style="margin:0">Championship · cumulative season points</h3>${standings.length?pagerHtml(boardPage, pages, "champ"):""}</div>
+      <p class="note">Sum of retained per-season championship points across completed seasons (same F1-style season points from the engine — not Credits, not referral/airdrop). Skipping a season adds 0; totals carry forward. Derived at page load from retained config — not a live server.</p>
+      ${standings.length ? slice.map((s,i) => { const gi=boardPage*PAGE_SIZE+i; return `<div class="row${pc(gi)}"><div class="rk">${s.rank}</div><div class="who">${who({ handle: s.handle, account: s.account })}</div><div class="pts"><span class="n">${fmt(s.points)}</span>&nbsp;<span class="unit">cum. season pts</span></div></div>`; }).join("") + pagerHtml(boardPage, pages, "champ-bottom")
+        : `<p class="note">No completed seasons with retained winners yet. Season ${CURRENT_SEASON} is ${seasonStatus(SEASON_HISTORY[0], now)} — cumulative standings appear after seasons close with real results.</p>`}
+      </section>`;
+    if (standings.length) bindPager(out);
+  } else if (tab === "race") {
     const c = E.championship(tre.races, tasks.tasks, roster.accounts);
-    if (tab === "champ") out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} championship · season points (sample)</h3>` +
-      c.standings.slice(0, BOARD_SHOWN).map((s, i) => `<div class="row${pc(i)}"><div class="rk">${s.rank}</div><div class="who">${who({ handle: String(s.account).replace(/^@+/, ""), account: s.account })}</div><div class="pts"><span class="n">${fmt(s.points)}</span>&nbsp;<span class="unit">season pts</span></div></div>`).join("") + "</section>";
-    else out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · Credits (sample)</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: String(x.account).replace(/^@+/, ""), account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmtB(x.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
+    out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · Credits (sample)</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: String(x.account).replace(/^@+/, ""), account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmtB(x.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
   } else {
     const cum = E.cumulativeRaised(tre.inflows);
     out.innerHTML = `<section class="card hero"><div><div class="big">${fmt(E.treasuryIndex(cum))}</div><div class="unit">Treasury index</div></div><p class="note">Based on cumulative raised (${fmt(cum)}, sample inflows only; outflows ignored). Unitless recognition index — not $, not tokens, not a commitment.</p></section>`;
@@ -300,7 +355,7 @@ document.getElementById("sform").onsubmit = ev => { ev.preventDefault(); runSear
   };
 })();
 
-document.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("nav button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b); }); render(); });
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; if (tab !== "results") resultsSeasonNum = null; boardPage = 0; document.querySelectorAll("nav button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b); }); render(); });
 document.addEventListener("keydown", e => {
   if (tab !== "board") return;
   if (e.key === "ArrowLeft") { boardPage = Math.max(0, boardPage - 1); render(); }

@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 42,
-  "passed": 42,
+  "total": 45,
+  "passed": 45,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -172,6 +172,18 @@
   },
   {
    "name": "referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending before launch; lifetime-only raw; disable",
+   "pass": true
+  },
+  {
+   "name": "season status boundaries + completed list only configured",
+   "pass": true
+  },
+  {
+   "name": "cumulative championship: S1=20 skip S2 => 20; S3 adds; empty fixtures ignored; referral excluded",
+   "pass": true
+  },
+  {
+   "name": "index Results + Championship tabs; Treasury branch unchanged",
    "pass": true
   }
  ]
