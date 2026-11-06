@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 45,
-  "passed": 45,
+  "total": 47,
+  "passed": 47,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -184,6 +184,14 @@
   },
   {
    "name": "index Results + Championship tabs; Treasury branch unchanged",
+   "pass": true
+  },
+  {
+   "name": "treasuryBuyPoints boundaries 99.99/100/999.99/1000/10000/10000.01",
+   "pass": true
+  },
+  {
+   "name": "Treasury tab copy + brackets from SEASON; index formula sample 35000 => 450",
    "pass": true
   }
  ]

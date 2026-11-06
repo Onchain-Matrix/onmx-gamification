@@ -1,7 +1,7 @@
 // Deterministic tests for the shared engine (src/engine.js). Writes tests/results.json.
 import { writeFileSync, readFileSync } from "node:fs";
 import * as E from "../src/engine.js";
-import { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship } from "../src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints } from "../src/config.js";
 import * as Ref from "../src/referral.js";
 import { transform } from "../tools/export-roster.mjs";
 import { makeAccounts, makeTasks } from "../sim/synth.js";
@@ -243,6 +243,29 @@ t("index Results + Championship tabs; Treasury branch unchanged", () => {
   ok(/upcoming \/ sample preview|upcoming\/sample preview|upcoming \/ sample/.test(h) || /upcoming/.test(h) && /not final winners/.test(h));
   ok(/const cum = E\.cumulativeRaised\(tre\.inflows\)/.test(h));
   ok(/data-t="treasury"/.test(h));
+});
+
+t("treasuryBuyPoints boundaries 99.99/100/999.99/1000/10000/10000.01", () => {
+  eq(treasuryBuyPoints(99.99), 0);
+  eq(treasuryBuyPoints(100), 10);
+  eq(treasuryBuyPoints(999.99), 10);
+  eq(treasuryBuyPoints(1000), 100);
+  eq(treasuryBuyPoints(10000), 100);
+  eq(treasuryBuyPoints(10000.01), 250);
+  eq(treasuryBuyPoints(-1), 0);
+  eq(treasuryBuyPoints("x"), 0);
+});
+t("Treasury tab copy + brackets from SEASON; index formula sample 35000 => 450", () => {
+  eq(E.treasuryIndex(35000), 450);
+  eq(SEASON.treasuryBuy.brackets.map(b => [b.label, b.points]), [
+    ["$100–under $1,000", 10], ["$1,000–$10,000", 100], ["Over $10,000", 250]
+  ]);
+  const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  ok(/Unitless recognition metric/.test(h));
+  ok(/BNB prize pool/.test(h));
+  ok(/SEASON\.treasuryBuy\.brackets/.test(h));
+  ok(/Ranking integration is undecided/.test(h));
+  ok(/bonus scoring points/.test(h));
 });
 
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };

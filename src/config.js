@@ -32,6 +32,17 @@ export const SEASON = Object.freeze({
     referrerCredits: 10, // Credits (display); lifetime-only
     welcomeCredits: 5,
     campaignId: "onmx-campaign"
+  }),
+  // Treasury buy-in bonus SCORING POINTS (not Credits). Half-open then closed at top of mid band:
+  // 100 <= usd < 1000 => 10; 1000 <= usd <= 10000 => 100; usd > 10000 => 250; usd < 100 => 0.
+  // INTEGRATION UNDECIDED: these points are displayed as a schedule only — not auto-applied to
+  // leaderboard / season / BNB ranking until owner chooses the scoring destination.
+  treasuryBuy: Object.freeze({
+    brackets: Object.freeze([
+      Object.freeze({ minUsd: 100, maxUsd: 1000, maxInclusive: false, points: 10, label: "$100–under $1,000" }),
+      Object.freeze({ minUsd: 1000, maxUsd: 10000, maxInclusive: true, points: 100, label: "$1,000–$10,000" }),
+      Object.freeze({ minUsd: 10000, maxUsd: null, maxInclusive: false, points: 250, label: "Over $10,000", exclusiveMin: true })
+    ])
   })
 });
 
@@ -132,4 +143,14 @@ export function inHalfOpenWindow(iso, from, to) {
   if (from != null && from !== "" && t < toInstantMs(from)) return false;
   if (to != null && to !== "" && t >= toInstantMs(to)) return false;
   return true;
+}
+
+/** Treasury buy-in bonus scoring points from SEASON.treasuryBuy. usd < 100 => 0. */
+export function treasuryBuyPoints(usd, season = SEASON) {
+  const x = Number(usd);
+  if (!Number.isFinite(x) || x < 100) return 0;
+  // Higher bracket wins at exact 1000 and exact 10000.
+  if (x > 10000) return 250;
+  if (x >= 1000) return 100; // 1000 <= x <= 10000
+  return 10; // 100 <= x < 1000
 }

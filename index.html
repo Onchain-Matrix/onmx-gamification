@@ -101,7 +101,7 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 </div>
 <script type="module">
 import * as E from "./src/engine.js";
-import { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship } from "./src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints } from "./src/config.js";
 import * as R from "./src/referral.js";
 
 const CURRENT_SEASON = SEASON.number;
@@ -269,7 +269,19 @@ function render() {
     out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · Credits (sample)</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: String(x.account).replace(/^@+/, ""), account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmtB(x.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
   } else {
     const cum = E.cumulativeRaised(tre.inflows);
-    out.innerHTML = `<section class="card hero"><div><div class="big">${fmt(E.treasuryIndex(cum))}</div><div class="unit">Treasury index</div></div><p class="note">Based on cumulative raised (${fmt(cum)}, sample inflows only; outflows ignored). Unitless recognition index — not $, not tokens, not a commitment.</p></section>`;
+    const idx = E.treasuryIndex(cum);
+    const curve = CONFIG.TREASURY_CURVE;
+    const brackets = SEASON.treasuryBuy.brackets;
+    out.innerHTML = `<section class="card hero"><div><div class="big">${fmt(idx)}</div><div class="unit">Treasury index</div></div>
+      <div>
+        <p class="note"><b>Unitless recognition metric</b> — formula: floor ${curve.floor} + ${(curve.pct*100).toFixed(0)}% of cumulative <b>raised</b> (positive sample inflows only; outflows ignored), capped at ${fmt(curve.cap)}. With sample cumulative raised ${fmt(cum)}: ${curve.floor} + ${curve.pct} × ${fmt(cum)} = <b>${fmt(idx)}</b>.</p>
+        <p class="note">This is <b>not</b> a wallet balance, not $, not tokens, and <b>not</b> the Season ${CURRENT_SEASON} BNB prize pool.</p>
+      </div></section>
+      <section class="card"><h3>Treasury buy-in · bonus scoring points</h3>
+        <p class="note">Configured schedule for owner review. Points are <b>scoring points</b> (100 points = 1 Credit for display only: +10 ⇒ +0.10 Credit, +100 ⇒ +1 Credit, +250 ⇒ +2.5 Credits). <b>Not live-verified</b> — no purchase data source is connected; sample players have not earned these. Ranking integration is undecided (schedule display only).</p>
+        <div class="row" style="font-size:12px;color:var(--mute)"><div class="rk">—</div><div class="who">Buy-in (USD)</div><div class="pts"><span class="unit">scoring points</span></div></div>
+        ${brackets.map(b => `<div class="row"><div class="rk"></div><div class="who">${esc(b.label)}</div><div class="pts"><span class="n">${b.points}</span>&nbsp;<span class="unit">pts${b.points===10?" · 0.10 cr":b.points===100?" · 1 cr":" · 2.5 cr"}</span></div></div>`).join("")}
+      </section>`;
   }
 }
 
