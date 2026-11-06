@@ -91,7 +91,7 @@ t("no user-facing battery in index.html; Credits + Season 1 + airdrop after clos
   ok(/Credits earned during the campaign convert into airdrops/.test(h));
   ok(!/10,?000 energy = 1 token/i.test(h));
   ok(/assets\/onchainmatrix-logo\.png/.test(h));
-  ok(/import \{ CONFIG, SEASON/.test(h));
+  ok(/\{ CONFIG, SEASON/.test(h), "CONFIG/SEASON binding from config module");
   ok(/counting begins/.test(h));
   ok(/No Season 1 activity yet/.test(h));
   ok(/Lifetime credits · vs lifetime leader/.test(h));
