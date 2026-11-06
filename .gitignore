@@ -3,3 +3,8 @@ node_modules/
 roster.real.json
 data/roster.json
 .env*
+worker/node_modules/
+worker/dist/
+worker/_mcp_deploy.js
+worker/.wrangler/
+tests/bootstrap-runtime-results.json

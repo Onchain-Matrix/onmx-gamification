@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onmx-gamification-claims",
+  "main": "src/index.js",
+  "compatibility_date": "2025-09-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": true }
+  },
+  "vars": {
+    "ALLOWED_ORIGIN": "https://onchain-matrix.github.io",
+    "SIWE_DOMAIN": "onchain-matrix.github.io",
+    "SIWE_URI": "https://onchain-matrix.github.io/onmx-gamification/",
+    "POLICY_VERSION": "claims-policy-v1",
+    "SEASON_START_ISO": "2026-11-09T12:00:00-05:00",
+    "SEASON_END_ISO": "2026-11-23T12:00:00-05:00",
+    "SEASON_NUMBER": "1",
+    "LIFETIME_START_ISO": "2026-11-09T12:00:00-05:00"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "onmx-gamification-claims",
+      "database_id": "15b34c40-9980-4d8b-833c-59f20ec02825",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

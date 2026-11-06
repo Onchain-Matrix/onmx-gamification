@@ -5,8 +5,9 @@
   "type": "module",
   "description": "PRIVATE DRAFT. ONMX gamification leaderboard (Pages-compatible static) + dry-run simulation. Provisional, unapproved rules.",
   "scripts": {
-    "test": "node tests/run.mjs && node tests/bootstrap-runtime.mjs",
+    "test": "node tests/run.mjs && node tests/bootstrap-runtime.mjs && npm --prefix worker test",
     "sim": "node sim/run.mjs",
-    "sample": "node tools/make-sample-data.mjs"
+    "sample": "node tools/make-sample-data.mjs",
+    "test:worker": "npm --prefix worker test"
   }
 }

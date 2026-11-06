@@ -71,7 +71,7 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 @media (max-width:640px){.rewards{grid-template-columns:1fr}nav button{font-size:12px;padding:8px 2px}.row{grid-template-columns:36px 1fr auto;gap:6px}.pts .n{font-size:16px}.row .pts .unit{display:none}.hero{grid-template-columns:1fr}.brand img{height:34px}.bar i{width:5px;height:12px}}
 </style></head><body><div class="wrap" id="app">
 <header>
-  <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261106-boot1" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
+  <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261106-claims1" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
   <span class="pill">Sample data · provisional rules</span>
 </header>
 <section class="card season"><details open>
@@ -97,10 +97,16 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 <section class="card how extra" id="how"><h3>How the game works</h3>
 <div id="howBody"></div>
 </section>
+
+<section class="card extra" id="claimsApiPanel" aria-label="Seed claim API status">
+  <h3>Seed claim API (provisional)</h3>
+  <p class="note">Ordinary play does <b>not</b> require a wallet. Optional seed-claim identity bridge is server-side only when configured. Rankings on this page remain sample fixtures unless distinctly labeled verified ledger scores.</p>
+  <div id="claimsApiStatus" class="note">Checking claims API readiness…</div>
+</section>
 <footer>Sample data: placeholder accounts, not real members. Credits are earned by contribution/verification work, never follows/RTs; seed bonus only amplifies effort (0 effort ⇒ 0). Rules are provisional. Onchain Matrix project dashboard — not affiliated with Warner Bros. or The Matrix films.</footer>
 </div>
 <script type="module">
-const ASSET_V = "20261106-boot1";
+const ASSET_V = "20261106-claims1";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -388,6 +394,25 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") { boardPage = Math.min(Math.ceil(BOARD_SHOWN / PAGE_SIZE) - 1, boardPage + 1); render(); }
 });
 render();
+
+// Optional claims API readiness (honest status; does not enable X login / grants UI)
+(async function claimsApiStatus() {
+  const el = document.getElementById("claimsApiStatus");
+  if (!el) return;
+  const API = "https://onmx-gamification-claims.onmx.workers.dev";
+  try {
+    const r = await fetch(API + "/v1/config", { credentials: "omit" });
+    const j = await r.json();
+    const ready = j.readiness || {};
+    const blockers = (j.blockers || []).map(b => `<li>${esc(b)}</li>`).join("");
+    el.innerHTML = `<p class="note"><b>API</b> <code>${esc(API)}</code> · policy <b>${esc(j.policyVersion||"")}</b> · formula <b>${esc(j.formulaVersion||"")}</b></p>
+      <p class="note">X login enabled: <b>${ready.xLoginEnabled ? "yes" : "no"}</b> · receipt verification: <b>${esc(String(ready.receiptVerification))}</b> · production grants: <b>${ready.productionGrantsEnabled ? "yes" : "no"}</b> · wallet required for ordinary play: <b>no</b></p>
+      <p class="warnproto">Not live for verified seed credits yet. Missing product X OAuth app secrets and verified seed ABI/RPC — endpoints fail closed. Grok Bot X connection is unrelated.</p>
+      ${blockers ? `<ul class="tasks">${blockers}</ul>` : ""}`;
+  } catch (e) {
+    el.innerHTML = `<p class="note">Claims API unreachable from this browser (${esc(String(e && e.message || e))}).</p>`;
+  }
+})();
 
 } catch (err) {
   console.error("[onmx] bootstrap failed", err);
