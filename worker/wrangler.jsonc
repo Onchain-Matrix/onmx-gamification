@@ -17,7 +17,10 @@
     "SEASON_START_ISO": "2026-11-09T12:00:00-05:00",
     "SEASON_END_ISO": "2026-11-23T12:00:00-05:00",
     "SEASON_NUMBER": "1",
-    "LIFETIME_START_ISO": "2026-11-09T12:00:00-05:00"
+    "LIFETIME_START_ISO": "2026-11-09T12:00:00-05:00",
+    "BNB_RPC_URL": "https://bsc-dataseed.binance.org/",
+    "ETH_RPC_URL": "https://ethereum.publicnode.com",
+    "PRODUCTION_GRANTS_ENABLED": "0"
   },
   "d1_databases": [
     {

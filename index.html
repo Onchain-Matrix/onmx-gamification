@@ -71,7 +71,7 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 @media (max-width:640px){.rewards{grid-template-columns:1fr}nav button{font-size:12px;padding:8px 2px}.row{grid-template-columns:36px 1fr auto;gap:6px}.pts .n{font-size:16px}.row .pts .unit{display:none}.hero{grid-template-columns:1fr}.brand img{height:34px}.bar i{width:5px;height:12px}}
 </style></head><body><div class="wrap" id="app">
 <header>
-  <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261106-claims1" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
+  <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261106-claims3" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
   <span class="pill">Sample data · provisional rules</span>
 </header>
 <section class="card season"><details open>
@@ -106,7 +106,7 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 <footer>Sample data: placeholder accounts, not real members. Credits are earned by contribution/verification work, never follows/RTs; seed bonus only amplifies effort (0 effort ⇒ 0). Rules are provisional. Onchain Matrix project dashboard — not affiliated with Warner Bros. or The Matrix films.</footer>
 </div>
 <script type="module">
-const ASSET_V = "20261106-claims1";
+const ASSET_V = "20261106-claims3";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -407,7 +407,7 @@ render();
     const blockers = (j.blockers || []).map(b => `<li>${esc(b)}</li>`).join("");
     el.innerHTML = `<p class="note"><b>API</b> <code>${esc(API)}</code> · policy <b>${esc(j.policyVersion||"")}</b> · formula <b>${esc(j.formulaVersion||"")}</b></p>
       <p class="note">X login enabled: <b>${ready.xLoginEnabled ? "yes" : "no"}</b> · receipt verification: <b>${esc(String(ready.receiptVerification))}</b> · production grants: <b>${ready.productionGrantsEnabled ? "yes" : "no"}</b> · wallet required for ordinary play: <b>no</b></p>
-      <p class="warnproto">Not live for verified seed credits yet. Missing product X OAuth app secrets and verified seed ABI/RPC — endpoints fail closed. Grok Bot X connection is unrelated.</p>
+      <p class="warnproto">Receipt decoder implemented (dApp ABI; ETH+BNB mined cross-checked; USD from event.paymentAmount). Production grants OFF until product X OAuth secrets + owner prelaunch policy. Ordinary play needs no wallet. Grok Bot X connection is unrelated.</p>
       ${blockers ? `<ul class="tasks">${blockers}</ul>` : ""}`;
   } catch (e) {
     el.innerHTML = `<p class="note">Claims API unreachable from this browser (${esc(String(e && e.message || e))}).</p>`;

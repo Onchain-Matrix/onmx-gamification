@@ -1,0 +1,153 @@
+{
+  "verdict": "VALIDATED: BNB proxy emits m0 SeedPurchaseCompleted; paymentAmount uses BSC USDT 18-dec; call tokenAmount is ONMX 18-dec.",
+  "notes_search": "Draft BNB totalUSDTSettled was 18 (stale); live getter now 10019 USDT. No BNB tx hashes in notes.",
+  "live_totalUSDTSettled_18dec": 10019.0,
+  "rpc": "https://bsc.publicnode.com",
+  "rpc_requests_used_this_pass": 7,
+  "rpc_requests_used_total_approx": 25,
+  "searched_ranges_this_pass": [
+    {
+      "fromBlock": 131740496,
+      "toBlock": 131840495
+    },
+    {
+      "fromBlock": 131820496,
+      "toBlock": 131840495
+    }
+  ],
+  "searched_ranges_all": [
+    {
+      "fromBlock": 131947697,
+      "toBlock": 131955696
+    },
+    {
+      "fromBlock": 131939697,
+      "toBlock": 131947696
+    },
+    {
+      "fromBlock": 131931697,
+      "toBlock": 131939696
+    },
+    {
+      "fromBlock": 131923697,
+      "toBlock": 131931696
+    },
+    {
+      "fromBlock": 131915697,
+      "toBlock": 131923696
+    },
+    {
+      "fromBlock": 131907697,
+      "toBlock": 131915696
+    },
+    {
+      "fromBlock": 131899697,
+      "toBlock": 131907696
+    },
+    {
+      "fromBlock": 131891697,
+      "toBlock": 131899696
+    },
+    {
+      "fromBlock": 131883697,
+      "toBlock": 131891696
+    },
+    {
+      "fromBlock": 131875697,
+      "toBlock": 131883696
+    },
+    {
+      "fromBlock": 131867697,
+      "toBlock": 131875696
+    },
+    {
+      "fromBlock": 131859697,
+      "toBlock": 131867696
+    },
+    {
+      "fromBlock": 131851697,
+      "toBlock": 131859696
+    },
+    {
+      "fromBlock": 131843697,
+      "toBlock": 131851696
+    },
+    {
+      "fromBlock": 131840496,
+      "toBlock": 131843696
+    },
+    {
+      "fromBlock": 131740496,
+      "toBlock": 131840495
+    },
+    {
+      "fromBlock": 131820496,
+      "toBlock": 131840495
+    }
+  ],
+  "m0_event_sig": "SeedPurchaseCompleted(bytes32,address,address,uint256,uint256,uint256,uint256)",
+  "m0_topic0": "0x9cf645f0930779acb1ac7de1633160834232e3e873b6552bd3978c562aa019a0",
+  "primary_example": {
+    "chainId": 56,
+    "network": "bnb",
+    "txHash": "0x89c24c7233d0816d3e0921e6a6c3917a37199037ed2a9a904f58fd738608e8c7",
+    "explorerUrl": "https://bscscan.com/tx/0x89c24c7233d0816d3e0921e6a6c3917a37199037ed2a9a904f58fd738608e8c7",
+    "status": 1,
+    "blockNumber": 131821704,
+    "blockHash": "0xccdfc877a51e5a5990d1adb1cf51684c024a609447911714a9f2f8b51011743a",
+    "blockTimestamp": 1793883910,
+    "blockTimestamp_iso_utc": "2026-11-05T13:05:10+00:00",
+    "blockTimestamp_ms": 1793883910000,
+    "confirmations_snapshot": 134057,
+    "finality_note": "BSC soft finality typically ~15\u201320 confirmations; snapshot = tip - blockNumber + 1",
+    "from": "0x6FF373b12256568B06Ac6dEA3Af4fA6325747a16",
+    "to": "0x933c05B86DBD2234A23810f5D447b4537A907B08",
+    "value_wei": "0",
+    "native_buy": false,
+    "inputSelector": "0x22ea2231",
+    "call": {
+      "function": "purchaseTokens(address,uint256)",
+      "tokenAddress": "0x55d398326f99059fF775485246999027B3197955",
+      "tokenAmount_raw": "71428571428571428571428",
+      "tokenAmount_as_18dec": 71428.57142857142,
+      "interpretation": "call tokenAmount = ONMX allocation (18-dec), not USD"
+    },
+    "expectedProxy": "0x933c05B86DBD2234A23810f5D447b4537A907B08",
+    "to_is_expected_proxy": true,
+    "expectedUSDT": "0x55d398326f99059fF775485246999027B3197955",
+    "usdtDecimals": 18,
+    "m0_topic0_SeedPurchaseCompleted": "0x9cf645f0930779acb1ac7de1633160834232e3e873b6552bd3978c562aa019a0",
+    "seedPurchaseCompleted": {
+      "event": "SeedPurchaseCompleted",
+      "logIndex": 655,
+      "eventAddress": "0x933c05B86DBD2234A23810f5D447b4537A907B08",
+      "topic0": "0x9cf645f0930779acb1ac7de1633160834232e3e873b6552bd3978c562aa019a0",
+      "purchaseId": "0x0690c13e08894f1fdb3db85ab03a998340598abf0f816a23df1c9fad147dd318",
+      "purchaser": "0x6FF373b12256568B06Ac6dEA3Af4fA6325747a16",
+      "paymentToken": "0x55d398326f99059fF775485246999027B3197955",
+      "paymentAmount_raw": "10000000000000000000000",
+      "paymentAmount_USDT_18dec": 10000.0,
+      "onmxAllocation_raw": "71428571428571428571428",
+      "onmxAllocation_18dec": 71428.57142857142,
+      "purchaseTimestamp": 1793883910,
+      "purchaseTimestamp_iso_utc": "2026-11-05T13:05:10+00:00",
+      "sourceChainId": 56,
+      "purchaser_eq_tx_from": true,
+      "paymentToken_is_BSC_USDT": true
+    },
+    "usdtTransfer": {
+      "logIndex": 654,
+      "from": "0x933c05B86DBD2234A23810f5D447b4537A907B08",
+      "to": "0xC7DE7F659316D19602005020B944089dac58423a",
+      "amount_raw": "10000000000000000000000",
+      "amount_USDT_18dec": 10000.0
+    },
+    "abi_function_match": true,
+    "abi_event_topic_and_decode_match": true,
+    "consistency": {
+      "call_tokenAmount_eq_event_onmxAllocation": true,
+      "event_payment_eq_usdt_transfer": true,
+      "implied_usd_per_onmx": 0.14
+    }
+  }
+}

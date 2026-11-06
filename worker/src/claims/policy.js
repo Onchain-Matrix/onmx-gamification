@@ -25,7 +25,7 @@ export const POLICY = Object.freeze({
     usdtDecimalsBnb: 18,
     usdtDecimalsEth: 6,
   }),
-  receiptVerification: "unavailable", // fail-closed until verified ABI + RPC
+  receiptVerification: "decoder_implemented_grants_off",
 });
 
 export function toInstantMs(iso) {
@@ -129,17 +129,22 @@ export function publicConfig(env) {
     readiness: {
       sessionSecrets: sessionConfigured,
       xOAuth: xConfigured,
-      xLoginEnabled: false, // never true until e2e passes
-      receiptVerification: POLICY.receiptVerification,
+      // Code implements full PKCE; UI login only when secrets present. Still no production grants.
+      xLoginEnabled: xConfigured,
+      xLoginUiSafe: xConfigured, // parent still must supply product app secrets
+      sessionModes: ["bearer", "cookie"],
+      preferredCrossSiteSession: "bearer",
+      receiptVerification: "see_receipts_block",
       rpc: rpcConfigured,
       productionGrantsEnabled: false,
       ordinaryPlayRequiresWallet: false,
+      eip1271: rpcConfigured ? "optional_eth_call" : "unsupported_without_rpc",
     },
     blockers: [
       !sessionConfigured && "SESSION_SECRET missing or too short",
       !xConfigured && "X OAuth app secrets not configured (X_CLIENT_ID / X_CLIENT_SECRET / X_REDIRECT_URI)",
-      "Seed sale verified ABI/events not available — receipt credit fail-closed",
-      !rpcConfigured && "Chain RPC URLs not configured (BNB_RPC_URL / ETH_RPC_URL)",
+      "Seed sale decoder implemented from dApp ABI; production grants OFF until X OAuth + owner prelaunch policy + mined crosscheck",
+      !rpcConfigured && "Chain RPC URLs optional for future EIP-1271/receipts — grants still blocked without ABI",
     ].filter(Boolean),
     contracts: POLICY.contracts,
     corsOrigin: env.ALLOWED_ORIGIN || "https://onchain-matrix.github.io",

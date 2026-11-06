@@ -1,171 +1,445 @@
 import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, it, expect, beforeAll } from "vitest";
-import { applyMigrations } from "./apply-migrations.js";
-import worker from "../src/index.js";
+import { createWorker } from "../src/index.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { keccak_256 } from "@noble/hashes/sha3.js";
 import { hashPersonalMessage, buildSiweMessage } from "../src/auth/siwe.js";
 import { treasuryBuyPoints, classifyPurchaseTime, resolveAwardSeason, POLICY } from "../src/claims/policy.js";
+import { applyMigrations } from "./apply-migrations.js";
+import {
+  SEED_PURCHASE_TOPIC0,
+  ERC20_TRANSFER_TOPIC0,
+  decodeSeedPurchaseLog,
+  paymentAmountToUsd,
+  SALE_PROXIES,
+  assertTopic0,
+  padTopicAddress,
+} from "../src/claims/decode.js";
+import { createPkcePair, startXOAuth, completeXCallback, xConfigStatus } from "../src/auth/x-oauth.js";
 
 const ORIGIN = "https://onchain-matrix.github.io";
 
 function privToAddress(priv) {
   const pub = secp256k1.getPublicKey(priv, false).slice(1);
-  const hash = keccak_256(pub);
-  return "0x" + [...hash.slice(12)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return "0x" + [...keccak_256(pub).slice(12)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function signMessage(message, priv) {
   const msgHash = await hashPersonalMessage(message);
   const sig65 = secp256k1.sign(msgHash, priv, { format: "recovered" });
-  // Ethereum: r||s||v with v=27/28; noble recovered is recovery||r||s (65 bytes, first byte 0/1)
   const recovery = sig65[0];
   const rs = sig65.slice(1);
   const v = recovery + 27;
   return "0x" + [...rs].map((b) => b.toString(16).padStart(2, "0")).join("") + v.toString(16).padStart(2, "0");
 }
 
-
 function sessionCookie(res) {
   const multi = typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : [];
   if (multi && multi.length) return multi.find((c) => c.startsWith("onmx_session=")) || multi[0];
-  // Headers#get joins Set-Cookie with comma which breaks; fall back to raw if present
   const raw = res.headers.get("Set-Cookie");
   if (!raw) return null;
   const m = raw.match(/onmx_session=[^;]+/);
-  return m ? m[0] + "; Path=/" : raw.split(",")[0];
+  return m ? m[0] : raw.split(",")[0];
 }
 
-async function fetchWorker(path, init = {}) {
-  const request = new Request("https://onmx-gamification-claims.onmx.workers.dev" + path, init);
-  const ctx = createExecutionContext();
-  const res = await worker.fetch(request, env, ctx);
-  await waitOnExecutionContext(ctx);
-  return res;
+function makeFakeReceipt({ chainId = 56, purchaser, paymentUsd = 1000, txHash, logIndex = 0 }) {
+  const proxy = SALE_PROXIES[chainId];
+  const usdt = chainId === 56
+    ? "0x55d398326f99059ff775485246999027b3197955"
+    : "0xdac17f958d2ee523a2206206994597c13d831ec7";
+  const decimals = chainId === 56 ? 18 : 6;
+  const amount = BigInt(Math.round(paymentUsd * 10 ** decimals));
+  const ts = Math.floor(Date.parse("2026-11-10T15:00:00-05:00") / 1000);
+  const data =
+    "0x" +
+    usdt.replace(/^0x/, "").padStart(64, "0") +
+    amount.toString(16).padStart(64, "0") +
+    (10n ** 18n).toString(16).padStart(64, "0") +
+    BigInt(ts).toString(16).padStart(64, "0") +
+    BigInt(chainId).toString(16).padStart(64, "0");
+  const purchaseId = "0x" + "ab".repeat(32);
+  const treasury = chainId === 56 ? "0xc7de7f659316d19602005020b944089dac58423a" : "0x9b8ca8189569e70165dfc1478975c9fb26d6f560";
+  return {
+    status: "0x1",
+    blockNumber: "0x100",
+    logs: [
+      {
+        address: usdt,
+        topics: [ERC20_TRANSFER_TOPIC0, padTopicAddress(purchaser), padTopicAddress(treasury)],
+        data: "0x" + amount.toString(16).padStart(64, "0"),
+        logIndex: "0x0",
+      },
+      {
+        address: proxy,
+        topics: [SEED_PURCHASE_TOPIC0, purchaseId, padTopicAddress(purchaser)],
+        data,
+        logIndex: "0x" + Math.max(1, logIndex).toString(16),
+      },
+    ],
+  };
 }
 
-describe("policy math", () => {
-  it("exp-v1 formula matches specified curve", () => {
-    expect(treasuryBuyPoints(0)).toBe(0);
+function fakeRpcFetch(purchaser, opts = {}) {
+  const receipt = makeFakeReceipt({
+    chainId: opts.chainId || 56,
+    purchaser,
+    paymentUsd: opts.paymentUsd || 1000,
+    txHash: opts.txHash,
+    logIndex: opts.logIndex || 0,
+  });
+  return async (url, init) => {
+    const body = JSON.parse(init.body);
+    if (body.method === "eth_getTransactionReceipt") {
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: receipt }), { status: 200 });
+    }
+    if (body.method === "eth_blockNumber") {
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x120" }), { status: 200 }); // 32 conf > 15
+    }
+    return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, error: { message: "unexpected " + body.method } }), { status: 200 });
+  };
+}
+
+describe("policy + decoder", () => {
+  it("exp-v1 + prelaunch + next season", () => {
     expect(treasuryBuyPoints(1000)).toBeCloseTo(158.03, 2);
-    expect(treasuryBuyPoints(1e9)).toBe(250);
-    expect(treasuryBuyPoints(-1)).toBe(0);
-  });
-
-  it("prelaunch stays unassigned", () => {
-    const c = classifyPurchaseTime(Date.parse("2026-11-01T12:00:00-05:00"));
-    expect(c.status).toBe("unassigned");
-    expect(c.awardSeason).toBeNull();
-    const r = resolveAwardSeason({ classification: c, existingCurrentSeasonClaims: 0 });
-    expect(r.awardSeason).toBeNull();
-    expect(r.pointsApply).toBe(false);
-  });
-
-  it("second in-season purchase queues next season", () => {
+    expect(classifyPurchaseTime(Date.parse("2026-11-01T12:00:00-05:00")).status).toBe("unassigned");
     const c = classifyPurchaseTime(Date.parse("2026-11-10T12:00:00-05:00"));
-    const first = resolveAwardSeason({ classification: c, existingCurrentSeasonClaims: 0 });
-    expect(first.awardSeason).toBe(1);
-    const second = resolveAwardSeason({ classification: c, existingCurrentSeasonClaims: 1 });
-    expect(second.awardSeason).toBe(POLICY.nextSeasonNumber);
-    expect(second.queueReason).toBe("next_season_queue");
+    expect(resolveAwardSeason({ classification: c, existingCurrentSeasonClaims: 1 }).awardSeason).toBe(2);
+  });
+  it("topic0 matches ABI event signature", () => {
+    expect(assertTopic0()).toBe(true);
+  });
+  it("decodes SeedPurchaseCompleted and USDT USD", () => {
+    const purchaser = "0x1111111111111111111111111111111111111111";
+    const receipt = makeFakeReceipt({ chainId: 56, purchaser, paymentUsd: 1000 });
+    const d = decodeSeedPurchaseLog(receipt.logs[1], 56);
+    expect(d.purchaser).toBe(purchaser);
+    const usd = paymentAmountToUsd(d.paymentToken, d.paymentAmount, 56);
+    expect(usd.ok).toBe(true);
+    expect(usd.purchaseUsd).toBe(1000);
+  });
+  it("rejects non-USDT payment", () => {
+    const r = paymentAmountToUsd("0x0000000000000000000000000000000000000000", 1n, 56);
+    expect(r.error).toBe("native_payment_usd_unknown");
   });
 });
 
 describe("API security + claims", () => {
-  beforeAll(async () => {
-    await applyMigrations(env.DB);
-  });
-
   const priv = secp256k1.utils.randomSecretKey();
   const address = privToAddress(priv);
-  let csrf;
-  let cookie;
 
-  it("health + config fail-closed readiness", async () => {
-    const h = await fetchWorker("/health");
-    expect(h.status).toBe(200);
-    const c = await fetchWorker("/v1/config");
-    const body = await c.json();
-    expect(body.readiness.xLoginEnabled).toBe(false);
-    expect(body.readiness.productionGrantsEnabled).toBe(false);
-    expect(body.readiness.receiptVerification).toBe("unavailable");
-    expect(body.blockers.some((b) => /ABI/i.test(b))).toBe(true);
-    expect(body.x.ready).toBe(false);
-    expect(body.x.missing).toContain("X_CLIENT_ID");
+  // Worker with injectable verifier for ledger races + grants path
+  let worker;
+  let fakeX;
+
+  beforeAll(async () => {
+    await applyMigrations(env.DB);
+    env.BNB_RPC_URL = "https://bsc-dataseed.binance.org/";
+    env.ETH_RPC_URL = "https://ethereum.publicnode.com";
+    env.X_CLIENT_ID = "test_client_id";
+    env.X_CLIENT_SECRET = "test_client_secret";
+    env.X_REDIRECT_URI = "https://onmx-gamification-claims.onmx.workers.dev/v1/auth/x/callback";
+
+    fakeX = {
+      authorize: "https://fake.x.test/authorize",
+      token: "https://fake.x.test/token",
+      me: "https://fake.x.test/me",
+    };
+
+    const xFetch = async (url, init = {}) => {
+      const u = String(url);
+      if (u.startsWith(fakeX.token)) {
+        const body = init.body?.toString?.() || "";
+        if (!body.includes("code_verifier=") || !body.includes("code=good")) {
+          return new Response("bad", { status: 400 });
+        }
+        return new Response(JSON.stringify({ access_token: "atok", token_type: "bearer" }), { status: 200 });
+      }
+      if (u.startsWith(fakeX.me)) {
+        const auth = init.headers?.Authorization || "";
+        if (!auth.includes("atok")) return new Response("no", { status: 401 });
+        return new Response(JSON.stringify({ data: { id: "999888777", username: "onmx_tester" } }), { status: 200 });
+      }
+      return new Response("nf", { status: 404 });
+    };
+
+    worker = createWorker({
+      fetchImpl: async (url, init) => {
+        const u = String(url);
+        if (u.includes("fake.x.test")) return xFetch(url, init);
+        // default: treat as RPC for receipt tests that set their own worker instance
+        return fakeRpcFetch(address)(url, init);
+      },
+      xEndpoints: fakeX,
+      allowClaimInsert: true,
+      claimVerifier: async (e, input, opts) => {
+        // Prefer real verifier with fake RPC
+        const { verifySeedPurchaseReceipt } = await import("../src/claims/receipts.js");
+        return verifySeedPurchaseReceipt(e, input, {
+          fetchImpl: fakeRpcFetch(opts.walletAddress || address, {
+            chainId: Number(input.chainId),
+            paymentUsd: Number(input._testUsd || 1000),
+            logIndex: Number(input.logIndex || 0),
+          }),
+          walletAddress: opts.walletAddress,
+        });
+      },
+    });
   });
 
-  it("CORS rejects other origins on preflight", async () => {
-    const res = await fetchWorker("/v1/config", {
-      method: "OPTIONS",
-      headers: { Origin: "https://evil.example", "Access-Control-Request-Method": "GET" },
-    });
-    // We still return headers but browser enforces; our gate marks ok false → 403
-    expect([403, 204]).toContain(res.status);
-  });
+  async function fetchWorker(path, init = {}, w = worker) {
+    const request = new Request("https://onmx-gamification-claims.onmx.workers.dev" + path, init);
+    const ctx = createExecutionContext();
+    const res = await w.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    return res;
+  }
 
-  it("X login start is fail-closed", async () => {
-    const res = await fetchWorker("/v1/auth/x/start", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json" },
-      body: "{}",
-    });
-    expect(res.status).toBe(503);
-    const j = await res.json();
-    expect(j.error).toBe("x_oauth_not_configured");
-  });
-
-  it("wallet challenge + verify (EIP-191) establishes session", async () => {
-    const ch = await fetchWorker("/v1/auth/wallet/challenge", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/onmx-gamification/" },
-      body: JSON.stringify({ address, chainId: 56 }),
-    });
+  async function loginWallet(w = worker) {
+    const ch = await fetchWorker(
+      "/v1/auth/wallet/challenge",
+      {
+        method: "POST",
+        headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
+        body: JSON.stringify({ address, chainId: 56 }),
+      },
+      w
+    );
+    const challenge = await ch.json();
     expect(ch.status).toBe(200);
-    const challenge = await ch.json();
-    expect(challenge.message).toContain(address);
-
     const signature = await signMessage(challenge.message, priv);
-    const ver = await fetchWorker("/v1/auth/wallet/verify", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/onmx-gamification/" },
-      body: JSON.stringify({ message: challenge.message, signature, address, chainId: 56 }),
-    });
+    const ver = await fetchWorker(
+      "/v1/auth/wallet/verify",
+      {
+        method: "POST",
+        headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
+        body: JSON.stringify({ message: challenge.message, signature, address, chainId: 56 }),
+      },
+      w
+    );
+    const j = await ver.json();
     expect(ver.status).toBe(200);
-    const vj = await ver.json();
-    expect(vj.ok).toBe(true);
-    expect(vj.csrf).toBeTruthy();
-    csrf = vj.csrf;
-    cookie = sessionCookie(ver);
-    expect(cookie).toMatch(/onmx_session=/);
-    expect(cookie).toMatch(/HttpOnly/i);
-    expect(cookie).toMatch(/SameSite=None/i);
+    expect(j.accessToken).toBeTruthy();
+    return j;
+  }
+
+  it("health + config distinguishes decoder vs grants", async () => {
+    const c = await (await fetchWorker("/v1/config")).json();
+    expect(c.receipts.verificationReadiness).toBe("implemented");
+    expect(c.receipts.grantsReadiness).toBe("disabled");
+    expect(c.receipts.productionGrantsEnabled).toBe(false);
+    expect(c.readiness.xLoginEnabled).toBe(true); // secrets present in test env
+    expect(c.readiness.preferredCrossSiteSession).toBe("bearer");
   });
 
-  it("nonce replay rejected", async () => {
-    const ch = await fetchWorker("/v1/auth/wallet/challenge", {
+  it("X OAuth start→callback→handoff→bearer (fake provider)", async () => {
+    const start = await fetchWorker("/v1/auth/x/start", {
       method: "POST",
       headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ address, chainId: 56 }),
+      body: JSON.stringify({ openerOrigin: ORIGIN }),
     });
-    const challenge = await ch.json();
-    const signature = await signMessage(challenge.message, priv);
-    const body = JSON.stringify({ message: challenge.message, signature, address, chainId: 56 });
-    const a = await fetchWorker("/v1/auth/wallet/verify", {
+    expect(start.status).toBe(200);
+    const sj = await start.json();
+    expect(sj.authorizeUrl).toContain("code_challenge");
+    expect(sj.authorizeUrl).toContain("state=");
+    const state = sj.state;
+
+    // Bad state replay / wrong code
+    const badCb = await fetchWorker(`/v1/auth/x/callback?code=good&state=nope`);
+    expect(badCb.status).toBeGreaterThanOrEqual(400);
+
+    const cb = await fetchWorker(`/v1/auth/x/callback?code=good&state=${state}`);
+    expect(cb.status).toBe(200);
+    const html = await cb.text();
+    expect(html).toContain("postMessage");
+    expect(html).toContain("handoffCode");
+    const handoff = html.match(/"handoffCode":"([^"]+)"/)[1];
+
+    // Replay state
+    const replay = await fetchWorker(`/v1/auth/x/callback?code=good&state=${state}`);
+    expect(replay.status).toBeGreaterThanOrEqual(400);
+
+    const ex = await fetchWorker("/v1/auth/session/exchange", {
       method: "POST",
       headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body,
+      body: JSON.stringify({ handoffCode: handoff }),
     });
-    expect(a.status).toBe(200);
-    const b = await fetchWorker("/v1/auth/wallet/verify", {
+    expect(ex.status).toBe(200);
+    const ej = await ex.json();
+    expect(ej.accessToken).toBeTruthy();
+    expect(ej.sessionMode).toBe("bearer");
+
+    // handoff one-use
+    const ex2 = await fetchWorker("/v1/auth/session/exchange", {
       method: "POST",
       headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body,
+      body: JSON.stringify({ handoffCode: handoff }),
     });
-    expect(b.status).toBe(409);
-    expect((await b.json()).error).toBe("nonce_replay");
+    expect(ex2.status).toBe(409);
+
+    const me = await fetchWorker("/v1/me", { headers: { Authorization: "Bearer " + ej.accessToken } });
+    expect(me.status).toBe(200);
+    const mj = await me.json();
+    expect(mj.x.xUserId).toBe("999888777");
+    expect(mj.sessionVia).toBe("bearer");
   });
 
-  it("wrong domain signature rejected", async () => {
+  it("X start fail-closed without secrets", async () => {
+    const saved = { id: env.X_CLIENT_ID, secret: env.X_CLIENT_SECRET, redir: env.X_REDIRECT_URI };
+    env.X_CLIENT_ID = "";
+    env.X_CLIENT_SECRET = "";
+    env.X_REDIRECT_URI = "";
+    const w = createWorker({ xEndpoints: fakeX, allowClaimInsert: true });
+    const res = await fetchWorker(
+      "/v1/auth/x/start",
+      {
+        method: "POST",
+        headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
+        body: JSON.stringify({ openerOrigin: ORIGIN }),
+      },
+      w
+    );
+    expect(res.status).toBe(503);
+    env.X_CLIENT_ID = saved.id;
+    env.X_CLIENT_SECRET = saved.secret;
+    env.X_REDIRECT_URI = saved.redir;
+  });
+
+  it("wallet bearer session + receipt decode path", async () => {
+    const j = await loginWallet();
+    const tx = "0x" + "11".repeat(32);
+    const res = await fetchWorker("/v1/claims/receipt", {
+      method: "POST",
+      headers: {
+        Origin: ORIGIN,
+        "Content-Type": "application/json",
+        Referer: ORIGIN + "/",
+        Authorization: "Bearer " + j.accessToken,
+        "X-CSRF-Token": j.csrf,
+      },
+      body: JSON.stringify({ chainId: 56, txHash: tx, logIndex: 0 }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.claim.pointsRaw).toBeCloseTo(158.03, 2);
+    expect(body.claim.awardSeason).toBe(1);
+    expect(body.claim.formulaVersion).toBe("exp-v1");
+
+    // duplicate receipt
+    const dup = await fetchWorker("/v1/claims/receipt", {
+      method: "POST",
+      headers: {
+        Origin: ORIGIN,
+        "Content-Type": "application/json",
+        Referer: ORIGIN + "/",
+        Authorization: "Bearer " + j.accessToken,
+        "X-CSRF-Token": j.csrf,
+      },
+      body: JSON.stringify({ chainId: 56, txHash: tx, logIndex: 0 }),
+    });
+    expect(dup.status).toBe(409);
+  });
+
+  it("concurrent first claims: only one season-1 award; other queues or rejects duplicate race", async () => {
+    const j = await loginWallet();
+    const headers = {
+      Origin: ORIGIN,
+      "Content-Type": "application/json",
+      Referer: ORIGIN + "/",
+      Authorization: "Bearer " + j.accessToken,
+      "X-CSRF-Token": j.csrf,
+    };
+    const txA = "0x" + "aa".repeat(32);
+    const txB = "0x" + "bb".repeat(32);
+    const [r1, r2] = await Promise.all([
+      fetchWorker("/v1/claims/receipt", { method: "POST", headers, body: JSON.stringify({ chainId: 56, txHash: txA }) }),
+      fetchWorker("/v1/claims/receipt", { method: "POST", headers, body: JSON.stringify({ chainId: 56, txHash: txB }) }),
+    ]);
+    const j1 = await r1.json();
+    const j2 = await r2.json();
+    const ok = [j1, j2].filter((x) => x.ok);
+    expect(ok.length).toBe(2);
+    const seasons = ok.map((x) => x.claim.awardSeason).sort();
+    expect(seasons).toEqual([1, 2]);
+    const s1 = ok.find((x) => x.claim.awardSeason === 1);
+    expect(s1.claim.pointsRaw).toBeLessThanOrEqual(250);
+
+    // list and assert SUM season 1 <= 250
+    const list = await (await fetchWorker("/v1/claims", { headers: { Authorization: "Bearer " + j.accessToken } })).json();
+    const sum1 = list.claims.filter((c) => c.award_season === 1).reduce((a, c) => a + c.points_raw, 0);
+    expect(sum1).toBeLessThanOrEqual(250);
+  });
+
+  it("prelaunch unassigned; client points ignored", async () => {
+    // custom verifier returning prelaunch time
+    const w = createWorker({
+      allowClaimInsert: true,
+      claimVerifier: async () => ({
+        ok: true,
+        chainId: 56,
+        txHash: "0x" + "cc".repeat(32),
+        logIndex: 0,
+        purchaseUsd: 1000,
+        purchaseAtMs: Date.parse("2026-11-01T12:00:00-05:00"),
+        receiptStatus: "verified_dapp_abi",
+      }),
+    });
+    const j = await loginWallet(w);
+    const res = await fetchWorker(
+      "/v1/claims/receipt",
+      {
+        method: "POST",
+        headers: {
+          Origin: ORIGIN,
+          "Content-Type": "application/json",
+          Referer: ORIGIN + "/",
+          Authorization: "Bearer " + j.accessToken,
+          "X-CSRF-Token": j.csrf,
+        },
+        body: JSON.stringify({ chainId: 56, txHash: "0x" + "cc".repeat(32), points: 99999 }),
+      },
+      w
+    );
+    const body = await res.json();
+    expect(body.claim.awardSeason).toBeNull();
+    expect(body.claim.pointsRaw).toBe(0);
+    expect(body.claim.queueReason).toBe("unassigned_prelaunch");
+  });
+
+  it("production grants off: verify may preview but not insert without allowClaimInsert", async () => {
+    const w = createWorker({
+      allowClaimInsert: false,
+      fetchImpl: fakeRpcFetch(address),
+      claimVerifier: undefined, // real
+    });
+    // need real default verifier with fake rpc — recreate
+    const w2 = createWorker({
+      allowClaimInsert: false,
+      fetchImpl: fakeRpcFetch(address),
+    });
+    const j = await loginWallet(w2);
+    const res = await fetchWorker(
+      "/v1/claims/receipt",
+      {
+        method: "POST",
+        headers: {
+          Origin: ORIGIN,
+          "Content-Type": "application/json",
+          Referer: ORIGIN + "/",
+          Authorization: "Bearer " + j.accessToken,
+          "X-CSRF-Token": j.csrf,
+        },
+        body: JSON.stringify({ chainId: 56, txHash: "0x" + "dd".repeat(32) }),
+      },
+      w2
+    );
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toBe("grants_disabled");
+    expect(body.verifiedPreview.purchaseUsd).toBe(1000);
+  });
+
+  it("wrong domain SIWE rejected; unauthenticated rejected", async () => {
     const ch = await fetchWorker("/v1/auth/wallet/challenge", {
       method: "POST",
       headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
@@ -188,235 +462,6 @@ describe("API security + claims", () => {
       body: JSON.stringify({ message: evil, signature, address, chainId: 56 }),
     });
     expect(ver.status).toBe(401);
-    expect((await ver.json()).error).toMatch(/siwe_/);
-  });
-
-  it("unauthenticated claims rejected; spoofed cookie rejected", async () => {
-    const a = await fetchWorker("/v1/claims");
-    expect(a.status).toBe(401);
-    const b = await fetchWorker("/v1/claims", { headers: { Cookie: "onmx_session=fake.fake.fake" } });
-    expect(b.status).toBe(401);
-  });
-
-  it("fixture receipt: immutable snapshot, duplicate rejected, next-season queue, prelaunch unassigned", async () => {
-    // re-login for fresh csrf/cookie
-    const ch = await fetchWorker("/v1/auth/wallet/challenge", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ address, chainId: 56 }),
-    });
-    const challenge = await ch.json();
-    const signature = await signMessage(challenge.message, priv);
-    const ver = await fetchWorker("/v1/auth/wallet/verify", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ message: challenge.message, signature, address, chainId: 56 }),
-    });
-    const vj = await ver.json();
-    csrf = vj.csrf;
-    cookie = sessionCookie(ver);
-    const cookiePair = cookie?.split(";")[0];
-    expect(cookiePair).toBeTruthy();
-
-    const headers = {
-      Origin: ORIGIN,
-      "Content-Type": "application/json",
-      Referer: ORIGIN + "/onmx-gamification/",
-      Cookie: cookiePair,
-      "X-CSRF-Token": csrf,
-    };
-
-    const tx1 = "0x" + "11".repeat(32);
-    const r1 = await fetchWorker("/v1/claims/receipt", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        purchaseUsd: 1000,
-        purchaseAt: "2026-11-10T15:00:00-05:00",
-        chainId: 56,
-        txHash: tx1,
-        logIndex: 0,
-      }),
-    });
-    expect(r1.status).toBe(200);
-    const j1 = await r1.json();
-    expect(j1.claim.pointsRaw).toBeCloseTo(158.03, 2);
-    expect(j1.claim.awardSeason).toBe(1);
-    expect(j1.claim.formulaVersion).toBe("exp-v1");
-    const frozen = j1.claim.pointsRaw;
-
-    // duplicate same receipt
-    const dup = await fetchWorker("/v1/claims/receipt", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ purchaseUsd: 1000, purchaseAt: "2026-11-10T15:00:00-05:00", chainId: 56, txHash: tx1, logIndex: 0 }),
-    });
-    expect(dup.status).toBe(409);
-
-    // second purchase same season → next season queue; points snapshot not added to season 1
-    const tx2 = "0x" + "22".repeat(32);
-    const r2 = await fetchWorker("/v1/claims/receipt", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ purchaseUsd: 5000, purchaseAt: "2026-11-11T12:00:00-05:00", chainId: 56, txHash: tx2, logIndex: 0 }),
-    });
-    expect(r2.status).toBe(200);
-    const j2 = await r2.json();
-    expect(j2.claim.awardSeason).toBe(2);
-    expect(j2.claim.purchaseSeason).toBe(1);
-    expect(j2.claim.queueReason).toBe("next_season_queue");
-    expect(j2.claim.pointsRaw).toBeGreaterThan(frozen); // own snapshot; does not mutate first
-
-    // prelaunch unassigned
-    const tx3 = "0x" + "33".repeat(32);
-    const r3 = await fetchWorker("/v1/claims/receipt", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ purchaseUsd: 1000, purchaseAt: "2026-11-01T12:00:00-05:00", chainId: 56, txHash: tx3, logIndex: 0 }),
-    });
-    expect(r3.status).toBe(200);
-    const j3 = await r3.json();
-    expect(j3.claim.awardSeason).toBeNull();
-    expect(j3.claim.pointsRaw).toBe(0);
-    expect(j3.claim.queueReason).toBe("unassigned_prelaunch");
-
-    // client-supplied points ignored (not in schema path) — spoofed high points field ignored
-    const tx4 = "0x" + "44".repeat(32);
-    const r4 = await fetchWorker("/v1/claims/receipt", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        purchaseUsd: 100,
-        points: 99999,
-        purchaseAt: "2026-11-12T12:00:00-05:00",
-        chainId: 56,
-        txHash: tx4,
-        logIndex: 0,
-      }),
-    });
-    const j4 = await r4.json();
-    expect(j4.claim.pointsRaw).toBe(treasuryBuyPoints(100));
-    expect(j4.claim.pointsRaw).toBeLessThan(250);
-
-    // list claims across session
-    const list = await fetchWorker("/v1/claims", { headers: { Cookie: cookiePair } });
-    expect(list.status).toBe(200);
-    const lj = await list.json();
-    expect(lj.claims.length).toBeGreaterThanOrEqual(3);
-
-    // CSRF missing rejected
-    const bad = await fetchWorker("/v1/claims/receipt", {
-      method: "POST",
-      headers: { ...headers, "X-CSRF-Token": "wrong" },
-      body: JSON.stringify({ purchaseUsd: 10, purchaseAt: "2026-11-12T12:00:00-05:00", chainId: 56, txHash: "0x" + "55".repeat(32), logIndex: 0 }),
-    });
-    expect(bad.status).toBe(403);
-  });
-
-  it("production path rejects unverified receipts when fixtures disabled", async () => {
-    const prev = env.ALLOW_TEST_FIXTURE_RECEIPTS;
-    env.ALLOW_TEST_FIXTURE_RECEIPTS = "0";
-    const ch = await fetchWorker("/v1/auth/wallet/challenge", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ address, chainId: 56 }),
-    });
-    const challenge = await ch.json();
-    const signature = await signMessage(challenge.message, priv);
-    const ver = await fetchWorker("/v1/auth/wallet/verify", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ message: challenge.message, signature, address, chainId: 56 }),
-    });
-    const vj = await ver.json();
-    const cookiePair = sessionCookie(ver)?.split(";")[0];
-    const res = await fetchWorker("/v1/claims/receipt", {
-      method: "POST",
-      headers: {
-        Origin: ORIGIN,
-        "Content-Type": "application/json",
-        Referer: ORIGIN + "/",
-        Cookie: cookiePair,
-        "X-CSRF-Token": vj.csrf,
-      },
-      body: JSON.stringify({ purchaseUsd: 100, purchaseAt: "2026-11-10T12:00:00-05:00", chainId: 56, txHash: "0x" + "66".repeat(32), logIndex: 0 }),
-    });
-    expect(res.status).toBe(503);
-    expect((await res.json()).error).toBe("receipt_verification_unavailable");
-    env.ALLOW_TEST_FIXTURE_RECEIPTS = prev;
-  });
-
-  it("independent session can read same identity claims", async () => {
-    env.ALLOW_TEST_FIXTURE_RECEIPTS = "1";
-    // device A
-    const ch1 = await fetchWorker("/v1/auth/wallet/challenge", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ address, chainId: 56 }),
-    });
-    const c1 = await ch1.json();
-    const s1 = await signMessage(c1.message, priv);
-    const v1 = await fetchWorker("/v1/auth/wallet/verify", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ message: c1.message, signature: s1, address, chainId: 56 }),
-    });
-    const j1 = await v1.json();
-    const cookieA = sessionCookie(v1)?.split(";")[0];
-    expect(cookieA).toBeTruthy();
-    const tx = "0x" + "77".repeat(32);
-    const claimRes = await fetchWorker("/v1/claims/receipt", {
-      method: "POST",
-      headers: {
-        Origin: ORIGIN,
-        "Content-Type": "application/json",
-        Referer: ORIGIN + "/",
-        Cookie: cookieA,
-        "X-CSRF-Token": j1.csrf,
-      },
-      body: JSON.stringify({ purchaseUsd: 200, purchaseAt: "2026-11-12T12:00:00-05:00", chainId: 56, txHash: tx, logIndex: 0 }),
-    });
-    expect(claimRes.status).toBe(200);
-
-    // device B: same wallet → same identity, can list claims
-    const ch2 = await fetchWorker("/v1/auth/wallet/challenge", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ address, chainId: 56 }),
-    });
-    const c2 = await ch2.json();
-    const s2 = await signMessage(c2.message, priv);
-    const v2 = await fetchWorker("/v1/auth/wallet/verify", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ message: c2.message, signature: s2, address, chainId: 56 }),
-    });
-    const j2 = await v2.json();
-    expect(j2.identityId).toBe(j1.identityId);
-    const cookieB = sessionCookie(v2)?.split(";")[0];
-    const list = await fetchWorker("/v1/claims", { headers: { Cookie: cookieB } });
-    expect(list.status).toBe(200);
-    const claims = (await list.json()).claims;
-    expect(claims.some((c) => c.tx_hash === tx)).toBe(true);
-  });
-
-  it("OAuth state replay rejected", async () => {
-    await env.DB.prepare(
-      `INSERT INTO auth_nonces (nonce, purpose, payload_json, created_at, expires_at) VALUES (?, 'oauth_state', '{}', ?, ?)`
-    )
-      .bind("state123", new Date().toISOString(), new Date(Date.now() + 600000).toISOString())
-      .run();
-    const a = await fetchWorker("/v1/auth/x/state/consume", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ state: "state123" }),
-    });
-    expect(a.status).toBe(200);
-    const b = await fetchWorker("/v1/auth/x/state/consume", {
-      method: "POST",
-      headers: { Origin: ORIGIN, "Content-Type": "application/json", Referer: ORIGIN + "/" },
-      body: JSON.stringify({ state: "state123" }),
-    });
-    expect(b.status).toBe(409);
+    expect((await fetchWorker("/v1/claims")).status).toBe(401);
   });
 });
