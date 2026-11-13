@@ -6,14 +6,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg0:#030612;--bg1:#061126;--card:rgba(8,17,33,.78);--line:rgba(7,233,251,.18);--txt:#F4FBFF;--mute:#8FA3BF;--cyan:#07E9FB;--blue:#5887F4;--violet:#8B4FF5;--mint:#00ff88;--gold:#E8D9A8}
+:root{--bg0:#030612;--bg1:#061126;--card:rgba(8,17,33,.86);--line:rgba(7,233,251,.18);--txt:#F4FBFF;--mute:#8FA3BF;--cyan:#07E9FB;--blue:#5887F4;--violet:#8B4FF5;--mint:#00ff88;--gold:#E8D9A8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
 body{font:15px/1.45 Inter,system-ui,sans-serif;color:var(--txt);background:var(--bg0);overflow-x:hidden}
-body::before{content:"";position:fixed;inset:-25%;z-index:-2;background:radial-gradient(42% 36% at 18% 12%,rgba(7,233,251,.16),transparent 70%),radial-gradient(38% 32% at 82% 18%,rgba(139,79,245,.14),transparent 70%),radial-gradient(50% 40% at 55% 95%,rgba(88,135,244,.10),transparent 70%),linear-gradient(180deg,var(--bg0),var(--bg1));animation:drift 32s ease-in-out infinite alternate}
-body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.07;background-image:linear-gradient(rgba(7,233,251,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(7,233,251,.25) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
-@keyframes drift{to{transform:translate3d(2.5%,-1.5%,0) scale(1.04)}}
+body::before{content:"";position:fixed;inset:-3%;z-index:-3;background:radial-gradient(42% 36% at 18% 12%,rgba(7,233,251,.18),transparent 70%),radial-gradient(38% 32% at 82% 18%,rgba(139,79,245,.18),transparent 70%),url("assets/bg-anime-wide.webp") center top/cover no-repeat,linear-gradient(180deg,var(--bg0),var(--bg1));filter:saturate(1.15);animation:drift 40s ease-in-out infinite alternate}
+@media (max-aspect-ratio:4/5){body::before{background:radial-gradient(60% 30% at 50% 8%,rgba(7,233,251,.16),transparent 70%),url("assets/bg-anime-tall.webp") center top/cover no-repeat,linear-gradient(180deg,var(--bg0),var(--bg1))}}
+#animeRain{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none;opacity:.5;mix-blend-mode:screen}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,rgba(3,6,18,.15),rgba(3,6,18,.62) 22%,rgba(3,6,18,.68) 50%,rgba(3,6,18,.62) 78%,rgba(3,6,18,.15)),linear-gradient(180deg,rgba(3,6,18,.1),rgba(3,6,18,.45) 60%,rgba(3,6,18,.7))}
+@media (max-width:640px){:root{--card:rgba(8,17,33,.92)}body::after{background:linear-gradient(180deg,rgba(3,6,18,.35),rgba(3,6,18,.66) 30%,rgba(3,6,18,.74))}#animeRain{opacity:.38}}
+@keyframes drift{to{transform:translate3d(1.2%,-1%,0) scale(1.03)}}
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){body::before,.card,.row{animation:none!important}*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){body::before,.card,.row{animation:none!important}*{transition:none!important}#animeRain{display:none!important}}
 .wrap{max-width:1040px;margin:auto;padding:14px 16px 40px}
 header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}.brand img{height:40px;width:auto;display:block}
@@ -27,7 +30,7 @@ nav{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0;backg
 nav button{all:unset;cursor:pointer;text-align:center;padding:9px 6px;border-radius:10px;color:var(--mute);font-weight:600;font-size:14px}
 nav button:hover{color:var(--txt)}nav button.on{color:var(--bg0);background:linear-gradient(135deg,var(--cyan),var(--blue))}
 nav button:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:8px 0;backdrop-filter:blur(10px);animation:rise .35s ease both}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:8px 0;backdrop-filter:blur(10px);box-shadow:0 0 0 1px rgba(139,79,245,.10),0 10px 32px rgba(0,0,0,.45),inset 0 1px 0 rgba(7,233,251,.14);animation:rise .35s ease both}
 .tools{display:grid;grid-template-columns:1fr;gap:8px}
 label{display:block;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 input{width:100%;background:#0a1220;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:15px}
@@ -70,7 +73,7 @@ h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;co
 .extra{transition:opacity .2s}.compact .extra{display:none}
 footer{font-size:12px;color:var(--mute);margin-top:16px}
 @media (max-width:640px){.rewards{grid-template-columns:1fr}nav button{font-size:12px;padding:8px 2px}.row{grid-template-columns:36px 1fr auto;gap:6px}.pts .n{font-size:16px}.row .pts .unit{display:none}.hero{grid-template-columns:1fr}.brand img{height:34px}.bar i{width:5px;height:12px}}
-</style></head><body><div class="wrap" id="app">
+</style></head><body><canvas id="animeRain" aria-hidden="true"></canvas><div class="wrap" id="app">
 <header>
   <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261106-claims4" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
   <span class="pill">Sample data · provisional rules</span>
@@ -420,3 +423,4 @@ if (claimsPanel) {
 }
 __onmxMain();
 </script>
+<script src="assets/anime-bg.js?v=20261113-anime1" defer></script>
