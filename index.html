@@ -76,17 +76,17 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 </style></head><body><canvas id="animeRain" aria-hidden="true"></canvas><div class="wrap" id="app">
 <header>
   <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261106-claims4" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
-  <span class="pill">Sample data · provisional rules</span>
+  <span class="pill" id="statusPill">Pre-launch</span>
 </header>
 <section class="card season"><details open>
   <summary><span class="badge" id="seasonBadge">Season 1</span><span class="when" id="seasonWhen"></span></summary>
   <div class="body extra" id="seasonBody"></div>
 </details></section>
-<section class="rewards extra" aria-label="Two rewards" id="rewards">
-  <div class="card"><h2>Two rewards</h2><p id="rewardCopy"></p></div>
-  <div class="card"><h2>Season 1 BNB pool</h2><p id="prizeCopy"></p></div>
+<section class="rewards extra" aria-label="Rewards" id="rewards">
+  <div class="card"><h2 id="rewardHead">Credits</h2><p id="rewardCopy"></p></div>
+  <div class="card"><h2>Prize</h2><p id="prizeCopy"></p></div>
 </section>
-<nav role="tablist" aria-label="Sections">
+<nav role="tablist" aria-label="Sections" id="tabs">
   <button role="tab" data-t="board" class="on" aria-selected="true">Leaderboard</button>
   <button role="tab" data-t="results" aria-selected="false">Results</button>
   <button role="tab" data-t="champ" aria-selected="false">Championship</button>
@@ -102,12 +102,12 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 <div id="howBody"></div>
 </section>
 
-<section class="card extra" id="claimsApiPanel" aria-label="Optional seed claim">
-  <h3>Optional seed claim (provisional)</h3>
-  <p class="note">Ordinary play / search / referrals do <b>not</b> require a wallet or X login. This panel is an optional identity bridge for seed-purchase verification when the claims API is configured. Sample board rankings stay fixtures unless distinctly labeled verified ledger scores.</p>
+<section class="card extra" id="claimsApiPanel" aria-label="Optional seed claim" hidden>
+  <h3>Optional seed claim</h3>
+  <p class="note">Ordinary play and search do <b>not</b> require a wallet or X login. This panel links your X account for seed-purchase verification.</p>
   <div id="claimsApiStatus" class="note">Checking claims API readiness…</div>
 </section>
-<footer>Sample data: placeholder accounts, not real members. Credits are earned by contribution/verification work, never follows/RTs; seed bonus only amplifies effort (0 effort ⇒ 0). Rules are provisional. Onchain Matrix project dashboard — not affiliated with Warner Bros. or The Matrix films.</footer>
+<footer>Credits are earned by verified contribution work, never by follows or reposts. Onchain Matrix project dashboard — not affiliated with Warner Bros. or The Matrix films.</footer>
 </div>
 <script type="module">
 const ASSET_V = "20261106-claims4";
@@ -115,18 +115,25 @@ const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
 const E = await import(ASSET_BASE + "src/engine.js?v=" + ASSET_V);
-const { CONFIG, SEASON, SEASON_HISTORY, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd } = await import(ASSET_BASE + "src/config.js?v=" + ASSET_V);
+const { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd } = await import(ASSET_BASE + "src/config.js?v=" + ASSET_V);
 const R = await import(ASSET_BASE + "src/referral.js?v=" + ASSET_V);
 const CURRENT_SEASON = SEASON.number;
 const LIFETIME_START = SEASON.lifetimeStart;
-const ASOF = "2026-11-06"; // sample roster as-of (prelaunch) — board is a sample preview
+const UI = PUBLIC_UI;
+const LIVE = !!UI.liveData; // false ⇒ no fixture rows shown to visitors
+const START_MS = toInstantMs(SEASON.start), END_MS = toInstantMs(SEASON.end);
+// "Live" only with real data loaded AND inside the season window. No real data ⇒ always upcoming / not launched.
+const LAUNCHED = LIVE && Date.now() >= START_MS && Date.now() < END_MS;
+const BEFORE_START = Date.now() < START_MS;
+const ASOF = "2026-11-06"; // fixture roster as-of; only used when PUBLIC_UI.liveData is true
 const BOARD_SHOWN = 20;
 const PAGE_SIZE = 10; // 2 pages × 10 = top 20
 let boardPage = 0;
 let compact = false;
 let resultsSeasonNum = null; // selected season in Results tab
 
-const [roster, tasks, tre] = await Promise.all(["data/sample-roster.json","data/sample-tasks.json","data/sample-treasury.json"].map(u => fetch(ASSET_BASE + u + "?v=" + ASSET_V).then(r => { if (!r.ok) throw new Error("Failed to load " + u + " (" + r.status + ")"); return r.json(); })));
+const [roster, tasks, tre] = (LIVE || UI.showTreasury) ? await Promise.all(["data/sample-roster.json","data/sample-tasks.json","data/sample-treasury.json"].map(u => fetch(ASSET_BASE + u + "?v=" + ASSET_V).then(r => { if (!r.ok) throw new Error("Failed to load " + u + " (" + r.status + ")"); return r.json(); })))
+  : [{ accounts: [] }, { tasks: [] }, { inflows: [], races: [] }];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = n => Number(n).toLocaleString("en-US");
 const fmtB = pts => (Math.round(Number(pts) / CONFIG.POINTS_PER_BATTERY * 100) / 100).toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -144,21 +151,40 @@ function fmtSeasonInstant(iso) {
 const launchLabel = fmtSeasonInstant(LIFETIME_START);
 const seasonStartLabel = fmtSeasonInstant(SEASON.start);
 const seasonEndLabel = fmtSeasonInstant(SEASON.end);
-const [u1,u2,u3] = SEASON.prizes.usdIllustrativeSplit;
-const [bandLo, bandHi] = SEASON.prizes.usdIllustrativeBand;
+// Friendly short form, e.g. "Wednesday, Nov 18 at 12:00 PM ET" (season time zone is America/New_York ⇒ "ET").
+function fmtShort(iso, withTime = true) {
+  const dt = new Date(toInstantMs(iso));
+  const day = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: SEASON.timeZone }).format(dt);
+  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: SEASON.timeZone }).format(dt);
+  return withTime ? `${day} at ${time} ET` : day;
+}
+const seasonStartShort = fmtShort(SEASON.start);
+const seasonEndShort = fmtShort(SEASON.end, false);
+const seasonWeeks = Math.round((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / (7 * 864e5));
+const weeksWord = ["zero","one","two","three","four","five","six","seven","eight"][seasonWeeks] || String(seasonWeeks);
+// e.g. "Season 1 starts Wednesday, Nov 18 at 12:00 PM ET and runs three weeks, through Wednesday, Dec 9."
+const SEASON_WINDOW_COPY = `Season ${CURRENT_SEASON} starts ${seasonStartShort} and runs ${weeksWord} week${seasonWeeks === 1 ? "" : "s"}, through ${seasonEndShort}.`;
 
 document.getElementById("seasonBadge").textContent = `Season ${CURRENT_SEASON}`;
-document.getElementById("seasonWhen").textContent = `${seasonStartLabel} → ${seasonEndLabel}`;
-document.getElementById("seasonBody").innerHTML = `Season ${CURRENT_SEASON} runs <b>${esc(seasonStartLabel)}</b> through <b>${esc(seasonEndLabel)}</b> (${esc(SEASON.timeZone)}). Season &amp; lifetime credit bars both begin counting at campaign launch <b>${esc(launchLabel)}</b>. Board below is a <b>sample preview</b> (synthetic prelaunch fixtures) — not live Season ${CURRENT_SEASON} standings.`;
-document.getElementById("rewardCopy").innerHTML = `<b>BNB prizes</b> for the Season ${CURRENT_SEASON} top 3, plus <b>Credits</b> earned during the campaign that convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.`;
-const sampleRaised = E.cumulativeRaised(tre.inflows);
+document.getElementById("seasonWhen").textContent = LAUNCHED ? `Live now · ends ${seasonEndShort}` : `Starts ${seasonStartShort}`;
+document.getElementById("seasonBody").innerHTML = LAUNCHED
+  ? `Season ${CURRENT_SEASON} runs <b>${esc(seasonStartShort)}</b> through <b>${esc(seasonEndShort)}</b>.`
+  : `${esc(SEASON_WINDOW_COPY)} ${BEFORE_START ? "Get ready — the leaderboard opens at launch." : "The leaderboard opens as soon as the first verified results are in."}`;
+document.getElementById("statusPill").textContent = LAUNCHED ? `Season ${CURRENT_SEASON} live` : (BEFORE_START ? "Starts soon" : "Opening soon");
+document.getElementById("rewardCopy").innerHTML = UI.showAirdropConversion
+  ? `<b>BNB prizes</b> for the Season ${CURRENT_SEASON} top 3, plus <b>Credits</b> earned during the campaign that convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.`
+  : `Earn <b>Credits</b> for verified contribution work. 100 scoring points = 1 Credit.`;
+const sampleRaised = UI.showPrizeGrowth ? E.cumulativeRaised(tre.inflows) : 0;
 const growthUsd = proposedPrizeGrowthUsd(sampleRaised);
-document.getElementById("prizeCopy").innerHTML = `Configured base pool: <b>${SEASON.prizes.bnbTotal} BNB</b> · illustrative USD for that base ≈ <b>$${fmt(u1)} / $${fmt(u2)} / $${fmt(u3)}</b> (about $${fmt(bandLo)}–$${fmt(bandHi)}). <b>Proposed</b> treasury-linked growth (separate, USD not BNB): ${((SEASON.prizes.growthPctOfRaisedUsd||0)*100).toFixed(0)}% of cumulative raised USD — sample raised $${fmt(sampleRaised)} ⇒ <b>$${fmt(growthUsd)}</b>. Not added into the BNB figure; not a funded guarantee.`;
+document.getElementById("prizeCopy").innerHTML = esc(PRIZE_COPY) + (UI.showPrizeGrowth
+  ? ` <b>Proposed</b> treasury-linked growth (separate, USD not BNB): ${((SEASON.prizes.growthPctOfRaisedUsd||0)*100).toFixed(0)}% of cumulative raised USD — sample raised $${fmt(sampleRaised)} ⇒ <b>$${fmt(growthUsd)}</b>. Not added into the $${fmt(SEASON.prizes.usdTotal)} prize; not a funded guarantee.`
+  : "");
 
 document.getElementById("howBody").innerHTML = `
-<p class="note">Do contribution &amp; verification work → earn <b>Credits</b> (100 scoring points = 1 Credit — display only, not an airdrop rate).</p>
-<p class="note"><b>Two rewards:</b> (1) Season ${CURRENT_SEASON} pool of <b>${SEASON.prizes.bnbTotal} BNB</b> for the top 3 — illustrative ≈ $${fmt(u1)} / $${fmt(u2)} / $${fmt(u3)} (about $${fmt(bandLo)}–$${fmt(bandHi)}). (2) Credits earned during the campaign convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.</p>
-<p class="note"><b>Task scoring points</b> (per effort unit; effort=1 on a verified task ⇒ these points). Not Credits:</p>
+<p class="note">Do contribution &amp; verification work → earn <b>Credits</b> (100 scoring points = 1 Credit). No wallet is needed to play: the leaderboard, search and ordinary tasks never ask for one.</p>
+<p class="note"><b>${esc(PRIZE_COPY)}</b></p>
+${UI.showAirdropConversion ? `<p class="note"><b>Two rewards:</b> (1) ${esc(PRIZE_COPY)} (2) Credits earned during the campaign convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.</p>` : ""}
+<p class="note"><b>Task scoring points</b> (per effort unit; effort=1 on a verified task ⇒ these points):</p>
 <ul class="tasks">${SEASON.tasks.map(t => `<li><b>${esc(t.label)}</b> — ${t.points} scoring points / effort</li>`).join("")}</ul>
 <p class="note">Each round, placement gives a <b>scoring-point</b> head start for the <b>next round only</b> (never stacks, none in the first round, needs your own work that round):</p>
 <ol class="hs" aria-label="Next-round head start by placement">
@@ -167,7 +193,8 @@ document.getElementById("howBody").innerHTML = `
   <li><b style="height:12px"></b><span>+5</span>#11–20</li>
   <li><b style="height:2px;background:rgba(120,140,160,.3)"></b><span>0</span>#21+</li>
 </ol>
-<p class="note">Head starts are scoring points: +25 = +0.25 Credit, +15 = +0.15 Credit, +5 = +0.05 Credit. Referral Credits (prototype) count toward <b>lifetime only</b>, never season/BNB ranking. Spending Credits on championships and decay of hoarded Credits are planned, not yet applied.</p>`;
+<p class="note">Head starts are scoring points: +25 = +0.25 Credit, +15 = +0.15 Credit, +5 = +0.05 Credit.${UI.showReferral ? ` Referral Credits (prototype) count toward <b>lifetime only</b>, never season/BNB ranking.` : ""}</p>
+<p class="note"><b>Season dates:</b> ${esc(SEASON_WINDOW_COPY)} Credits start counting at launch.</p>`;
 
 const who = r => { const handle = String(r.handle || "").replace(/^@+/, "") || String(r.account || "").replace(/^@+/, ""); const u = r.xUrl ?? E.xLink(handle); const label = handle ? `@${handle}` : esc(r.account); return u ? `<a href="${esc(u)}" rel="noopener nofollow" target="_blank">${esc(label)}</a>` : `<span class="h">${esc(label)}</span>`; };
 const pc = i => i < 3 ? ` p${i + 1}` : "";
@@ -214,55 +241,61 @@ function bindPager(root) {
 
 function render() {
   document.getElementById("app").classList.toggle("compact", compact);
-  if (tab === "board") {
+  if (tab === "board" && !LIVE) {
+    out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN}</h3>
+      <p class="note">Season ${CURRENT_SEASON} hasn't launched yet — the leaderboard opens when it starts. ${esc(SEASON_WINDOW_COPY)} Complete verified tasks after launch to earn Credits and climb the board.</p></section>`;
+  } else if (tab === "board") {
     const all = E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }).slice(0, BOARD_SHOWN);
     const pages = Math.ceil(all.length / PAGE_SIZE) || 1;
     boardPage = Math.min(boardPage, pages - 1);
     const slice = all.slice(boardPage * PAGE_SIZE, (boardPage + 1) * PAGE_SIZE);
-    out.innerHTML = `<section class="card"><div class="board-head"><h3 style="margin:0">Season ${CURRENT_SEASON} · sample preview · Top ${BOARD_SHOWN}</h3>${pagerHtml(boardPage, pages, "top")}</div>
-      <p class="note">Synthetic sample — not live Season ${CURRENT_SEASON} standings. Rank ${BOARD_SHOWN + 1}+? search your handle.</p>
+    out.innerHTML = `<section class="card"><div class="board-head"><h3 style="margin:0">Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN}</h3>${pagerHtml(boardPage, pages, "top")}</div>
+      <p class="note">Rank ${BOARD_SHOWN + 1}+? Search your handle.</p>
       ${slice.map((r, i) => { const gi = boardPage * PAGE_SIZE + i; return `<div class="row${pc(gi)}"><div class="rk">${r.rank}</div><div class="who">${who(r)}</div><div class="pts">${power(r.score, all[0].score)}<span class="n">${fmtB(r.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`; }).join("")}
       ${pagerHtml(boardPage, pages, "bottom")}</section>`;
     bindPager(out);
   } else if (tab === "results") {
     const now = Date.now();
     const defs = SEASON_HISTORY;
-    const list = defs.map(s => ({ ...s, status: seasonStatus(s, now) }));
+    // Without real data the current season stays "not launched", even after its start time.
+    const statusOf = s => (!LIVE && s.number === CURRENT_SEASON) ? "not_launched" : seasonStatus(s, now);
+    const list = defs.map(s => ({ ...s, status: statusOf(s) }));
     if (resultsSeasonNum == null) {
       out.innerHTML = `<section class="card"><h3>Season results</h3>
-        <p class="note">Derived at page load from retained season config (static Pages — not a live server archive). Only configured seasons appear. Completed seasons list after their end time; winners require retained non-zero results.</p>
+        <p class="note">Final results appear here after each season closes.</p>
         ${list.map(s => {
           const st = s.status;
-          const label = st === "upcoming" ? "upcoming / sample preview — not final winners"
-            : st === "active" ? "in progress — not final winners"
+          const label = st === "not_launched" ? `starts ${s.number === CURRENT_SEASON ? seasonStartShort : "soon"} — results appear after it closes${s.number === CURRENT_SEASON ? ` on ${seasonEndShort}` : ""}`
+            : st === "upcoming" ? "upcoming — results appear after the season closes"
+            : st === "active" ? "underway — results appear after the season closes"
             : (Array.isArray(s.results) && s.results.some(r => (r.seasonPoints||0) > 0) ? "completed" : "completed — no retained winners yet");
           return `<button type="button" class="btn ghost" data-rsn="${s.number}" style="display:block;width:100%;text-align:left;margin:6px 0;padding:12px">Season ${s.number} — ${esc(label)}</button>`;
         }).join("")}</section>`;
       out.querySelectorAll("[data-rsn]").forEach(b => b.onclick = () => { resultsSeasonNum = +b.dataset.rsn; render(); });
     } else {
       const s = defs.find(x => x.number === resultsSeasonNum) || SEASON_HISTORY[0];
-      const st = seasonStatus(s, now);
+      const st = statusOf(s);
       const pages = Math.ceil(BOARD_SHOWN / PAGE_SIZE) || 1;
       boardPage = Math.min(boardPage, pages - 1);
       let rows = [];
       let banner = "";
       if (st !== "completed") {
-        // Upcoming/active: synthetic sample preview top 20 — not final winners
-        rows = E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }).slice(0, BOARD_SHOWN);
-        banner = `<p class="note"><b>Season ${s.number} — ${st === "upcoming" ? "upcoming" : "in progress"} / sample preview; not final winners.</b> Showing synthetic sample top ${BOARD_SHOWN} for layout testing only.</p>`;
+        // Not launched / upcoming / active: no final results — never show fixture rows here.
+        rows = [];
+        banner = `<p class="note"><b>${st === "not_launched" ? `Season ${s.number} hasn't launched yet.` : `Season ${s.number} hasn't closed yet.`}</b> ${st === "not_launched" && s.number === CURRENT_SEASON ? esc(SEASON_WINDOW_COPY) + " " : ""}Final results appear here after the season closes${s.number === CURRENT_SEASON ? ` on ${esc(seasonEndShort)}` : ""}.</p>`;
       } else if (Array.isArray(s.results) && s.results.some(r => (Number(r.seasonPoints)||0) > 0)) {
         rows = [...s.results].sort((a,b) => (b.score-a.score) || String(a.account).localeCompare(b.account)).slice(0, BOARD_SHOWN)
           .map((r,i) => ({ ...r, rank: i+1 }));
         banner = `<p class="note">Retained Season ${s.number} results (static snapshot).</p>`;
       } else {
-        banner = `<p class="note"><b>Season ${s.number} is completed, but no eligible retained winners are stored.</b> All-zero / empty fixtures are not awarded as winners.</p>`;
+        banner = `<p class="note"><b>Season ${s.number} has closed.</b> Final results will be posted here.</p>`;
         rows = [];
       }
       const slice = rows.slice(boardPage * PAGE_SIZE, (boardPage + 1) * PAGE_SIZE);
       const maxScore = rows[0]?.score || 1;
       out.innerHTML = `<section class="card"><div class="board-head"><button type="button" class="btn ghost" id="rsBack">← Seasons</button><h3 style="margin:0">Season ${s.number} · Top ${BOARD_SHOWN}</h3>${rows.length?pagerHtml(boardPage, pages, "results"):""}</div>
         ${banner}
-        ${slice.map((r,i) => { const gi = boardPage*PAGE_SIZE+i; return `<div class="row${pc(gi)}"><div class="rk">${r.rank}</div><div class="who">${who(r)}</div><div class="pts">${power(r.score||0, maxScore)}<span class="n">${fmtB(r.score||0)}</span>&nbsp;<span class="unit">credits</span></div></div>`; }).join("") || "<p class=\"note\">No rows.</p>"}
+        ${slice.map((r,i) => { const gi = boardPage*PAGE_SIZE+i; return `<div class="row${pc(gi)}"><div class="rk">${r.rank}</div><div class="who">${who(r)}</div><div class="pts">${power(r.score||0, maxScore)}<span class="n">${fmtB(r.score||0)}</span>&nbsp;<span class="unit">credits</span></div></div>`; }).join("")}
         ${rows.length?pagerHtml(boardPage, pages, "results-bottom"):""}</section>`;
       const back = out.querySelector("#rsBack"); if (back) back.onclick = () => { resultsSeasonNum = null; render(); };
       bindPager(out);
@@ -274,16 +307,19 @@ function render() {
     boardPage = Math.min(boardPage, pages - 1);
     const slice = standings.slice(boardPage * PAGE_SIZE, (boardPage + 1) * PAGE_SIZE);
     out.innerHTML = `<section class="card"><div class="board-head"><h3 style="margin:0">Championship · cumulative season points</h3>${standings.length?pagerHtml(boardPage, pages, "champ"):""}</div>
-      <p class="note">Sum of retained per-season championship points across completed seasons (same F1-style season points from the engine — not Credits, not referral/airdrop). Skipping a season adds 0; totals carry forward. Derived at page load from retained config — not a live server.</p>
+      <p class="note">Championship points add up across completed seasons (F1-style points per season, separate from Credits). Skipping a season adds 0; totals carry forward.</p>
       ${standings.length ? slice.map((s,i) => { const gi=boardPage*PAGE_SIZE+i; return `<div class="row${pc(gi)}"><div class="rk">${s.rank}</div><div class="who">${who({ handle: s.handle, account: s.account })}</div><div class="pts"><span class="n">${fmt(s.points)}</span>&nbsp;<span class="unit">cum. season pts</span></div></div>`; }).join("") + pagerHtml(boardPage, pages, "champ-bottom")
-        : `<p class="note">No completed seasons with retained winners yet. Season 1 has not launched — the board is a sample preview only (provisional rules). Real cumulative standings will appear after a season closes with real results.</p>`}
+        : `<p class="note">No championship standings yet. ${esc(SEASON_WINDOW_COPY)} Standings appear after a season closes with real results.</p>`}
       </section>`;
     if (standings.length) bindPager(out);
+  } else if (tab === "race" && !LIVE) {
+    out.innerHTML = `<section class="card"><h3>Credit results</h3><p class="note">Round-by-round Credit results appear once Season ${CURRENT_SEASON} starts on ${esc(seasonStartShort)}.</p></section>`;
   } else if (tab === "race") {
     const c = E.championship(tre.races, tasks.tasks, roster.accounts);
-    out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · Credits (sample)</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: String(x.account).replace(/^@+/, ""), account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmtB(x.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
-  } else {
-        const cum = E.cumulativeRaised(tre.inflows);
+    out.innerHTML = `<div class="grid">` + c.results.map((r, k) => { const top = r.rows.slice(0, 10); return `<section class="card"><h3>Round ${k + 1} · Credits</h3>` + top.map((x, i) => `<div class="row${pc(i)}"><div class="rk">${x.rank}</div><div class="who">${who({ handle: String(x.account).replace(/^@+/, ""), account: x.account })}</div><div class="pts">${power(x.score, top[0].score)}<span class="n">${fmtB(x.score)}</span>&nbsp;<span class="unit">credits</span></div></div>`).join("") + "</section>"; }).join("") + "</div>";
+  } else if (UI.showTreasury) {
+    // Treasury tab: hidden from visitors while PUBLIC_UI.showTreasury is false (not live).
+    const cum = E.cumulativeRaised(tre.inflows);
     const idx = E.treasuryIndex(cum);
     const curve = CONFIG.TREASURY_CURVE;
     const tb = SEASON.treasuryBuy;
@@ -293,7 +329,7 @@ function render() {
       <div>
         <p class="note"><b>Unitless recognition metric</b> — formula: floor ${curve.floor} + ${(curve.pct*100).toFixed(0)}% of cumulative <b>raised</b> (positive sample inflows only; outflows ignored), capped at ${fmt(curve.cap)}. Sample raised ${fmt(cum)} ⇒ index <b>${fmt(idx)}</b>.</p>
         <p class="note">This is <b>not</b> a wallet balance, not $, not tokens, and <b>not</b> the Season ${CURRENT_SEASON} BNB prize pool.</p>
-        <p class="note"><b>Proposed</b> prize growth (USD, separate from base ${SEASON.prizes.bnbTotal} BNB): ${((SEASON.prizes.growthPctOfRaisedUsd||0)*100).toFixed(0)}% × raised USD ⇒ <b>$${fmt(growth)}</b> on this sample. Not converted into BNB here; not a funded guarantee.</p>
+        <p class="note"><b>Proposed</b> prize growth (USD, separate from the $${fmt(SEASON.prizes.usdTotal)} prize): ${((SEASON.prizes.growthPctOfRaisedUsd||0)*100).toFixed(0)}% × raised USD ⇒ <b>$${fmt(growth)}</b> on this sample. Not converted into BNB here; not a funded guarantee.</p>
       </div></section>
       <section class="card"><h3>Treasury buy-in · proposed scoring points</h3>
         <p class="note"><b>PROPOSED / provisional</b> continuous formula (no bracket cliffs): <code>points = ${tb.capPoints} × (1 − e^(−USD / ${tb.scaleUsd}))</code>, rounded to 2 decimals, never above <b>${tb.capPoints}</b> raw scoring points per player per season (${fmtB(tb.capPoints)} Credits display). Formula version <b>${esc(tb.formulaVersion)}</b>. Claims freeze at purchase; extra buys queue for the <b>next</b> season as a new claim. <b>Purchase verification / email–wallet–X linking is not yet live</b> — examples below are fixtures only; rankings unchanged.</p>
@@ -310,7 +346,7 @@ function searchRows(allRows, q) { const h = normHandle(q); if (!h) return null; 
 
 function memStore() { let s = null; return { get: () => s, set: v => { s = v; } }; }
 
-R.activatePending({ cfg: SEASON, now: Date.now(), storeApi });
+if (UI.showReferral) R.activatePending({ cfg: SEASON, now: Date.now(), storeApi });
 
 function referralPanel(handle) {
   const link = R.referralLink(location.origin + location.pathname.replace(/index\.html$/, ""), handle);
@@ -325,9 +361,14 @@ function referralPanel(handle) {
 let allRows = null;
 const sres = document.getElementById("sres");
 function runSearch(q) {
+  if (!LIVE) {
+    if (normHandle(q) === "") { sres.innerHTML = `<section class="card note">Enter an X handle to search.</section>`; return; }
+    sres.innerHTML = `<section class="card note">Standings appear once Season ${CURRENT_SEASON} starts on ${esc(seasonStartShort)}. Search for <b>@${esc(normHandle(q))}</b> again after launch.</section>`;
+    return;
+  }
   allRows ??= E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }, { ...CONFIG, BOARD_SIZE: Infinity });
   // Include locally registered referred handles as synthetic zero-activity rows for search
-  const local = R.listLocalHandles(storeApi);
+  const local = UI.showReferral ? R.listLocalHandles(storeApi) : [];
   const extras = local.filter(h => !allRows.some(r => r.account === h)).map(h => ({ account: h, handle: h.slice(1), score: 0, rank: null, xUrl: E.xLink(h.slice(1)) }));
   const pool = allRows.concat(extras.map((r, i) => ({ ...r, rank: "—", classification: "Unranked", next: "—" })));
   const hits = searchRows(pool, q);
@@ -351,7 +392,7 @@ function runSearch(q) {
           ${progRow(`Season ${CURRENT_SEASON} credits · vs season leader (counting begins ${seasonStartLabel})`, S, seaLead, "No Season 1 activity yet")}
           ${progRow(`Lifetime credits · vs lifetime leader (counting begins ${launchLabel})`, L, lifeLead, "No campaign activity yet")}
         </div>
-        ${referralPanel(r.account)}
+        ${UI.showReferral ? referralPanel(r.account) : ""}
       </div></section>`;
   }).join("");
   sres.querySelectorAll("#refcopy").forEach(btn => btn.onclick = async () => {
@@ -366,7 +407,7 @@ document.getElementById("sform").onsubmit = ev => { ev.preventDefault(); runSear
 (function referralLanding() {
   const ref = R.decodeRef(new URLSearchParams(location.search).get("ref"));
   const box = document.getElementById("refSignup");
-  if (!ref) return;
+  if (!ref || !UI.showReferral) return; // referral UI hidden while PUBLIC_UI.showReferral is false
   box.hidden = false;
   box.innerHTML = `<h3>Join via referral</h3>
     <p class="note">Referrer <b>${esc(ref)}</b>. Enter your X handle to register in this browser only.</p>
@@ -391,6 +432,9 @@ document.getElementById("sform").onsubmit = ev => { ev.preventDefault(); runSear
   };
 })();
 
+// Hide tabs for features that are not live (PUBLIC_UI flags).
+document.querySelectorAll("nav button").forEach(b => { if (b.dataset.t === "treasury" && !UI.showTreasury) b.remove(); });
+{ const navEl = document.getElementById("tabs"); const n = document.querySelectorAll("nav button").length; if (navEl && navEl.style && n) navEl.style.gridTemplateColumns = `repeat(${n},1fr)`; }
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; if (tab !== "results") resultsSeasonNum = null; boardPage = 0; document.querySelectorAll("nav button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", x === b); }); render(); });
 document.addEventListener("keydown", e => {
   if (tab !== "board") return;
@@ -402,7 +446,11 @@ render();
 // Optional seed-claim client (Bearer/CSRF in memory only; no ordinary-play gate)
 const Claims = await import(ASSET_BASE + "src/claims-client.js?v=" + ASSET_V);
 const claimsPanel = document.getElementById("claimsApiPanel");
-if (claimsPanel) {
+// Visitors only see the claim panel once X login is configured; until then it stays hidden.
+let claimsReady = false;
+try { const cfg = await Claims.fetchPublicConfig(); claimsReady = !!Claims.readinessSummary(cfg.json || {}).xLoginEnabled; } catch { claimsReady = false; }
+if (claimsPanel && claimsReady) {
+  claimsPanel.hidden = false;
   Claims.mountClaimsPanel(claimsPanel, { openerOrigin: location.origin }).catch((e) => {
     const el = document.getElementById("claimsApiStatus");
     if (el) el.innerHTML = `<p class="note">Claims panel failed to start (${esc(String(e && e.message || e))}). Ordinary play is unaffected.</p>`;

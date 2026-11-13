@@ -60,7 +60,7 @@ t("index bootstrap uses dynamic import + ASSET_V cache-bust + root ASSET_BASE", 
   ok(!/import\s*\{[^}]+\}\s*from\s*["']\.\/src\//.test(html), "no static relative named imports");
 });
 
-t("Node DOM harness: bootstrap fills season/prize/out and referral with ?ref=", () => {
+t("Node DOM harness: bootstrap fills season/prize/out; ?ref= referral gated off; clean empty board", () => {
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
   const body = script
     .replace(/const ASSET_BASE\s*=\s*["']\/onmx-gamification\/["']\s*;/,
@@ -128,8 +128,13 @@ const ref = document.getElementById("refSignup");
 if (!when || when.length < 10) { console.error("FAIL seasonWhen", when); process.exit(2); }
 if (!prize || !/BNB/.test(prize)) { console.error("FAIL prizeCopy", prize?.slice(0,80)); process.exit(3); }
 if (!out || out.length < 100) { console.error("FAIL out", out?.length); process.exit(4); }
-if (ref.hidden) { console.error("FAIL refSignup hidden"); process.exit(5); }
-if (!/Sign up/i.test(ref.innerHTML)) { console.error("FAIL ref form", ref.innerHTML.slice(0,120)); process.exit(6); }
+// Referral UI is gated off (PUBLIC_UI.showReferral=false): ?ref= must NOT open the signup form.
+if (/Sign up/i.test(ref.innerHTML)) { console.error("FAIL ref form shown while referral gated off"); process.exit(5); }
+if (!/hasn't launched yet/.test(out) || /sample|synthetic|provisional|preview/i.test(out)) { console.error("FAIL board empty state", out.slice(0,200)); process.exit(6); }
+if (!/[$]600 paid in BNB/.test(prize) || /1 BNB|700/.test(prize)) { console.error("FAIL prize copy", prize); process.exit(7); }
+if (!/Starts /.test(when)) { console.error("FAIL seasonWhen upcoming", when); process.exit(8); }
+const claims = document.getElementById("claimsApiPanel");
+if (claims.hidden === false && /decoder_implemented|preview only/.test(claims.innerHTML)) { console.error("FAIL claims panel dev strings"); process.exit(9); }
 console.log("BOOT_OK");
 `;
   writeFileSync(bootPath, harness);

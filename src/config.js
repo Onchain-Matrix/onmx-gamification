@@ -5,17 +5,19 @@
 /** Single editable season/campaign block. Bump number/start/end for Season 2+; never retie lifetimeStart. */
 export const SEASON = Object.freeze({
   number: 1,
+  // Owner-approved schedule (Nov 13 2026): Wed Nov 18 noon ET → Wed Dec 9 noon ET (three weeks).
   // Explicit -05:00 (EST) so browsers in any TZ parse noon Eastern correctly.
-  start: "2026-11-09T12:00:00-05:00",
-  end: "2026-11-23T12:00:00-05:00",
+  start: "2026-11-18T12:00:00-05:00",
+  end: "2026-12-09T12:00:00-05:00",
   timeZone: "America/New_York",
   // FIXED campaign launch — both season/lifetime credit bars count from here; do not change when bumping SEASON.number.
-  lifetimeStart: "2026-11-09T12:00:00-05:00",
-  // Owner-configured Season 1 prize: 1 BNB total. USD figures are illustrative only (not a funding verification).
+  lifetimeStart: "2026-11-18T12:00:00-05:00",
+  // Season 1 prize (owner decision Nov 13 2026). Visible copy lives in PRIZE_COPY below.
   prizes: Object.freeze({
-    bnbTotal: 1, // owner base display (BNB) — not auto-mixed with USD growth
-    usdIllustrativeSplit: Object.freeze([300, 200, 100]), // places 1–3 illustrative USD for the base 1 BNB
-    usdIllustrativeBand: Object.freeze([600, 700]),
+    // Owner decision (Nov 13 2026): $600 total, paid in BNB — $300 / $200 / $100 for places 1–3.
+    usdTotal: 600,
+    usdSplit: Object.freeze([300, 200, 100]),
+    payoutAsset: "BNB",
     // PROPOSED (not final): separate USD growth = growthPct × cumulative raised USD. Not converted to BNB here.
     growthPctOfRaisedUsd: 0.01
   }),
@@ -50,6 +52,22 @@ export const SEASON = Object.freeze({
     // INTEGRATION: ranking destination undecided — schedule + pure helpers only until verification backend exists.
   })
 });
+
+/**
+ * PUBLIC UI SWITCHES — what visitors see on the live dashboard.
+ * Features that are not live stay in the code but are hidden while their flag is false.
+ * Flip a flag to true only with owner approval.
+ */
+export const PUBLIC_UI = Object.freeze({
+  liveData: false,            // false ⇒ no fixture/test rows anywhere; season shown as upcoming/not launched even after the start time
+  showTreasury: false,        // Treasury tab (index, buy-in scoring points) — not live
+  showPrizeGrowth: false,     // 1% treasury-linked prize growth — not approved
+  showReferral: false,        // browser-local referral links / ?ref= signup — not live
+  showAirdropConversion: false // Credits → airdrop conversion copy — not announced
+});
+
+/** Public prize line (owner decision Nov 13 2026). Single place to edit the visible prize copy. Never pair with a Credits→airdrop rate. */
+export const PRIZE_COPY = "Season 1 prize: $600 paid in BNB — $300 / $200 / $100 for the top 3.";
 
 /**
  * Retained season definitions for Results history + cumulative Championship.

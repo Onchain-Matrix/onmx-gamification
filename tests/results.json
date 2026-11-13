@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 50,
-  "passed": 50,
+  "total": 51,
+  "passed": 51,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -159,7 +159,7 @@
    "pass": true
   },
   {
-   "name": "SEASON config: prizes 1 BNB + USD split/band; tasks drive TASK_WEIGHTS; offsets -05:00",
+   "name": "SEASON config: prize $600 paid in BNB, 300/200/100; Nov 18–Dec 9 noon ET; tasks drive TASK_WEIGHTS; offsets -05:00",
    "pass": true
   },
   {
@@ -167,7 +167,7 @@
    "pass": true
   },
   {
-   "name": "index: sample preview label, prize band, bar start copy, headstart +5, pager, no battery",
+   "name": "index: launch-clean copy (no sample/provisional wording), PRIZE_COPY, bar start copy, headstart +5, pager, no battery",
    "pass": true
   },
   {
@@ -184,6 +184,10 @@
   },
   {
    "name": "index Results + Championship tabs; Treasury branch unchanged",
+   "pass": true
+  },
+  {
+   "name": "PUBLIC_UI: not-live features gated off; PRIZE_COPY exact; LAUNCHED requires real data",
    "pass": true
   },
   {
