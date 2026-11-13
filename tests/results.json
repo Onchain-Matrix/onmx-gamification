@@ -227,7 +227,7 @@
    "pass": true
   },
   {
-   "name": "PUBLIC_UI: signals + referral flags exist and stay OFF; legacy local referral OFF",
+   "name": "PUBLIC_UI: signals + referral ON (owner approved Nov 13 2026); legacy local referral OFF",
    "pass": true
   },
   {

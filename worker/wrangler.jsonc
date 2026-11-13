@@ -14,14 +14,14 @@
     "SIWE_DOMAIN": "onchain-matrix.github.io",
     "SIWE_URI": "https://onchain-matrix.github.io/onmx-gamification/",
     "POLICY_VERSION": "claims-policy-v1",
-    "SEASON_START_ISO": "2026-11-09T12:00:00-05:00",
-    "SEASON_END_ISO": "2026-11-23T12:00:00-05:00",
+    "SEASON_START_ISO": "2026-11-18T12:00:00-05:00",
+    "SEASON_END_ISO": "2026-12-09T12:00:00-05:00",
     "SEASON_NUMBER": "1",
-    "LIFETIME_START_ISO": "2026-11-09T12:00:00-05:00",
+    "LIFETIME_START_ISO": "2026-11-18T12:00:00-05:00",
     "BNB_RPC_URL": "https://bsc-dataseed.binance.org/",
     "ETH_RPC_URL": "https://ethereum.publicnode.com",
     "PRODUCTION_GRANTS_ENABLED": "0",
-    "SIGNALS_OPEN": "0",
+    "SIGNALS_OPEN": "1",
     "LEADERBOARD_CACHE_SECONDS": "60"
   },
   "d1_databases": [

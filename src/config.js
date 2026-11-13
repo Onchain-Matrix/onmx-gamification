@@ -21,7 +21,7 @@ export const SEASON = Object.freeze({
     // PROPOSED (not final): separate USD growth = growthPct × cumulative raised USD. Not converted to BNB here.
     growthPctOfRaisedUsd: 0.01
   }),
-  // MATRIX SIGNALS player tasks (PROPOSED values — owner sign-off pending; shown publicly only when PUBLIC_UI.signals is true).
+  // MATRIX SIGNALS player tasks (owner approved Nov 13 2026; shown publicly while PUBLIC_UI.signals is true).
   // points = scoring points for ONE approved signal at the "accepted" tier (100 points = 1 Credit).
   // Engine compatibility: an approved signal becomes a task row { type: id, effort: tierMultiplier } ⇒ points × multiplier.
   // Credits are granted only by a reviewer approving the submission in the Worker — never self-awarded.
@@ -46,7 +46,7 @@ export const SEASON = Object.freeze({
     Object.freeze({ id: "circle_onboard", label: "Circle onboard", points: 25 }),
     Object.freeze({ id: "video_watch", label: "Video watch (one-time)", points: 5 })
   ]),
-  // Season 1 referral — SERVER-SIDE (Worker + D1), replaces the browser-local prototype. PROPOSED; UI behind PUBLIC_UI.referral.
+  // Season 1 referral — SERVER-SIDE (Worker + D1), replaces the browser-local prototype. Owner approved Nov 13 2026; UI behind PUBLIC_UI.referral.
   // A referral QUALIFIES only when the referred player's FIRST Matrix Signal is APPROVED by a reviewer.
   // Then: referrer +10 Credits (level 1), referrer's referrer +5 Credits (level 2, only if that referrer is an approved contributor).
   // No self-referral; one referrer per player, set at registration and immutable; cap 20 qualified per referrer per season.
@@ -57,7 +57,7 @@ export const SEASON = Object.freeze({
     model: "server-flat-v1",
     referrerCredits: 10,   // level 1
     level2Credits: 5,      // level 2
-    welcomeCredits: 0,     // 6 Nov prototype paid +5 welcome to the new player; owner to choose welcome vs level 2
+    welcomeCredits: 0,     // owner approved Nov 13 2026: level 2 (+5), no welcome bonus
     capQualifiedPerSeason: 20,
     qualifyOn: "first_approved_signal",
     campaignId: "onmx-campaign"
@@ -88,18 +88,18 @@ export const PUBLIC_UI = Object.freeze({
   showTreasury: false,        // Treasury tab (index, buy-in scoring points) — not live
   showPrizeGrowth: false,     // 1% treasury-linked prize growth — not approved
   showReferral: false,        // LEGACY browser-local referral prototype — retired; keep false (replaced by `referral` below)
-  signals: false,             // Matrix Signals tasks, submission form and Credit table — owner flips after review
-  referral: false,            // server-side referral link / ?ref=CODE signup / pending vs qualified counts — owner flips after review
+  signals: true,              // Matrix Signals tasks, submission form and Credit table — owner approved Nov 13 2026
+  referral: true,             // server-side referral link / ?ref=CODE signup / pending vs qualified counts — owner approved Nov 13 2026
   showAirdropConversion: false // Credits → airdrop conversion copy — not announced
 });
 
 /**
- * MATRIX SIGNALS credit table (PROPOSED — owner sign-off pending). Mirrors worker/src/signals/policy.js (Worker is authoritative).
+ * MATRIX SIGNALS credit table (owner approved Nov 13 2026). Mirrors worker/src/signals/policy.js (Worker is authoritative).
  * Credits for one APPROVED signal = base[type] × tierMultiplier[tier] + capped outcome bonus. Rejected / low-quality / spam = 0.
  */
 export const SIGNALS = Object.freeze({
-  status: "proposed",
-  policyVersion: "signals-policy-v1-proposed",
+  status: "approved", // owner approved Nov 13 2026
+  policyVersion: "signals-policy-v1",
   apiBase: "https://onmx-gamification-claims.onmx.workers.dev",
   baseCredits: Object.freeze({ reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 }),
   tierMultiplier: Object.freeze({ accepted: 1, strong: 2, outstanding: 4 }),

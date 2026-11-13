@@ -325,7 +325,7 @@ t("Matrix Signals tasks replace the five legacy tasks; ids/labels/descriptions; 
   for (const x of SEASON.tasks) { ok(x.desc && x.desc.length > 40 && x.desc.length < 240, "desc " + x.id); eq(x.points, SIGNALS.baseCredits[x.id.replace("signal_", "")] * CONFIG.POINTS_PER_BATTERY); }
   eq(SEASON.legacyTasks.map(x => x.id), ["receipt_check", "verifier_checklist", "architect_ship", "circle_onboard", "video_watch"]);
   ok(!/\bfollow (us|@|for)|retweet|repost for|like for/i.test(SEASON.tasks.map(x => x.desc).join(" ")), "no follow/retweet-for-points tasks");
-  eq(SIGNALS.status, "proposed");
+  eq(SIGNALS.status, "approved");
 });
 t("signalCredits: type × tier + capped outcome bonus; unknown/rejected = 0", () => {
   eq(signalCredits("reply", "accepted"), 5); eq(signalCredits("reply", "strong"), 10); eq(signalCredits("reply", "outstanding"), 20);
@@ -349,8 +349,8 @@ t("referral: legacy % model marked legacy; flat server model 10/5, cap 20, quali
   eq(CONFIG.REFERRAL_FLAT, { l1Credits: 10, l2Credits: 5, capQualifiedPerSeason: 20, qualifyOn: "first_approved_signal", scope: "lifetime_only" });
   eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.capQualifiedPerSeason, 20);
 });
-t("PUBLIC_UI: signals + referral flags exist and stay OFF; legacy local referral OFF", () => {
-  eq(PUBLIC_UI.signals, false); eq(PUBLIC_UI.referral, false); eq(PUBLIC_UI.showReferral, false);
+t("PUBLIC_UI: signals + referral ON (owner approved Nov 13 2026); legacy local referral OFF", () => {
+  eq(PUBLIC_UI.signals, true); eq(PUBLIC_UI.referral, true); eq(PUBLIC_UI.showReferral, false); // owner approved Nov 13 2026
 });
 t("Worker signal policy mirrors src/config.js SIGNALS", () => {
   const w = readFileSync(new URL("../worker/src/signals/policy.js", import.meta.url), "utf8");

@@ -1,9 +1,9 @@
 /**
- * Matrix Signals + referral policy (PROPOSED — owner sign-off pending).
+ * Matrix Signals + referral policy (owner approved Nov 13 2026).
  * Mirrors SIGNALS / REFERRAL_FLAT in src/config.js. The Worker is the source of truth for granted Credits.
  */
 export const SIGNAL_POLICY = Object.freeze({
-  version: "signals-policy-v1-proposed",
+  version: "signals-policy-v1",
   // Credits for an APPROVED signal at the "accepted" tier. strong = x2, outstanding = x4. Rejected / spam = 0.
   baseCredits: Object.freeze({ reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 }),
   tierMultiplier: Object.freeze({ accepted: 1, strong: 2, outstanding: 4 }),
@@ -19,10 +19,10 @@ export const SIGNAL_POLICY = Object.freeze({
 });
 
 export const REFERRAL_POLICY = Object.freeze({
-  version: "referral-flat-v1-proposed",
+  version: "referral-flat-v1",
   l1Credits: 10,               // referrer, when the referred player's FIRST signal is approved
   l2Credits: 5,                // referrer's referrer (only if the referrer has an approved signal themselves)
-  welcomeCredits: 0,           // 6 Nov prototype had +5 welcome for the new player; owner to choose L2 vs welcome
+  welcomeCredits: 0,           // owner approved Nov 13 2026: level 2, no welcome bonus
   capQualifiedPerSeason: 20,   // per referrer per season (L1 and L2 each)
   qualifyOn: "first_approved_signal",
   creditsScope: "lifetime_only", // never season / BNB ranking (6 Nov owner policy)

@@ -11,6 +11,7 @@ export default defineWorkersConfig({
             ALLOW_TEST_FIXTURE_RECEIPTS: "1",
             ADMIN_TOKEN: "test-admin-token-0123456789abcdef",
             LEADERBOARD_CACHE_SECONDS: "0",
+            SIGNALS_OPEN: "0", // tests exercise the closed/preview gate; production wrangler.jsonc has SIGNALS_OPEN=1
             ALLOWED_ORIGIN: "https://onchain-matrix.github.io",
             SIWE_DOMAIN: "onchain-matrix.github.io",
             SIWE_URI: "https://onchain-matrix.github.io/onmx-gamification/",

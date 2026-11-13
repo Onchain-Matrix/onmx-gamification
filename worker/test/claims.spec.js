@@ -49,7 +49,7 @@ function makeFakeReceipt({ chainId = 56, purchaser, paymentUsd = 1000, txHash, l
     : "0xdac17f958d2ee523a2206206994597c13d831ec7";
   const decimals = chainId === 56 ? 18 : 6;
   const amount = BigInt(Math.round(paymentUsd * 10 ** decimals));
-  const ts = Math.floor(Date.parse("2026-11-10T15:00:00-05:00") / 1000);
+  const ts = Math.floor(Date.parse("2026-11-20T15:00:00-05:00") / 1000);
   const data =
     "0x" +
     usdt.replace(/^0x/, "").padStart(64, "0") +
@@ -103,7 +103,7 @@ describe("policy + decoder", () => {
   it("exp-v1 + prelaunch + next season", () => {
     expect(treasuryBuyPoints(1000)).toBeCloseTo(158.03, 2);
     expect(classifyPurchaseTime(Date.parse("2026-11-01T12:00:00-05:00")).status).toBe("unassigned");
-    const c = classifyPurchaseTime(Date.parse("2026-11-10T12:00:00-05:00"));
+    const c = classifyPurchaseTime(Date.parse("2026-11-20T12:00:00-05:00"));
     expect(resolveAwardSeason({ classification: c, existingCurrentSeasonClaims: 1 }).awardSeason).toBe(2);
   });
   it("topic0 matches ABI event signature", () => {
