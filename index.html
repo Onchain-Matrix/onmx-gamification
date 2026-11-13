@@ -73,9 +73,19 @@ h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;co
 .extra{transition:opacity .2s}.compact .extra{display:none}
 footer{font-size:12px;color:var(--mute);margin-top:16px}
 @media (max-width:640px){.rewards{grid-template-columns:1fr}nav button{font-size:12px;padding:8px 2px}.row{grid-template-columns:36px 1fr auto;gap:6px}.pts .n{font-size:16px}.row .pts .unit{display:none}.hero{grid-template-columns:1fr}.brand img{height:34px}.bar i{width:5px;height:12px}}
-</style></head><body><canvas id="animeRain" aria-hidden="true"></canvas><div class="wrap" id="app">
+html{scroll-behavior:smooth}/* Hero stage (visual only). Avoid class name "hero" — already used by dashboard grid. */.hero-stage{position:relative;width:100%;height:100svh;min-height:100svh;overflow:hidden;background:var(--bg0);isolation:isolate;color:var(--txt)}.hero-stage .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:0;pointer-events:none}.hero-stage .hero-ui{position:absolute;inset:0;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:28px 20px 36px}.hero-stage .hero-brand{pointer-events:none}.hero-stage .hero-brand img{height:44px;width:auto;display:block;filter:drop-shadow(0 2px 12px rgba(0,0,0,.65))}.hero-stage .hero-scroll{pointer-events:auto;display:inline-flex;flex-direction:column;align-items:center;gap:6px;color:var(--txt);text-decoration:none;font-family:Orbitron,Inter,sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.86;text-shadow:0 1px 8px rgba(0,0,0,.7)}.hero-stage .hero-scroll:hover,.hero-stage .hero-scroll:focus-visible{opacity:1;color:var(--cyan)}.hero-stage .hero-scroll .chev{display:block;width:10px;height:10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);animation:heroNudge 1.8s ease-in-out infinite}@keyframes heroNudge{0%,100%{transform:rotate(45deg) translate(0,0);opacity:.7}50%{transform:rotate(45deg) translate(3px,3px);opacity:1}}#dashboard{scroll-margin-top:0;position:relative}@media (max-aspect-ratio:4/5){.hero-stage{background:var(--bg0)}.hero-stage::before{content:"";position:absolute;inset:-8%;background:url("assets/hero-alley-poster.webp") center/cover no-repeat;filter:blur(16px) brightness(.4) saturate(1.1);z-index:0}.hero-stage .hero-video{inset:auto;top:46%;left:50%;width:128%;height:auto;transform:translate(-50%,-50%);object-fit:contain;z-index:1}}@media (prefers-reduced-motion:reduce){.hero-stage .hero-video{display:none!important}.hero-stage{background:var(--bg0) url("assets/hero-alley-poster.webp") center/cover no-repeat}.hero-stage::before{display:none!important}.hero-stage .hero-scroll .chev{animation:none!important}html{scroll-behavior:auto}}</style></head><body><section class="hero-stage" id="hero" aria-label="Onchain Matrix">
+  <video class="hero-video" id="heroVideo" autoplay muted loop playsinline preload="metadata" poster="assets/hero-alley-poster.webp" aria-hidden="true">
+    <source src="assets/hero-alley.webm?v=20261113-hero1" type="video/webm">
+    <source src="assets/hero-alley.mp4?v=20261113-hero1" type="video/mp4">
+  </video>
+  <div class="hero-ui">
+    <div class="hero-brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261113-hero1" width="170" height="58" alt="Onchain Matrix"></div>
+    <a class="hero-scroll" href="#dashboard">Scroll<span class="chev" aria-hidden="true"></span></a>
+  </div>
+</section>
+<canvas id="animeRain" aria-hidden="true"></canvas><div id="dashboard"><div class="wrap" id="app">
 <header>
-  <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261106-claims4" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
+  <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261113-hero1" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
   <span class="pill" id="statusPill">Pre-launch</span>
 </header>
 <section class="card season"><details open>
@@ -109,8 +119,9 @@ footer{font-size:12px;color:var(--mute);margin-top:16px}
 </section>
 <footer>Credits are earned by verified contribution work, never by follows or reposts. Onchain Matrix project dashboard — not affiliated with Warner Bros. or The Matrix films.</footer>
 </div>
+</div>
 <script type="module">
-const ASSET_V = "20261106-claims4";
+const ASSET_V = "20261113-hero1";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -472,4 +483,4 @@ if (claimsPanel && claimsReady) {
 }
 __onmxMain();
 </script>
-<script src="assets/anime-bg.js?v=20261113-anime1" defer></script>
+<script src="assets/anime-bg.js?v=20261113-hero1" defer></script>
