@@ -273,7 +273,7 @@ function render() {
     out.innerHTML = `<section class="card"><div class="board-head"><h3 style="margin:0">Championship · cumulative season points</h3>${standings.length?pagerHtml(boardPage, pages, "champ"):""}</div>
       <p class="note">Sum of retained per-season championship points across completed seasons (same F1-style season points from the engine — not Credits, not referral/airdrop). Skipping a season adds 0; totals carry forward. Derived at page load from retained config — not a live server.</p>
       ${standings.length ? slice.map((s,i) => { const gi=boardPage*PAGE_SIZE+i; return `<div class="row${pc(gi)}"><div class="rk">${s.rank}</div><div class="who">${who({ handle: s.handle, account: s.account })}</div><div class="pts"><span class="n">${fmt(s.points)}</span>&nbsp;<span class="unit">cum. season pts</span></div></div>`; }).join("") + pagerHtml(boardPage, pages, "champ-bottom")
-        : `<p class="note">No completed seasons with retained winners yet. Season ${CURRENT_SEASON} is ${seasonStatus(SEASON_HISTORY[0], now)} — cumulative standings appear after seasons close with real results.</p>`}
+        : `<p class="note">No completed seasons with retained winners yet. Season 1 has not launched — the board is a sample preview only (provisional rules). Real cumulative standings will appear after a season closes with real results.</p>`}
       </section>`;
     if (standings.length) bindPager(out);
   } else if (tab === "race") {
