@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg0:#030612;--bg1:#061126;--card:rgba(8,17,33,.86);--line:rgba(7,233,251,.18);--txt:#F4FBFF;--mute:#8FA3BF;--cyan:#07E9FB;--blue:#5887F4;--violet:#8B4FF5;--mint:#00ff88;--gold:#E8D9A8}
+:root{--bg0:#030612;--bg1:#061126;--card:rgba(8,17,33,.86);--line:rgba(7,233,251,.18);--txt:#F4FBFF;--mute:#8FA3BF;--cyan:#07E9FB;--blue:#5887F4;--violet:#8B4FF5;--violet-text:#C4A8FF;--mint:#00ff88;--gold:#E8D9A8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
 body{font:15px/1.45 Inter,system-ui,sans-serif;color:var(--txt);background:var(--bg0);overflow-x:hidden}
 @media (max-width:640px){:root{--card:rgba(8,17,33,.92)}}
@@ -36,7 +36,7 @@ form.s{display:flex;gap:8px}
 .unit{font-size:11px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase}
 .row{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:3px 6px;border-bottom:1px solid rgba(255,255,255,.06)}
 .row:last-child{border:0}.rk{font-weight:800;font-size:16px;color:var(--mute);text-align:center;font-variant-numeric:tabular-nums;font-family:Orbitron,Inter,sans-serif}
-.row.p1 .rk{color:var(--cyan)}.row.p2 .rk{color:#B8F7FF}.row.p3 .rk{color:var(--violet)}
+.row.p1 .rk{color:var(--cyan)}.row.p2 .rk{color:#B8F7FF}.row.p3 .rk{color:var(--violet-text)}
 .who a,.who span.h{color:var(--txt);text-decoration:none;font-weight:600}.who a:hover{color:var(--cyan)}
 .row .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar{display:inline-flex;gap:2px;vertical-align:middle;margin-right:8px}.bar i{width:8px;height:14px;border-radius:2px;background:rgba(120,140,160,.18)}.bar i.f{background:linear-gradient(180deg,var(--cyan),var(--blue));box-shadow:0 0 6px rgba(7,233,251,.45)}
@@ -44,7 +44,7 @@ form.s{display:flex;gap:8px}
 .pts .n{font-size:18px;font-weight:800;color:var(--cyan);font-variant-numeric:tabular-nums;font-family:Orbitron,Inter,sans-serif}
 .hero{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
-h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);font-family:Orbitron,Inter,sans-serif}
+h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--violet-text);font-family:Orbitron,Inter,sans-serif}
 .note{font-size:12px;color:var(--mute)}
 .season summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .season summary::-webkit-details-marker{display:none}
@@ -143,7 +143,7 @@ html{scroll-behavior:smooth}
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261113-hero2";
+const ASSET_V = "20261113-hero2b";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
