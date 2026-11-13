@@ -9,14 +9,9 @@
 :root{--bg0:#030612;--bg1:#061126;--card:rgba(8,17,33,.86);--line:rgba(7,233,251,.18);--txt:#F4FBFF;--mute:#8FA3BF;--cyan:#07E9FB;--blue:#5887F4;--violet:#8B4FF5;--mint:#00ff88;--gold:#E8D9A8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
 body{font:15px/1.45 Inter,system-ui,sans-serif;color:var(--txt);background:var(--bg0);overflow-x:hidden}
-body::before{content:"";position:fixed;inset:-3%;z-index:-3;background:radial-gradient(42% 36% at 18% 12%,rgba(7,233,251,.18),transparent 70%),radial-gradient(38% 32% at 82% 18%,rgba(139,79,245,.18),transparent 70%),url("assets/bg-anime-wide.webp") center top/cover no-repeat,linear-gradient(180deg,var(--bg0),var(--bg1));filter:saturate(1.15);animation:drift 40s ease-in-out infinite alternate}
-@media (max-aspect-ratio:4/5){body::before{background:radial-gradient(60% 30% at 50% 8%,rgba(7,233,251,.16),transparent 70%),url("assets/bg-anime-tall.webp") center top/cover no-repeat,linear-gradient(180deg,var(--bg0),var(--bg1))}}
-#animeRain{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none;opacity:.5;mix-blend-mode:screen}
-body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,rgba(3,6,18,.15),rgba(3,6,18,.62) 22%,rgba(3,6,18,.68) 50%,rgba(3,6,18,.62) 78%,rgba(3,6,18,.15)),linear-gradient(180deg,rgba(3,6,18,.1),rgba(3,6,18,.45) 60%,rgba(3,6,18,.7))}
-@media (max-width:640px){:root{--card:rgba(8,17,33,.92)}body::after{background:linear-gradient(180deg,rgba(3,6,18,.35),rgba(3,6,18,.66) 30%,rgba(3,6,18,.74))}#animeRain{opacity:.38}}
-@keyframes drift{to{transform:translate3d(1.2%,-1%,0) scale(1.03)}}
+@media (max-width:640px){:root{--card:rgba(8,17,33,.92)}}
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){body::before,.card,.row{animation:none!important}*{transition:none!important}#animeRain{display:none!important}}
+@media (prefers-reduced-motion:reduce){.card,.row{animation:none!important}*{transition:none!important}}
 .wrap{max-width:1040px;margin:auto;padding:14px 16px 40px}
 header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}.brand img{height:40px;width:auto;display:block}
@@ -73,19 +68,46 @@ h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;co
 .extra{transition:opacity .2s}.compact .extra{display:none}
 footer{font-size:12px;color:var(--mute);margin-top:16px}
 @media (max-width:640px){.rewards{grid-template-columns:1fr}nav button{font-size:12px;padding:8px 2px}.row{grid-template-columns:36px 1fr auto;gap:6px}.pts .n{font-size:16px}.row .pts .unit{display:none}.hero{grid-template-columns:1fr}.brand img{height:34px}.bar i{width:5px;height:12px}}
-html{scroll-behavior:smooth}/* Hero stage (visual only). Avoid class name "hero" — already used by dashboard grid. */.hero-stage{position:relative;width:100%;height:100svh;min-height:100svh;overflow:hidden;background:var(--bg0);isolation:isolate;color:var(--txt)}.hero-stage .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:0;pointer-events:none}.hero-stage .hero-ui{position:absolute;inset:0;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:28px 20px 36px}.hero-stage .hero-brand{pointer-events:none}.hero-stage .hero-brand img{height:44px;width:auto;display:block;filter:drop-shadow(0 2px 12px rgba(0,0,0,.65))}.hero-stage .hero-scroll{pointer-events:auto;display:inline-flex;flex-direction:column;align-items:center;gap:6px;color:var(--txt);text-decoration:none;font-family:Orbitron,Inter,sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.86;text-shadow:0 1px 8px rgba(0,0,0,.7)}.hero-stage .hero-scroll:hover,.hero-stage .hero-scroll:focus-visible{opacity:1;color:var(--cyan)}.hero-stage .hero-scroll .chev{display:block;width:10px;height:10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);animation:heroNudge 1.8s ease-in-out infinite}@keyframes heroNudge{0%,100%{transform:rotate(45deg) translate(0,0);opacity:.7}50%{transform:rotate(45deg) translate(3px,3px);opacity:1}}#dashboard{scroll-margin-top:0;position:relative}@media (max-aspect-ratio:4/5){.hero-stage{background:var(--bg0)}.hero-stage::before{content:"";position:absolute;inset:-8%;background:url("assets/hero-alley-poster.webp") center/cover no-repeat;filter:blur(16px) brightness(.4) saturate(1.1);z-index:0}.hero-stage .hero-video{inset:auto;top:46%;left:50%;width:128%;height:auto;transform:translate(-50%,-50%);object-fit:contain;z-index:1}}@media (prefers-reduced-motion:reduce){.hero-stage .hero-video{display:none!important}.hero-stage{background:var(--bg0) url("assets/hero-alley-poster.webp") center/cover no-repeat}.hero-stage::before{display:none!important}.hero-stage .hero-scroll .chev{animation:none!important}html{scroll-behavior:auto}}</style></head><body><section class="hero-stage" id="hero" aria-label="Onchain Matrix">
-  <video class="hero-video" id="heroVideo" autoplay muted loop playsinline preload="metadata" poster="assets/hero-alley-poster.webp" aria-hidden="true">
-    <source src="assets/hero-alley.webm?v=20261113-hero1" type="video/webm">
-    <source src="assets/hero-alley.mp4?v=20261113-hero1" type="video/mp4">
-  </video>
+html{scroll-behavior:smooth}
+/* Fixed alley video behind a transparent 100svh hero spacer; dashboard scrolls over it. */
+.hero-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:0;pointer-events:none}
+#heroPoster{display:none}
+.hero-stage{position:relative;z-index:2;width:100%;height:100svh;min-height:100svh;overflow:hidden;background:transparent;color:var(--txt)}
+.hero-stage .hero-ui{position:absolute;inset:0;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:28px 20px 36px}
+.hero-stage .hero-brand{pointer-events:none}
+.hero-stage .hero-brand img{height:44px;width:auto;display:block;filter:drop-shadow(0 2px 12px rgba(0,0,0,.65))}
+.hero-stage .hero-scroll{pointer-events:auto;display:inline-flex;flex-direction:column;align-items:center;gap:6px;color:var(--txt);text-decoration:none;font-family:Orbitron,Inter,sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.86;text-shadow:0 1px 8px rgba(0,0,0,.7)}
+.hero-stage .hero-scroll:hover,.hero-stage .hero-scroll:focus-visible{opacity:1;color:var(--cyan)}
+.hero-stage .hero-scroll .chev{display:block;width:10px;height:10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);animation:heroNudge 1.8s ease-in-out infinite}
+@keyframes heroNudge{0%,100%{transform:rotate(45deg) translate(0,0);opacity:.7}50%{transform:rotate(45deg) translate(3px,3px);opacity:1}}
+#dashboard{scroll-margin-top:0;position:relative;z-index:3}
+#dashboard::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(90deg,rgba(3,6,18,.28),rgba(3,6,18,.78) 14%,rgba(3,6,18,.88) 50%,rgba(3,6,18,.78) 86%,rgba(3,6,18,.28));-webkit-mask-image:linear-gradient(180deg,transparent,#000 22px);mask-image:linear-gradient(180deg,transparent,#000 22px)}
+@media (max-width:640px){#dashboard::before{background:linear-gradient(180deg,rgba(3,6,18,0),rgba(3,6,18,.75) 18px,rgba(3,6,18,.88))}}
+@media (max-aspect-ratio:4/5){
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:url("assets/hero-alley-poster.webp") center/cover no-repeat;filter:blur(16px) brightness(.4) saturate(1.1);pointer-events:none}
+  .hero-bg{object-fit:contain;object-position:center 46%;z-index:1;background:transparent}
+}
+@media (prefers-reduced-motion:reduce){
+  #heroVideo{display:none!important}
+  #heroPoster{display:block!important}
+  .hero-stage .hero-scroll .chev{animation:none!important}
+  html{scroll-behavior:auto}
+}
+</style></head><body>
+<video class="hero-bg" id="heroVideo" autoplay muted loop playsinline preload="metadata" poster="assets/hero-alley-poster.webp?v=20261113-hero2" aria-hidden="true">
+  <source src="assets/hero-alley.webm?v=20261113-hero2" type="video/webm">
+  <source src="assets/hero-alley.mp4?v=20261113-hero2" type="video/mp4">
+</video>
+<img class="hero-bg" id="heroPoster" src="assets/hero-alley-poster.webp?v=20261113-hero2" alt="" aria-hidden="true">
+<section class="hero-stage" id="hero" aria-label="Onchain Matrix">
   <div class="hero-ui">
-    <div class="hero-brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261113-hero1" width="170" height="58" alt="Onchain Matrix"></div>
+    <div class="hero-brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261113-hero2" width="170" height="58" alt="Onchain Matrix"></div>
     <a class="hero-scroll" href="#dashboard">Scroll<span class="chev" aria-hidden="true"></span></a>
   </div>
 </section>
-<canvas id="animeRain" aria-hidden="true"></canvas><div id="dashboard"><div class="wrap" id="app">
+<div id="dashboard"><div class="wrap" id="app">
 <header>
-  <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261113-hero1" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
+  <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261113-hero2" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
   <span class="pill" id="statusPill">Pre-launch</span>
 </header>
 <section class="card season"><details open>
@@ -121,7 +143,7 @@ html{scroll-behavior:smooth}/* Hero stage (visual only). Avoid class name "hero"
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261113-hero1";
+const ASSET_V = "20261113-hero2";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -483,4 +505,4 @@ if (claimsPanel && claimsReady) {
 }
 __onmxMain();
 </script>
-<script src="assets/anime-bg.js?v=20261113-hero1" defer></script>
+
