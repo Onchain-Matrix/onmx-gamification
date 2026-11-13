@@ -182,7 +182,7 @@ label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;let
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261113-signals1";
+const ASSET_V = "20261113-signals2";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -323,9 +323,27 @@ function bindPager(root) {
   });
 }
 
+// Season board from approved Signal Credits (Worker /v1/leaderboard). Only set when PUBLIC_UI.signals is on or in owner preview.
+let SIGBOARD = null, SIGPREVIEW = null;
 function render() {
   document.getElementById("app").classList.toggle("compact", compact);
-  if (tab === "board" && !LIVE) {
+  if (tab === "board" && SIGBOARD) {
+    const all = SIGBOARD.top.slice(0, BOARD_SHOWN);
+    if (!all.length) {
+      out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN}</h3><p class="note">No approved signals yet. Rankings use Credits from approved Matrix Signals this season — submit your first signal above.</p></section>`;
+    } else {
+      const pages = Math.ceil(all.length / PAGE_SIZE) || 1;
+      boardPage = Math.min(boardPage, pages - 1);
+      const slice = all.slice(boardPage * PAGE_SIZE, (boardPage + 1) * PAGE_SIZE);
+      const max = all[0].seasonCredits || 1;
+      const cells = c => power(c * CONFIG.POINTS_PER_BATTERY, max * CONFIG.POINTS_PER_BATTERY);
+      out.innerHTML = `<section class="card"><div class="board-head"><h3 style="margin:0">Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN}</h3>${pages > 1 ? pagerHtml(boardPage, pages, "top") : ""}</div>
+        <p class="note">Ranked by Credits from approved Matrix Signals this season. Referral Credits count toward lifetime totals only.${SIGBOARD.totalRanked > BOARD_SHOWN ? ` Rank ${BOARD_SHOWN + 1}+? Search your handle.` : ""}</p>
+        ${slice.map((r, i) => { const gi = boardPage * PAGE_SIZE + i; return `<div class="row${pc(gi)}"><div class="rk">${r.rank}</div><div class="who">${who({ handle: r.handle })}</div><div class="pts">${cells(r.seasonCredits)}<span class="n">${fmt(r.seasonCredits)}</span>&nbsp;<span class="unit">credits</span></div></div>`; }).join("")}
+        ${pages > 1 ? pagerHtml(boardPage, pages, "bottom") : ""}</section>`;
+      if (pages > 1) bindPager(out);
+    }
+  } else if (tab === "board" && !LIVE) {
     out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN}</h3>
       <p class="note">Season ${CURRENT_SEASON} hasn't launched yet. ${esc(windowCopy("It"))} The leaderboard opens at launch — complete verified tasks to earn Credits and climb the board.</p></section>`;
   } else if (tab === "board") {
@@ -444,7 +462,23 @@ function referralPanel(handle) {
 
 let allRows = null;
 const sres = document.getElementById("sres");
+async function runSignalSearch(q) {
+  const h = normHandle(q);
+  if (!h) { sres.innerHTML = `<section class="card note">Enter an X handle to search.</section>`; return; }
+  if (!/^[a-z0-9_]{1,15}$/.test(h)) { sres.innerHTML = `<section class="card note">Enter a valid X handle (1–15 letters, numbers or _).</section>`; return; }
+  sres.innerHTML = `<section class="card note">Searching…</section>`;
+  let j;
+  try { j = await SG.fetchLeaderboard(SIGNALS.apiBase, { adminPreview: SIGPREVIEW, limit: BOARD_SHOWN, handle: h }); }
+  catch { sres.innerHTML = `<section class="card note">Search is unavailable right now. Try again shortly.</section>`; return; }
+  const p = j.player;
+  if (!p) { sres.innerHTML = `<section class="card note">No contributor found for “${esc(h)}”. Join Matrix Signals above to get on the board.</section>`; return; }
+  sres.innerHTML = `<section class="card hero"><div><div class="big">${p.rank ? "#" + fmt(p.rank) : "—"}</div><div class="unit">${p.rank ? `of ${fmt(j.totalRanked)}${p.rank > BOARD_SHOWN ? ` · outside top ${BOARD_SHOWN}` : ""}` : "no approved signals this season yet"}</div></div>
+    <div class="who">${who({ handle: p.handle })}
+      <div class="pts" style="justify-content:flex-start;margin-top:6px"><span class="big" style="font-size:26px">${fmt(p.seasonCredits)}</span>&nbsp;<span class="unit">Season ${CURRENT_SEASON} credits</span></div>
+      <p class="note">Lifetime credits (signals + referrals): <b>${fmt(p.lifetimeCredits)}</b></p></div></section>`;
+}
 function runSearch(q) {
+  if (SIGBOARD) { runSignalSearch(q); return; }
   if (!LIVE) {
     if (normHandle(q) === "") { sres.innerHTML = `<section class="card note">Enter an X handle to search.</section>`; return; }
     sres.innerHTML = `<section class="card note">Standings appear once Season ${CURRENT_SEASON} starts on ${esc(seasonStartShort)}. Search for <b>@${esc(normHandle(q))}</b> again after launch.</section>`;
@@ -534,6 +568,12 @@ async function bootSignals(previewToken) {
   const sigOn = !!UI.signals || !!previewToken, refOn = !!UI.referral || !!previewToken;
   renderHow(sigOn, refOn, !!previewToken);
   if (!sigOn && !refOn) return;
+  if (sigOn) {
+    SIGPREVIEW = previewToken || null;
+    try { SIGBOARD = await SG.fetchLeaderboard(SIGNALS.apiBase, { adminPreview: SIGPREVIEW, limit: BOARD_SHOWN }); }
+    catch (e) { SIGBOARD = { top: [], totalRanked: 0 }; console.warn("[onmx] leaderboard", e); }
+    render();
+  }
   await SG.mountSignalsPanel({ root: document.getElementById("signalsPanel"), apiBase: SIGNALS.apiBase, SIGNALS, SEASON, showSignals: sigOn, showReferral: refOn, adminPreview: previewToken || null });
 }
 if (UI.signals || UI.referral) {

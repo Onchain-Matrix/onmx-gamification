@@ -215,3 +215,12 @@ export async function mountSignalsPanel(opts) {
 
   if (player && player.key) await renderPlayer(); else await renderJoin();
 }
+
+/** Season leaderboard from the Worker (approved Signal Credits only). Returns the JSON body or throws. */
+export async function fetchLeaderboard(apiBase, { adminPreview = null, limit = 20, handle = "" } = {}) {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (handle) q.set("handle", handle);
+  const r = await api(apiBase, adminPreview)(`/v1/leaderboard?${q}`);
+  if (!r.ok) throw new Error("leaderboard " + r.status);
+  return r.json;
+}

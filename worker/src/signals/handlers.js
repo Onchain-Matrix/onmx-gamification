@@ -499,3 +499,77 @@ export async function adminPurgePreview(env) {
   const orphan = await env.DB.prepare(`SELECT COUNT(*) AS n FROM signals WHERE preview = 1`).first();
   return [200, { ok: true, deletedPlayers: rows.length, previewSignalsLeft: Number(orphan?.n) || 0 }];
 }
+
+// ---------------- public leaderboard (S9) ----------------
+
+/**
+ * Season leaderboard ranked by APPROVED Signal Credits for the season (kinds signal + signal_bonus only).
+ * Referral Credits never enter the prize ranking; they are included only in lifetimeCredits on a handle lookup.
+ * Ties: earlier time the player reached their total (latest qualifying ledger row) ranks first, then handle.
+ * Public-safe fields only: handle, rank, seasonCredits (+ lifetimeCredits for a looked-up handle).
+ * Preview rows (created while Signals were closed) are excluded unless a valid X-Admin-Preview header is sent.
+ * Next-season head starts are a back-end rule and are not applied/exposed here (Season 1 has no prior round).
+ */
+export function rankRows(rows) {
+  const sorted = rows
+    .map((r) => ({ handle: r.handle, credits: Math.round((Number(r.credits) || 0) * 100) / 100, reachedAt: String(r.reached_at || ""), playerId: r.player_id }))
+    .filter((r) => r.credits > 0)
+    .sort((a, b) => b.credits - a.credits || a.reachedAt.localeCompare(b.reachedAt) || a.handle.localeCompare(b.handle));
+  sorted.forEach((r, i) => { r.rank = i + 1; });
+  return sorted;
+}
+
+export async function handleLeaderboard(env, request, url) {
+  const hdr = request.headers.get("X-Admin-Preview") || "";
+  const preview = !!hdr && (await tokenMatches(env, hdr));
+  const s = Number(url.searchParams.get("season")) || season(env);
+  const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 20));
+  const lookup = canonHandle(url.searchParams.get("handle") || "");
+  const ttl = Number(env.LEADERBOARD_CACHE_SECONDS ?? 60);
+  const useCache = !preview && ttl > 0 && typeof caches !== "undefined";
+  const cacheKey = new Request(`https://cache.onmx.internal/v1/leaderboard?season=${s}&limit=${limit}&handle=${lookup || ""}`);
+  if (useCache) {
+    const hit = await caches.default.match(cacheKey);
+    if (hit) return [200, { ...(await hit.json()), cached: true }];
+  }
+  const previewFilter = preview ? "" : "AND p.preview = 0";
+  const rows = (await env.DB.prepare(
+    `SELECT p.id AS player_id, p.handle AS handle, SUM(l.credits) AS credits, MAX(l.created_at) AS reached_at
+     FROM credit_ledger l JOIN signal_players p ON p.id = l.player_id
+     WHERE l.season = ? AND l.kind IN ('signal','signal_bonus') ${previewFilter}
+     GROUP BY p.id, p.handle`
+  ).bind(s).all()).results || [];
+  const ranked = rankRows(rows);
+  const body = {
+    ok: true,
+    season: s,
+    ranking: "approved_signal_credits",
+    totalRanked: ranked.length,
+    top: ranked.slice(0, limit).map((r) => ({ rank: r.rank, handle: "@" + r.handle, seasonCredits: r.credits })),
+    preview,
+    generatedAt: new Date().toISOString(),
+  };
+  if (lookup) {
+    const p = await env.DB.prepare(`SELECT id, handle, preview FROM signal_players WHERE handle = ?`).bind(lookup).first();
+    if (!p || (p.preview && !preview)) {
+      body.player = null;
+    } else {
+      const life = await env.DB.prepare(
+        `SELECT COALESCE(SUM(CASE WHEN kind IN ('signal','signal_bonus') THEN credits END),0) AS sig,
+                COALESCE(SUM(CASE WHEN kind LIKE 'referral_%' THEN credits END),0) AS ref
+         FROM credit_ledger WHERE player_id = ?`
+      ).bind(p.id).first();
+      const r = ranked.find((x) => x.playerId === p.id);
+      body.player = {
+        handle: "@" + p.handle,
+        rank: r ? r.rank : null,
+        seasonCredits: r ? r.credits : 0,
+        lifetimeCredits: Math.round(((Number(life.sig) || 0) + (Number(life.ref) || 0)) * 100) / 100,
+      };
+    }
+  }
+  if (useCache) {
+    await caches.default.put(cacheKey, new Response(JSON.stringify(body), { headers: { "content-type": "application/json", "cache-control": `max-age=${ttl}` } }));
+  }
+  return [200, body];
+}

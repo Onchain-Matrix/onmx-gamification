@@ -21,7 +21,8 @@
     "BNB_RPC_URL": "https://bsc-dataseed.binance.org/",
     "ETH_RPC_URL": "https://ethereum.publicnode.com",
     "PRODUCTION_GRANTS_ENABLED": "0",
-    "SIGNALS_OPEN": "0"
+    "SIGNALS_OPEN": "0",
+    "LEADERBOARD_CACHE_SECONDS": "60"
   },
   "d1_databases": [
     {

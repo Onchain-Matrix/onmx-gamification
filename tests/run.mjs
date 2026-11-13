@@ -360,6 +360,18 @@ t("Worker signal policy mirrors src/config.js SIGNALS", () => {
   ok(w.includes("bonusCapPerSignal: 25") && w.includes("l1Credits: 10") && w.includes("l2Credits: 5") && w.includes("capQualifiedPerSeason: 20"), "caps");
 });
 
+t("S9 wiring: season board/search use /v1/leaderboard only when signals flag or owner preview is on", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const ui = readFileSync(new URL("../src/signals-ui.js", import.meta.url), "utf8");
+  ok(/let SIGBOARD = null/.test(html), "SIGBOARD starts null (public board unchanged)");
+  const boot = html.slice(html.indexOf("async function bootSignals"), html.indexOf("// Optional seed-claim client"));
+  ok(/if \(sigOn\) \{[\s\S]*SIGBOARD = await SG\.fetchLeaderboard/.test(boot), "SIGBOARD set only inside bootSignals when sigOn");
+  ok((html.match(/SIGBOARD = /g) || []).length === 3, "SIGBOARD assigned only in boot (+ error fallback)");
+  ok(/if \(UI\.signals \|\| UI\.referral\)/.test(boot) && /get\("preview"\) === "signals"/.test(boot), "boot gated by flags or ?preview=signals");
+  ok(ui.includes("/v1/leaderboard?"), "client calls /v1/leaderboard");
+  ok(!/headStart|HEADSTART/.test(ui), "head-start rules stay back-end only");
+});
+
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };
 writeFileSync(new URL("./results.json", import.meta.url), JSON.stringify({ summary, results }, null, 1));
 console.log(JSON.stringify(summary)); for (const r of results) if (!r.pass) console.log("FAIL", r.name, r.error);

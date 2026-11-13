@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 57,
-  "passed": 57,
+  "total": 58,
+  "passed": 58,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -232,6 +232,10 @@
   },
   {
    "name": "Worker signal policy mirrors src/config.js SIGNALS",
+   "pass": true
+  },
+  {
+   "name": "S9 wiring: season board/search use /v1/leaderboard only when signals flag or owner preview is on",
    "pass": true
   }
  ]

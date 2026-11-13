@@ -37,6 +37,7 @@ import {
   handleMe,
   handleSubmit,
   handleResolveRef,
+  handleLeaderboard,
   adminList,
   adminApprove,
   adminReject,
@@ -181,6 +182,12 @@ export function createWorker(deps = {}) {
           if (!g.ok) return respond(env, request, { ok: false, error: g.error }, 403);
           const [st, body] = await handleSubmit(env, request, await readJson(request, 8_000));
           return respond(env, request, body, st);
+        }
+        if (path === "/v1/leaderboard" && request.method === "GET") {
+          const [st, body] = await handleLeaderboard(env, request, url);
+          const { headers: cors } = corsHeaders(env, request);
+          const pv = !!body.preview;
+          return json(body, st, { ...cors, "cache-control": pv ? "no-store" : "public, max-age=30" });
         }
         if (path === "/v1/referral/resolve" && request.method === "GET") {
           const [st, body] = await handleResolveRef(env, url);
