@@ -30,6 +30,23 @@ import {
   DEFAULT_ENDPOINTS,
 } from "./auth/x-oauth.js";
 import { rateLimit } from "./lib/rate.js";
+import {
+  signalsPublicConfig,
+  requireAdmin,
+  handleRegister,
+  handleMe,
+  handleSubmit,
+  handleResolveRef,
+  adminList,
+  adminApprove,
+  adminReject,
+  adminOutcomes,
+  adminRevoke,
+  adminCsv,
+  adminPlayers,
+  adminDeletePlayer,
+  adminPurgePreview,
+} from "./signals/handlers.js";
 
 function respond(env, request, body, status = 200) {
   const { headers: cors } = corsHeaders(env, request);
@@ -144,7 +161,76 @@ export function createWorker(deps = {}) {
             ...publicConfig(env),
             x: xConfigStatus(env),
             receipts: receiptVerificationStatus(env),
+            signals: signalsPublicConfig(env),
           });
+        }
+
+        // --- Matrix Signals + referral (player) ---
+        if (path === "/v1/signals/register" && request.method === "POST") {
+          const g = requireSameSiteMutation(env, request);
+          if (!g.ok) return respond(env, request, { ok: false, error: g.error }, 403);
+          const [st, body] = await handleRegister(env, request, await readJson(request, 4_000));
+          return respond(env, request, body, st);
+        }
+        if (path === "/v1/signals/me" && request.method === "GET") {
+          const [st, body] = await handleMe(env, request);
+          return respond(env, request, body, st);
+        }
+        if (path === "/v1/signals" && request.method === "POST") {
+          const g = requireSameSiteMutation(env, request);
+          if (!g.ok) return respond(env, request, { ok: false, error: g.error }, 403);
+          const [st, body] = await handleSubmit(env, request, await readJson(request, 8_000));
+          return respond(env, request, body, st);
+        }
+        if (path === "/v1/referral/resolve" && request.method === "GET") {
+          const [st, body] = await handleResolveRef(env, url);
+          return respond(env, request, body, st);
+        }
+
+        // --- Matrix Signals review (admin token) ---
+        if (path.startsWith("/v1/admin/")) {
+          const auth = await requireAdmin(env, request);
+          if (!auth.ok) return respond(env, request, { ok: false, error: auth.error }, auth.status);
+          if (request.method === "POST") {
+            const g = requireSameSiteMutation(env, request);
+            if (!g.ok) return respond(env, request, { ok: false, error: g.error }, 403);
+          }
+          if (path === "/v1/admin/ping" && request.method === "GET") {
+            return respond(env, request, { ok: true, admin: true, signals: signalsPublicConfig(env) });
+          }
+          if (path === "/v1/admin/signals" && request.method === "GET") {
+            const [st, body] = await adminList(env, url);
+            return respond(env, request, body, st);
+          }
+          if (path === "/v1/admin/signals.csv" && request.method === "GET") {
+            const { headers: cors } = corsHeaders(env, request);
+            return new Response(await adminCsv(env, url), {
+              status: 200,
+              headers: { ...cors, "content-type": "text/csv; charset=utf-8", "cache-control": "no-store",
+                "content-disposition": `attachment; filename="matrix-signals-log.csv"` },
+            });
+          }
+          const m = path.match(/^\/v1\/admin\/signals\/([a-f0-9]{32})\/(approve|reject|outcomes|revoke)$/);
+          if (m && request.method === "POST") {
+            const body = await readJson(request, 8_000);
+            const fn = { approve: adminApprove, reject: adminReject, outcomes: adminOutcomes, revoke: adminRevoke }[m[2]];
+            const [st, out] = await fn(env, m[1], body);
+            return respond(env, request, out, st);
+          }
+          if (path === "/v1/admin/players" && request.method === "GET") {
+            const [st, body] = await adminPlayers(env, url);
+            return respond(env, request, body, st);
+          }
+          const d = path.match(/^\/v1\/admin\/players\/([a-f0-9]{32})\/delete$/);
+          if (d && request.method === "POST") {
+            const [st, body] = await adminDeletePlayer(env, d[1]);
+            return respond(env, request, body, st);
+          }
+          if (path === "/v1/admin/purge-preview" && request.method === "POST") {
+            const [st, body] = await adminPurgePreview(env);
+            return respond(env, request, body, st);
+          }
+          return respond(env, request, { ok: false, error: "not_found" }, 404);
         }
 
         // --- X OAuth PKCE start ---

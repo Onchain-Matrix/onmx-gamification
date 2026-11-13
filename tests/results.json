@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 51,
-  "passed": 51,
+  "total": 57,
+  "passed": 57,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -171,7 +171,7 @@
    "pass": true
   },
   {
-   "name": "referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending before launch; lifetime-only raw; disable",
+   "name": "LEGACY referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending before launch; lifetime-only raw; disable",
    "pass": true
   },
   {
@@ -208,6 +208,30 @@
   },
   {
    "name": "referral pending welcome on stats; launch activate 10/5 idempotent",
+   "pass": true
+  },
+  {
+   "name": "Matrix Signals tasks replace the five legacy tasks; ids/labels/descriptions; points = accepted Credits × 100",
+   "pass": true
+  },
+  {
+   "name": "signalCredits: type × tier + capped outcome bonus; unknown/rejected = 0",
+   "pass": true
+  },
+  {
+   "name": "signalToTask feeds the existing engine: approved strong reply = 1000 pts = 10 Credits; pending/rejected ignored",
+   "pass": true
+  },
+  {
+   "name": "referral: legacy % model marked legacy; flat server model 10/5, cap 20, qualifies on first approved signal",
+   "pass": true
+  },
+  {
+   "name": "PUBLIC_UI: signals + referral flags exist and stay OFF; legacy local referral OFF",
+   "pass": true
+  },
+  {
+   "name": "Worker signal policy mirrors src/config.js SIGNALS",
    "pass": true
   }
  ]

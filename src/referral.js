@@ -1,4 +1,7 @@
 /**
+ * LEGACY — Season 1 referral PROTOTYPE (browser-local). Retired: the live model is server-side (Worker + D1,
+ * see worker/src/signals). Kept for helper functions (canonHandle/decodeRef) and old tests only.
+ *
  * Season 1 referral PROTOTYPE (browser-local).
  *
  * POLICY (documented for Season 2 tuning):

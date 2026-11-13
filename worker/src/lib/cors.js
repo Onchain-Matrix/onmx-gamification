@@ -12,7 +12,7 @@ export function corsHeaders(env, request) {
   const { ok, origin, allowed } = allowedOrigin(env, request);
   const h = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token",
+    "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token, Authorization, X-Player-Key, X-Admin-Preview",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "600",
     Vary: "Origin",

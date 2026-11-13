@@ -1,7 +1,7 @@
 // Deterministic tests for the shared engine (src/engine.js). Writes tests/results.json.
 import { writeFileSync, readFileSync } from "node:fs";
 import * as E from "../src/engine.js";
-import { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal } from "../src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal, SIGNALS, signalCredits, signalToTask } from "../src/config.js";
 import * as Ref from "../src/referral.js";
 import { transform } from "../tools/export-roster.mjs";
 import { makeAccounts, makeTasks } from "../sim/synth.js";
@@ -193,10 +193,12 @@ t("index: launch-clean copy (no sample/provisional wording), PRIZE_COPY, bar sta
   ok(/PAGE_SIZE = 10/.test(h));
   ok(/not affiliated with Warner Bros\. or The Matrix films/.test(h), "non-affiliation footer");
 });
-t("referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending before launch; lifetime-only raw; disable", () => {
+// LEGACY prototype config (6 Nov: 10 referrer / 5 welcome) — the browser-local prototype is retired; kept for helper coverage.
+const LEGACY_REF_SEASON = { ...SEASON, referral: { ...SEASON.referral, welcomeCredits: 5 } };
+t("LEGACY referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending before launch; lifetime-only raw; disable", () => {
   const mem = () => { let s=null; return { get:()=>s, set:v=>{s=v;} }; };
   const store = mem();
-  const cfg = { ...SEASON };
+  const cfg = { ...LEGACY_REF_SEASON };
   eq(Ref.canonHandle(" @Sample_Syn_0001 "), "@sample_syn_0001");
   eq(Ref.encodeRef("@Ab_1"), "ab_1"); eq(Ref.decodeRef("Ab_1"), "@ab_1");
   ok(Ref.referralLink("https://onchain-matrix.github.io/onmx-gamification/", "@sample_syn_0103").endsWith("?ref=sample_syn_0103"));
@@ -307,14 +309,55 @@ t("referral UI raw: no maxlength 15 truncation; self @sample_syn_0103 rejects; n
 t("referral pending welcome on stats; launch activate 10/5 idempotent", () => {
   const mem = () => { let s=null; return { get:()=>s, set:v=>{s=v;} }; };
   const store = mem();
-  const pre = Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "onmx_test_1105b", rosterAccounts: ["@sample_syn_0103"], cfg: SEASON, now: "2026-11-05T12:00:00-05:00", storeApi: store });
+  const pre = Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "onmx_test_1105b", rosterAccounts: ["@sample_syn_0103"], cfg: LEGACY_REF_SEASON, now: "2026-11-05T12:00:00-05:00", storeApi: store });
   eq(pre.status, "pending");
   eq(Ref.statsFor("@onmx_test_1105b", store).asReferred.welcomeCredits, 5);
   eq(Ref.lifetimeReferralRaw("@onmx_test_1105b", store, 100), 0);
-  eq(Ref.activatePending({ cfg: SEASON, now: "2026-11-18T12:00:00-05:00", storeApi: store }).activated, 1);
-  eq(Ref.activatePending({ cfg: SEASON, now: "2026-11-19T12:00:00-05:00", storeApi: store }).activated, 0);
+  eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-18T12:00:00-05:00", storeApi: store }).activated, 1);
+  eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-19T12:00:00-05:00", storeApi: store }).activated, 0);
   eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 1000);
   eq(Ref.lifetimeReferralRaw("@onmx_test_1105b", store, 100), 500);
+});
+
+// --- Matrix Signals (PROPOSED credit table) + flags ---
+t("Matrix Signals tasks replace the five legacy tasks; ids/labels/descriptions; points = accepted Credits × 100", () => {
+  eq(SEASON.tasks.map(x => x.id), ["signal_reply", "signal_quote", "signal_connect", "signal_discover", "signal_standalone"]);
+  for (const x of SEASON.tasks) { ok(x.desc && x.desc.length > 40 && x.desc.length < 240, "desc " + x.id); eq(x.points, SIGNALS.baseCredits[x.id.replace("signal_", "")] * CONFIG.POINTS_PER_BATTERY); }
+  eq(SEASON.legacyTasks.map(x => x.id), ["receipt_check", "verifier_checklist", "architect_ship", "circle_onboard", "video_watch"]);
+  ok(!/\bfollow (us|@|for)|retweet|repost for|like for/i.test(SEASON.tasks.map(x => x.desc).join(" ")), "no follow/retweet-for-points tasks");
+  eq(SIGNALS.status, "proposed");
+});
+t("signalCredits: type × tier + capped outcome bonus; unknown/rejected = 0", () => {
+  eq(signalCredits("reply", "accepted"), 5); eq(signalCredits("reply", "strong"), 10); eq(signalCredits("reply", "outstanding"), 20);
+  eq(signalCredits("quote", "accepted"), 4); eq(signalCredits("connect", "outstanding"), 24); eq(signalCredits("standalone", "accepted"), 2);
+  eq(signalCredits("reply", "accepted", { kolReplied: true }), 10);
+  eq(signalCredits("discover", "accepted", { kolReplied: true, kolFollowed: true, directInterest: true, introduction: true }), 6 + 25);
+  eq(signalCredits("reply", "spam"), 0); eq(signalCredits("follow", "accepted"), 0);
+});
+t("signalToTask feeds the existing engine: approved strong reply = 1000 pts = 10 Credits; pending/rejected ignored", () => {
+  const rows = [
+    signalToTask({ account: "@a", type: "reply", tier: "strong", date: "2026-11-19T10:00:00-05:00", status: "approved" }),
+    signalToTask({ account: "@a", type: "quote", tier: "accepted", date: "2026-11-19T11:00:00-05:00", status: "pending" }),
+    signalToTask({ account: "@b", type: "standalone", tier: "accepted", date: "2026-11-19T11:00:00-05:00", status: "rejected" })
+  ].filter(Boolean);
+  eq(rows.length, 1);
+  const b = E.baseEnergy(rows, { from: SEASON.start, to: SEASON.end });
+  eq(b.get("@a"), 1000); eq(b.get("@a") / CONFIG.POINTS_PER_BATTERY, 10);
+});
+t("referral: legacy % model marked legacy; flat server model 10/5, cap 20, qualifies on first approved signal", () => {
+  eq(CONFIG.REFERRAL.legacy, true);
+  eq(CONFIG.REFERRAL_FLAT, { l1Credits: 10, l2Credits: 5, capQualifiedPerSeason: 20, qualifyOn: "first_approved_signal", scope: "lifetime_only" });
+  eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.capQualifiedPerSeason, 20);
+});
+t("PUBLIC_UI: signals + referral flags exist and stay OFF; legacy local referral OFF", () => {
+  eq(PUBLIC_UI.signals, false); eq(PUBLIC_UI.referral, false); eq(PUBLIC_UI.showReferral, false);
+});
+t("Worker signal policy mirrors src/config.js SIGNALS", () => {
+  const w = readFileSync(new URL("../worker/src/signals/policy.js", import.meta.url), "utf8");
+  ok(w.includes("baseCredits: Object.freeze({ reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 })"), "base");
+  ok(w.includes("tierMultiplier: Object.freeze({ accepted: 1, strong: 2, outstanding: 4 })"), "tiers");
+  ok(w.includes("outcomeBonus: Object.freeze({ kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 })"), "bonus");
+  ok(w.includes("bonusCapPerSignal: 25") && w.includes("l1Credits: 10") && w.includes("l2Credits: 5") && w.includes("capQualifiedPerSeason: 20"), "caps");
 });
 
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };

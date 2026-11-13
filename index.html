@@ -103,6 +103,20 @@ html{scroll-behavior:smooth}
 .music-toggle.on .ic-off{display:none}
 .music-toggle.on .ic-on{display:block}
 footer{padding-right:56px}
+/* Matrix Signals + referral (rendered only when PUBLIC_UI.signals/referral are on, or in owner preview) */
+.sigtable-wrap{overflow-x:auto}.sigtable{border-collapse:collapse;font-size:13px;margin:8px 0;min-width:320px}
+.sigtable caption{text-align:left;color:var(--violet-text);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.sigtable th,.sigtable td{padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:center}.sigtable th[scope=row]{text-align:left;color:var(--txt)}
+.sigtable thead th{color:var(--mute);font-weight:600}.sigtable td{color:var(--cyan);font-weight:700;font-variant-numeric:tabular-nums}
+.sgform{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.sgform .full{grid-column:1/-1}
+.sgform select,.sgform textarea{width:100%;background:#0a1220;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font:inherit}
+.sgrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;color:var(--txt);margin:0}label.inl input{width:auto}
+.sgstats{display:flex;gap:24px;flex-wrap:wrap;margin:6px 0}
+.sglist{list-style:none;padding:0;margin:6px 0;font-size:13px}.sglist li{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}.sglist a{color:var(--cyan)}
+.chip{display:inline-block;font-size:11px;border-radius:99px;padding:2px 8px;border:1px solid var(--line);color:var(--mute)}.chip.ok{color:var(--mint);border-color:rgba(0,255,136,.4)}.chip.no{color:#ff9a9a;border-color:rgba(255,120,120,.4)}
+.linkbtn{all:unset;cursor:pointer;color:var(--mute);text-decoration:underline;font-size:12px}
+@media (max-width:640px){.sgform{grid-template-columns:1fr}}
 @media (max-width:640px){
   .music-toggle{right:12px;bottom:max(12px,env(safe-area-inset-bottom,0px));width:44px;height:44px}
   .wrap{padding-bottom:72px;padding-right:60px}
@@ -152,6 +166,8 @@ footer{padding-right:56px}
 <form id="sform" class="s" autocomplete="off"><input id="q" type="search" placeholder="@handle" maxlength="40"><button class="btn" type="submit">Search</button></form></div></section>
 <div id="sres" aria-live="polite"></div>
 <div id="refSignup" class="card" hidden></div>
+<section id="previewGate" class="card" hidden></section>
+<section id="signalsPanel" class="card" aria-label="Matrix Signals" hidden></section>
 <main id="out"></main>
 <section class="card how extra" id="how"><h3>How the game works</h3>
 <div id="howBody"></div>
@@ -166,12 +182,12 @@ footer{padding-right:56px}
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261113-wallet1";
+const ASSET_V = "20261113-signals1";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
 const E = await import(ASSET_BASE + "src/engine.js?v=" + ASSET_V);
-const { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd } = await import(ASSET_BASE + "src/config.js?v=" + ASSET_V);
+const { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, SIGNALS, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd } = await import(ASSET_BASE + "src/config.js?v=" + ASSET_V);
 const R = await import(ASSET_BASE + "src/referral.js?v=" + ASSET_V);
 const CURRENT_SEASON = SEASON.number;
 const LIFETIME_START = SEASON.lifetimeStart;
@@ -237,12 +253,20 @@ document.getElementById("prizeCopy").innerHTML = esc(PRIZE_COPY) + (UI.showPrize
   ? ` <b>Proposed</b> treasury-linked growth (separate, USD not BNB): ${((SEASON.prizes.growthPctOfRaisedUsd||0)*100).toFixed(0)}% of cumulative raised USD — sample raised $${fmt(sampleRaised)} ⇒ <b>$${fmt(growthUsd)}</b>. Not added into the $${fmt(SEASON.prizes.usdTotal)} prize; not a funded guarantee.`
   : "");
 
+// Task list: Matrix Signals when PUBLIC_UI.signals is on (or owner preview); otherwise the unchanged legacy list.
+let SG = null;
+function renderHow(sigOn = !!UI.signals, refOn = !!UI.referral, preview = false) {
+const tasksBlock = sigOn
+  ? `<p class="note"><b>Matrix Signals</b> — find an X conversation where Onchain Matrix genuinely belongs, contribute something useful, and mention @OnchainMatrix only when it fits. No follow-for-points or retweet-for-points, no mass tagging. A reviewer approves each signal; quality and outcomes beat volume.</p>
+${SG.tasksListHtml(SEASON.tasks)}
+${SG.creditTableHtml(SIGNALS, SEASON.tasks, { preview })}`
+  : `<p class="note"><b>Task scoring points</b> (per effort unit; effort=1 on a verified task ⇒ these points):</p>
+<ul class="tasks">${SEASON.legacyTasks.map(t => `<li><b>${esc(t.label)}</b> — ${t.points} scoring points / effort</li>`).join("")}</ul>`;
 document.getElementById("howBody").innerHTML = `
 <p class="note">Do contribution &amp; verification work → earn <b>Credits</b> (100 scoring points = 1 Credit). No wallet needed to play Season 1. Before rewards are paid, you'll link your X account and wallet.</p>
 <p class="note"><b>${esc(PRIZE_COPY)}</b></p>
 ${UI.showAirdropConversion ? `<p class="note"><b>Two rewards:</b> (1) ${esc(PRIZE_COPY)} (2) Credits earned during the campaign convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.</p>` : ""}
-<p class="note"><b>Task scoring points</b> (per effort unit; effort=1 on a verified task ⇒ these points):</p>
-<ul class="tasks">${SEASON.tasks.map(t => `<li><b>${esc(t.label)}</b> — ${t.points} scoring points / effort</li>`).join("")}</ul>
+${tasksBlock}
 <p class="note">Each round, placement gives a <b>scoring-point</b> head start for the <b>next round only</b> (never stacks, none in the first round, needs your own work that round):</p>
 <ol class="hs" aria-label="Next-round head start by placement">
   <li><b style="height:40px"></b><span>+25</span>#1–5</li>
@@ -250,8 +274,11 @@ ${UI.showAirdropConversion ? `<p class="note"><b>Two rewards:</b> (1) ${esc(PRIZ
   <li><b style="height:12px"></b><span>+5</span>#11–20</li>
   <li><b style="height:2px;background:rgba(120,140,160,.3)"></b><span>0</span>#21+</li>
 </ol>
-<p class="note">Head starts are scoring points: +25 = +0.25 Credit, +15 = +0.15 Credit, +5 = +0.05 Credit.${UI.showReferral ? ` Referral Credits (prototype) count toward <b>lifetime only</b>, never season/BNB ranking.` : ""}</p>
+<p class="note">Head starts are scoring points: +25 = +0.25 Credit, +15 = +0.15 Credit, +5 = +0.05 Credit.${refOn ? ` <b>Referrals:</b> a referral qualifies when your friend's first signal is approved — +${SEASON.referral.referrerCredits} Credits to you, +${SEASON.referral.level2Credits} to your own inviter. Referral Credits count toward <b>lifetime only</b>, never season/BNB ranking.` : ""}</p>
 <p class="note"><b>Season dates:</b> ${esc(SEASON_WINDOW_COPY)} Credits start counting at launch.</p>`;
+}
+if (UI.signals) SG = await import(ASSET_BASE + "src/signals-ui.js?v=" + ASSET_V);
+renderHow();
 
 const who = r => { const handle = String(r.handle || "").replace(/^@+/, "") || String(r.account || "").replace(/^@+/, ""); const u = r.xUrl ?? E.xLink(handle); const label = handle ? `@${handle}` : esc(r.account); return u ? `<a href="${esc(u)}" rel="noopener nofollow" target="_blank">${esc(label)}</a>` : `<span class="h">${esc(label)}</span>`; };
 const pc = i => i < 3 ? ` p${i + 1}` : "";
@@ -499,6 +526,24 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") { boardPage = Math.min(Math.ceil(BOARD_SHOWN / PAGE_SIZE) - 1, boardPage + 1); render(); }
 });
 render();
+
+// Matrix Signals + server-side referral. Public visitors load nothing extra while both flags are OFF.
+// Owner preview: ?preview=signals + admin token (verified by the Worker, kept in this tab only).
+async function bootSignals(previewToken) {
+  SG ??= await import(ASSET_BASE + "src/signals-ui.js?v=" + ASSET_V);
+  const sigOn = !!UI.signals || !!previewToken, refOn = !!UI.referral || !!previewToken;
+  renderHow(sigOn, refOn, !!previewToken);
+  if (!sigOn && !refOn) return;
+  await SG.mountSignalsPanel({ root: document.getElementById("signalsPanel"), apiBase: SIGNALS.apiBase, SIGNALS, SEASON, showSignals: sigOn, showReferral: refOn, adminPreview: previewToken || null });
+}
+if (UI.signals || UI.referral) {
+  bootSignals(null).catch(e => console.warn("[onmx] signals panel", e));
+} else if (new URLSearchParams(location.search).get("preview") === "signals") {
+  SG ??= await import(ASSET_BASE + "src/signals-ui.js?v=" + ASSET_V);
+  const saved = SG.savedPreviewToken();
+  if (saved && await SG.verifyPreviewToken(SIGNALS.apiBase, saved)) bootSignals(saved);
+  else SG.mountPreviewGate(document.getElementById("previewGate"), SIGNALS.apiBase, t => bootSignals(t));
+}
 
 // Optional seed-claim client (Bearer/CSRF in memory only; no ordinary-play gate)
 const Claims = await import(ASSET_BASE + "src/claims-client.js?v=" + ASSET_V);
