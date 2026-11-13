@@ -1,10 +1,16 @@
-# onmx-gamification — PRIVATE DRAFT (owner review only, do not publish)
+# onmx-gamification
 
-Static, GitHub-Pages-*compatible* contributor leaderboard + dry-run simulation for the ONMX gamification program.
-**Not deployed. Pages is not enabled. Actions is disabled. No live data.**
+Static, GitHub-Pages-deployed contributor Credits leaderboard + dry-run simulation for the ONMX gamification program.
 
-> ⚠️ **No existing production scoring logic was found** (read-only check of the OnchainNeo GitHub account — no repos — and the local workspace).
-> `src/engine.js` is **new, provisional, unapproved logic** written from the Notion brainstorm/sketch. Every number in `src/config.js` is an assumption.
+**Status**
+- Deployed on GitHub Pages at https://onchain-matrix.github.io/onmx-gamification from `main`.
+- Live page uses **sample data** and **provisional rules**.
+- Claims Worker is deployed at https://onmx-gamification-claims.onmx.workers.dev; settings are at `/v1/config`.
+- X login is not configured, and production grants are OFF.
+- Cross-device claim enforcement and real-wallet end-to-end testing have not been done.
+- No real awards have been made.
+
+> `src/engine.js` is **provisional, unapproved logic** written from the Notion brainstorm/sketch. Every number in `src/config.js` is an assumption.
 > No real money, token conversion, or public reward commitment is implied anywhere.
 
 ## Contents
