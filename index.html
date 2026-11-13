@@ -163,7 +163,8 @@ const seasonEndShort = fmtShort(SEASON.end, false);
 const seasonWeeks = Math.round((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / (7 * 864e5));
 const weeksWord = ["zero","one","two","three","four","five","six","seven","eight"][seasonWeeks] || String(seasonWeeks);
 // e.g. "Season 1 starts Wednesday, Nov 18 at 12:00 PM ET and runs three weeks, through Wednesday, Dec 9."
-const SEASON_WINDOW_COPY = `Season ${CURRENT_SEASON} starts ${seasonStartShort} and runs ${weeksWord} week${seasonWeeks === 1 ? "" : "s"}, through ${seasonEndShort}.`;
+const windowCopy = (subject = `Season ${CURRENT_SEASON}`) => `${subject} starts ${seasonStartShort} and runs ${weeksWord} week${seasonWeeks === 1 ? "" : "s"}, through ${seasonEndShort}.`;
+const SEASON_WINDOW_COPY = windowCopy();
 
 document.getElementById("seasonBadge").textContent = `Season ${CURRENT_SEASON}`;
 document.getElementById("seasonWhen").textContent = LAUNCHED ? `Live now · ends ${seasonEndShort}` : `Starts ${seasonStartShort}`;
@@ -243,7 +244,7 @@ function render() {
   document.getElementById("app").classList.toggle("compact", compact);
   if (tab === "board" && !LIVE) {
     out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN}</h3>
-      <p class="note">Season ${CURRENT_SEASON} hasn't launched yet — the leaderboard opens when it starts. ${esc(SEASON_WINDOW_COPY)} Complete verified tasks after launch to earn Credits and climb the board.</p></section>`;
+      <p class="note">Season ${CURRENT_SEASON} hasn't launched yet. ${esc(windowCopy("It"))} The leaderboard opens at launch — complete verified tasks to earn Credits and climb the board.</p></section>`;
   } else if (tab === "board") {
     const all = E.leaderboard(roster.accounts, tasks.tasks, { asOf: ASOF }).slice(0, BOARD_SHOWN);
     const pages = Math.ceil(all.length / PAGE_SIZE) || 1;
@@ -282,7 +283,7 @@ function render() {
       if (st !== "completed") {
         // Not launched / upcoming / active: no final results — never show fixture rows here.
         rows = [];
-        banner = `<p class="note"><b>${st === "not_launched" ? `Season ${s.number} hasn't launched yet.` : `Season ${s.number} hasn't closed yet.`}</b> ${st === "not_launched" && s.number === CURRENT_SEASON ? esc(SEASON_WINDOW_COPY) + " " : ""}Final results appear here after the season closes${s.number === CURRENT_SEASON ? ` on ${esc(seasonEndShort)}` : ""}.</p>`;
+        banner = `<p class="note"><b>${st === "not_launched" ? `Season ${s.number} hasn't launched yet.` : `Season ${s.number} hasn't closed yet.`}</b> ${st === "not_launched" && s.number === CURRENT_SEASON ? esc(windowCopy("It")) + " Final results appear here after it closes." : "Final results appear here after the season closes."}</p>`;
       } else if (Array.isArray(s.results) && s.results.some(r => (Number(r.seasonPoints)||0) > 0)) {
         rows = [...s.results].sort((a,b) => (b.score-a.score) || String(a.account).localeCompare(b.account)).slice(0, BOARD_SHOWN)
           .map((r,i) => ({ ...r, rank: i+1 }));
