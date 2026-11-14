@@ -66,13 +66,13 @@ h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;co
 .how ol.hs li span{display:block;color:var(--txt);font-weight:700}
 .how ul.tasks{margin:6px 0;padding-left:18px;color:var(--mute);font-size:13px}.how ul.tasks b{color:var(--txt)}
 
-.play-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+.play-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
 .play-tile{background:rgba(8,17,33,.55);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0}
 .play-tile h4{margin:0 0 6px;font-size:13px;letter-spacing:.02em;text-transform:none;font-family:Orbitron,Inter,sans-serif;color:var(--txt);display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.play-tile .play-pts{margin:0 0 6px;font-family:Orbitron,Inter,sans-serif;font-size:18px;font-weight:800;color:var(--cyan)}
+.play-tile .play-pts{margin:0 0 4px;font-family:Orbitron,Inter,sans-serif;font-size:16px;font-weight:800;color:var(--cyan)}
+.play-tile .play-tiers{margin:0 0 6px;font-size:11px;color:var(--mute)}
 .play-tile p{margin:0;font-size:12px;color:var(--mute);line-height:1.4}
-.play-invite{margin:0 0 10px}
-.pending-tag{display:inline-block;font-family:Inter,system-ui,sans-serif;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:none;color:#9AA8BC;background:rgba(143,163,191,.12);border:1px solid rgba(143,163,191,.35);border-radius:99px;padding:2px 8px}
+.play-invite{grid-column:1/-1}
 .how-rules{margin-top:8px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
 .how-rules>summary{cursor:pointer;list-style:none;font-size:13px;font-weight:700;color:var(--txt)}
 .how-rules>summary::-webkit-details-marker{display:none}
@@ -198,7 +198,7 @@ label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;let
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261113-howtoplay1";
+const ASSET_V = "20261114-howtoplay1";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -272,51 +272,69 @@ document.getElementById("prizeCopy").innerHTML = esc(PRIZE_COPY) + (UI.showPrize
 // Task list: Matrix Signals when PUBLIC_UI.signals is on (or owner preview); otherwise the unchanged legacy list.
 let SG = null;
 function renderHow(sigOn = !!UI.signals, refOn = !!UI.referral, preview = false) {
-const tag = `<span class="pending-tag">Pending owner decision</span>`;
-const tilePts = t => t.unit === "bonus" ? `+${t.credits} bonus` : `${t.credits} Credits`;
-const tiles = HOW_TO_PLAY.tiles.map(t => `<article class="play-tile" data-tile="${esc(t.id)}">
-  <h4>${esc(t.title)}${t.pending ? " " + tag : ""}</h4>
-  <div class="play-pts">${esc(tilePts(t))}</div>
-  <p>${esc(t.body)}</p>
-</article>`).join("");
 const ref = SEASON.referral;
+const tiers = Object.entries(SIGNALS.tierMultiplier);
+const typeTiles = SEASON.tasks.map(t => {
+  const type = t.id.replace(/^signal_/, "");
+  const base = SIGNALS.baseCredits[type];
+  const vals = tiers.map(([, m]) => base * m).join(" / ") + " points";
+  const labels = tiers.map(([k]) => HOW_TO_PLAY.tierLabels[k] || k).join(" / ");
+  return `<article class="play-tile" data-tile="${esc(type)}">
+  <h4>${esc(t.label)}</h4>
+  <div class="play-pts">${esc(vals)}</div>
+  <div class="play-tiers">${esc(labels)}</div>
+  <p>${esc(t.desc)}</p>
+</article>`;
+}).join("");
+const bonusEntries = Object.entries(SIGNALS.outcomeBonus);
+const bonusPts = bonusEntries.map(([, v]) => "+" + v).join(" / ") + " points";
+const bonusNames = bonusEntries.map(([k]) => HOW_TO_PLAY.outcomeLabels[k] || k).join(", ");
+const bonusTile = `<article class="play-tile" data-tile="bonuses">
+  <h4>Outcome bonuses</h4>
+  <div class="play-pts">${esc(bonusPts)}</div>
+  <div class="play-tiers">${esc(bonusNames)}</div>
+  <p>Capped at +${SIGNALS.bonusCapPerSignal} points per signal. A reviewer confirms each outcome.</p>
+</article>`;
 const invite = `<article class="play-tile play-invite" data-tile="invite">
   <h4>${esc(HOW_TO_PLAY.inviteTitle)}</h4>
-  <div class="play-pts">+${ref.referrerCredits} Credits</div>
-  <p>You earn +${ref.referrerCredits} Credits when your friend's first signal is approved. If they invite someone later, you get +${ref.level2Credits} when that player's first signal is approved. Referral Credits count toward your lifetime total only, never toward the Season 1 prize ranking.</p>
+  <div class="play-pts">+${ref.referrerCredits} points</div>
+  <p>You earn +${ref.referrerCredits} points when your friend's first signal is approved. If they invite someone later, you get +${ref.level2Credits} points when that player's first signal is approved. Referral points count toward your lifetime total only, never toward the Season 1 prize ranking.</p>
 </article>`;
 document.getElementById("howBody").innerHTML = `
-<div class="play-tiles">${tiles}</div>
-${invite}
-<p class="note play-prize"><b>Season 1 prize:</b> $600 in BNB is paid to the Season 1 top 3 ($300 / $200 / $100) at the end of Season 1 (Nov 18 – Dec 9). Season 1 is the first stage of the championship. The overall championship is decided at the end of the whole championship.</p>
-<p class="note play-units">Units: 100 scoring points = 1 Credit. Scoring points rank you in Season 1 and in the championship. Championship winners are crowned at the end of the whole championship.</p>
+<p class="note">Do contribution and verification work to earn <b>points</b>. Points convert to Credits at the end of each season. No wallet needed to play Season 1. Before rewards are paid, you'll link your X account and wallet.</p>
+<div class="play-tiles">${typeTiles}${bonusTile}${invite}</div>
+<p class="note play-prize"><b>${esc(PRIZE_COPY)}</b> Paid at the end of Season 1.</p>
+<p class="note play-units">Points convert to Credits at the end of each season.</p>
 ${UI.showAirdropConversion ? `<p class="note"><b>Two rewards:</b> (1) ${esc(PRIZE_COPY)} (2) Credits earned during the campaign convert into airdrops. The conversion rate will be announced after Season 1 closes, once season performance is reviewed.</p>` : ""}
+<p class="note">Each round, placement gives a <b>points</b> head start for the <b>next round only</b> (never stacks, none in the first round, needs your own work that round):</p>
+<ol class="hs" aria-label="Next-round head start by placement">
+  <li><b style="height:40px"></b><span>+25</span>#1–5</li>
+  <li><b style="height:24px"></b><span>+15</span>#6–10</li>
+  <li><b style="height:12px"></b><span>+5</span>#11–20</li>
+  <li><b style="height:2px;background:rgba(120,140,160,.3)"></b><span>0</span>#21+</li>
+</ol>
+<p class="note">Head starts are points: +25, +15 or +5 for the next round only.</p>
+<p class="note"><b>Season dates:</b> ${esc(SEASON_WINDOW_COPY)} Credits start counting at launch.</p>
 <details class="how-rules" id="howRules">
   <summary>Rules — read before you claim</summary>
   <div class="how-rules-body">
     <h4>Registration</h4>
-    <p>Link your X handle to your game profile. Claims count only from the linked handle.</p>
-    <h4>Eligibility (external replies)</h4>
-    <p>The account you reply to must have 10,000+ followers, be at least 3 months old, and be relevant to crypto, web3, or ONMX.</p>
-    <h4>Anti-farming</h4>
-    <ul>
-      <li>Replies to a thread must come from distinct accounts.</li>
-      <li>A thread or reply must reach 50 impressions from outside your follower base. ${tag}</li>
-    </ul>
+    <p>Use your own X handle. Reviewers check that every signal was posted from that handle. Link your X account and wallet before payout.</p>
+    <h4>Review guidelines</h4>
+    <p>Reviewers apply these guidelines for external targets: 10,000+ followers, account at least 3 months old, and relevant to crypto, web3, or ONMX. Near-duplicate or reworded copy-paste replies are rejected.</p>
     <h4>Claim limits</h4>
     <ul>
-      <li>One claim per reply.</li>
-      <li>One claim per target account per day.</li>
-      <li>No near-duplicate replies. Reworded copies are rejected.</li>
+      <li>${SIGNALS.maxSubmissionsPerDay} submissions per UTC day.</li>
+      <li>One signal per target post.</li>
+      <li>Up to ${SIGNALS.maxPendingTotal} pending at a time.</li>
     </ul>
     <h4>Referrals</h4>
     <ul>
       <li>No self-referral.</li>
-      <li>No fake, bought, or duplicate accounts. Referrals from them are voided.</li>
       <li>One referrer per player, set at registration and can't be changed.</li>
       <li>A referral counts only after the new player's first signal is approved.</li>
       <li>Up to ${ref.capQualifiedPerSeason} qualified referrals per referrer per season.</li>
-      <li>Referral Credits are lifetime-only and never count toward Season 1 prizes paid in BNB.</li>
+      <li>Referral points count toward lifetime only and never count toward Season 1 prizes paid in BNB.</li>
     </ul>
     <h4>Referee checks</h4>
     <p>The Referee reviews every claim and checks for fake, bought, or coordinated accounts. Flagged claims are rejected, and repeat offenders lose their scoring points.</p>

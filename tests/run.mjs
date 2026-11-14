@@ -185,6 +185,7 @@ t("index: launch-clean copy (no sample/provisional wording), PRIZE_COPY, bar sta
   ok(/SEASON_WINDOW_COPY/.test(h) && /starts \$\{seasonStartShort\}/.test(h), "upcoming season window copy");
   ok(/counting begins/.test(h));
   ok(/How to Play/.test(h) && /Rules — read before you claim/.test(h) && /play-tiles/.test(h), "How to Play + Rules card");
+  ok(/\+5/.test(h) && /#11–20|#11-20/.test(h), "head-start #11–20 +5");
   ok(/PAGE_SIZE|data-pg/.test(h));
   ok(!/\bbatter(y|ies)\b/i.test(h));
   ok(/after Season 1 closes/.test(h));
@@ -327,13 +328,31 @@ t("Matrix Signals tasks replace the five legacy tasks; ids/labels/descriptions; 
   ok(!/\bfollow (us|@|for)|retweet|repost for|like for/i.test(SEASON.tasks.map(x => x.desc).join(" ")), "no follow/retweet-for-points tasks");
   eq(SIGNALS.status, "approved");
 });
-t("HOW_TO_PLAY tiles are a separate config; SIGNALS Credit table values unchanged", () => {
-  eq(HOW_TO_PLAY.tiles.map(x => [x.id, x.credits, !!x.pending]), [["reply_target", 10, false], ["target_engagement", 25, false], ["qualifying_thread", 50, false], ["notifications", 5, true]]);
+t("How to Play tiles read live SIGNALS values; Credit table and referral unchanged", () => {
   eq(SIGNALS.baseCredits, { reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 });
   eq(SIGNALS.tierMultiplier, { accepted: 1, strong: 2, outstanding: 4 });
   eq(SIGNALS.outcomeBonus, { kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 });
   eq(SIGNALS.bonusCapPerSignal, 25);
+  eq(SIGNALS.maxSubmissionsPerDay, 5);
+  eq(SIGNALS.maxPendingTotal, 10);
   eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.welcomeCredits, 0);
+  eq(HOW_TO_PLAY.inviteTitle, "Invite a friend");
+  ok(!("tiles" in HOW_TO_PLAY), "no hardcoded HOW_TO_PLAY tiles");
+  const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const how = h.slice(h.indexOf("function renderHow"), h.indexOf("if (UI.signals)"));
+  ok(/SIGNALS\.baseCredits/.test(how) && /SIGNALS\.tierMultiplier/.test(how) && /SIGNALS\.outcomeBonus/.test(how), "tiles read SIGNALS");
+  ok(/SIGNALS\.maxSubmissionsPerDay/.test(how) && /SIGNALS\.maxPendingTotal/.test(how), "claim limits read SIGNALS");
+  ok(/Points convert to Credits at the end of each season/.test(how), "conversion line");
+  ok(!/100 scoring points = 1 Credit/.test(how), "no 100:1 ratio in How to Play");
+  ok(!/500 pts|1,000 pts|1000 pts/.test(how), "no 100× multiplied display values");
+  ok(!/pending-tag|Pending owner decision/.test(how), "no pending tags");
+  ok(!/50 impressions/.test(how), "no impressions rule");
+  ok(!/qualifying_thread|notifications task|10 \/ 25 \/ 50/i.test(how), "old 10/25/50/5 tiles removed");
+  ok(!/one per target per day|one claim per target account per day/i.test(how), "no one-per-target-per-day");
+  ok(/Use your own X handle/.test(how) && /before payout/.test(how), "X handle rule");
+  ok(/Credits start counting at launch/.test(how), "credits start at launch");
+  ok(!/convert into tokens at TGE/i.test(how), "no TGE sentence");
+  ok(!/link your X handle to your game profile/i.test(how), "no X-login implication");
 });
 t("signalCredits: type × tier + capped outcome bonus; unknown/rejected = 0", () => {
   eq(signalCredits("reply", "accepted"), 5); eq(signalCredits("reply", "strong"), 10); eq(signalCredits("reply", "outstanding"), 20);
@@ -366,6 +385,11 @@ t("Worker signal policy mirrors src/config.js SIGNALS", () => {
   ok(w.includes("tierMultiplier: Object.freeze({ accepted: 1, strong: 2, outstanding: 4 })"), "tiers");
   ok(w.includes("outcomeBonus: Object.freeze({ kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 })"), "bonus");
   ok(w.includes("bonusCapPerSignal: 25") && w.includes("l1Credits: 10") && w.includes("l2Credits: 5") && w.includes("capQualifiedPerSeason: 20"), "caps");
+  ok(w.includes("maxSubmissionsPerDay: 5") && w.includes("maxPendingTotal: 10"), "submission limits");
+  ok(w.includes('version: "signals-policy-v1"') && w.includes('version: "referral-flat-v1"'), "policy versions unchanged");
+  eq(SIGNALS.policyVersion, "signals-policy-v1");
+  eq(SIGNALS.maxSubmissionsPerDay, 5);
+  eq(SIGNALS.maxPendingTotal, 10);
 });
 
 t("S9 wiring: season board/search use /v1/leaderboard only when signals flag or owner preview is on", () => {

@@ -106,6 +106,7 @@ export const SIGNALS = Object.freeze({
   outcomeBonus: Object.freeze({ kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 }),
   bonusCapPerSignal: 25,
   maxSubmissionsPerDay: 5,
+  maxPendingTotal: 10,
   topics: Object.freeze(["rwa", "bnb", "treasury", "defi", "stablecoin", "credit", "macro", "tokenomics", "data", "other"])
 });
 
@@ -127,46 +128,19 @@ export function signalToTask({ account, type, tier, date, status }, sig = SIGNAL
 }
 
 /**
- * How to Play tile values (copy spec v1.2). The public tiles read this object.
- * NOT wired to SIGNALS or the Worker — those stay the owner-approved Credit table
- * (Reply 5/10/20 etc.) and policy.js scoring. Do not treat these tile numbers as live grants.
+ * How to Play display labels. Tile values are read from SIGNALS / SEASON at render
+ * time (display only). Do not hardcode the Credit table here, and do not treat
+ * this object as a second scoring source — Worker policy.js stays authoritative.
  */
 export const HOW_TO_PLAY = Object.freeze({
-  tiles: Object.freeze([
-    Object.freeze({
-      id: "reply_target",
-      title: "Reply to a target",
-      credits: 10,
-      unit: "Credits",
-      pending: false,
-      body: "Add something useful to a qualifying X conversation and mention @Onchain_Matrix only when it fits."
-    }),
-    Object.freeze({
-      id: "target_engagement",
-      title: "Engagement from that target",
-      credits: 25,
-      unit: "bonus",
-      pending: false,
-      body: "Earned when the target account replies to or quotes your reply."
-    }),
-    Object.freeze({
-      id: "qualifying_thread",
-      title: "Qualifying thread",
-      credits: 50,
-      unit: "Credits",
-      pending: false,
-      body: "An original thread about Onchain Matrix that passes review."
-    }),
-    Object.freeze({
-      id: "notifications",
-      title: "Notifications task",
-      credits: 5,
-      unit: "Credits",
-      pending: true,
-      body: "Turn on notifications for @Onchain_Matrix."
-    })
-  ]),
-  inviteTitle: "Invite a friend"
+  inviteTitle: "Invite a friend",
+  tierLabels: Object.freeze({ accepted: "Accepted", strong: "Strong", outstanding: "Outstanding" }),
+  outcomeLabels: Object.freeze({
+    kolReplied: "KOL replied",
+    kolFollowed: "KOL followed",
+    directInterest: "direct interest",
+    introduction: "introduction"
+  })
 });
 
 /** Public prize line (owner decision Nov 13 2026). Single place to edit the visible prize copy. Never pair with a Credits→airdrop rate. */
