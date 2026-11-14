@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 58,
-  "passed": 58,
+  "total": 59,
+  "passed": 59,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -212,6 +212,10 @@
   },
   {
    "name": "Matrix Signals tasks replace the five legacy tasks; ids/labels/descriptions; points = accepted Credits × 100",
+   "pass": true
+  },
+  {
+   "name": "HOW_TO_PLAY tiles are a separate config; SIGNALS Credit table values unchanged",
    "pass": true
   },
   {

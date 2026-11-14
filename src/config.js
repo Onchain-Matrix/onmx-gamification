@@ -126,6 +126,49 @@ export function signalToTask({ account, type, tier, date, status }, sig = SIGNAL
   return { account, type: "signal_" + type, effort: m, date };
 }
 
+/**
+ * How to Play tile values (copy spec v1.2). The public tiles read this object.
+ * NOT wired to SIGNALS or the Worker — those stay the owner-approved Credit table
+ * (Reply 5/10/20 etc.) and policy.js scoring. Do not treat these tile numbers as live grants.
+ */
+export const HOW_TO_PLAY = Object.freeze({
+  tiles: Object.freeze([
+    Object.freeze({
+      id: "reply_target",
+      title: "Reply to a target",
+      credits: 10,
+      unit: "Credits",
+      pending: false,
+      body: "Add something useful to a qualifying X conversation and mention @Onchain_Matrix only when it fits."
+    }),
+    Object.freeze({
+      id: "target_engagement",
+      title: "Engagement from that target",
+      credits: 25,
+      unit: "bonus",
+      pending: false,
+      body: "Earned when the target account replies to or quotes your reply."
+    }),
+    Object.freeze({
+      id: "qualifying_thread",
+      title: "Qualifying thread",
+      credits: 50,
+      unit: "Credits",
+      pending: false,
+      body: "An original thread about Onchain Matrix that passes review."
+    }),
+    Object.freeze({
+      id: "notifications",
+      title: "Notifications task",
+      credits: 5,
+      unit: "Credits",
+      pending: true,
+      body: "Turn on notifications for @Onchain_Matrix."
+    })
+  ]),
+  inviteTitle: "Invite a friend"
+});
+
 /** Public prize line (owner decision Nov 13 2026). Single place to edit the visible prize copy. Never pair with a Credits→airdrop rate. */
 export const PRIZE_COPY = "Season 1 prize: $600 paid in BNB — $300 / $200 / $100 for the top 3.";
 

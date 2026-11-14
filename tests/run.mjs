@@ -1,7 +1,7 @@
 // Deterministic tests for the shared engine (src/engine.js). Writes tests/results.json.
 import { writeFileSync, readFileSync } from "node:fs";
 import * as E from "../src/engine.js";
-import { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal, SIGNALS, signalCredits, signalToTask } from "../src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal, SIGNALS, HOW_TO_PLAY, signalCredits, signalToTask } from "../src/config.js";
 import * as Ref from "../src/referral.js";
 import { transform } from "../tools/export-roster.mjs";
 import { makeAccounts, makeTasks } from "../sim/synth.js";
@@ -184,7 +184,7 @@ t("index: launch-clean copy (no sample/provisional wording), PRIZE_COPY, bar sta
   ok(/PRIZE_COPY/.test(h) && !/usdIllustrative|bandHi|\b1 BNB\b/.test(h), "prize via PRIZE_COPY only; no 1 BNB / band");
   ok(/SEASON_WINDOW_COPY/.test(h) && /starts \$\{seasonStartShort\}/.test(h), "upcoming season window copy");
   ok(/counting begins/.test(h));
-  ok(/\+5/.test(h) && /#11–20|#11-20/.test(h));
+  ok(/How to Play/.test(h) && /Rules — read before you claim/.test(h) && /play-tiles/.test(h), "How to Play + Rules card");
   ok(/PAGE_SIZE|data-pg/.test(h));
   ok(!/\bbatter(y|ies)\b/i.test(h));
   ok(/after Season 1 closes/.test(h));
@@ -326,6 +326,14 @@ t("Matrix Signals tasks replace the five legacy tasks; ids/labels/descriptions; 
   eq(SEASON.legacyTasks.map(x => x.id), ["receipt_check", "verifier_checklist", "architect_ship", "circle_onboard", "video_watch"]);
   ok(!/\bfollow (us|@|for)|retweet|repost for|like for/i.test(SEASON.tasks.map(x => x.desc).join(" ")), "no follow/retweet-for-points tasks");
   eq(SIGNALS.status, "approved");
+});
+t("HOW_TO_PLAY tiles are a separate config; SIGNALS Credit table values unchanged", () => {
+  eq(HOW_TO_PLAY.tiles.map(x => [x.id, x.credits, !!x.pending]), [["reply_target", 10, false], ["target_engagement", 25, false], ["qualifying_thread", 50, false], ["notifications", 5, true]]);
+  eq(SIGNALS.baseCredits, { reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 });
+  eq(SIGNALS.tierMultiplier, { accepted: 1, strong: 2, outstanding: 4 });
+  eq(SIGNALS.outcomeBonus, { kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 });
+  eq(SIGNALS.bonusCapPerSignal, 25);
+  eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.welcomeCredits, 0);
 });
 t("signalCredits: type × tier + capped outcome bonus; unknown/rejected = 0", () => {
   eq(signalCredits("reply", "accepted"), 5); eq(signalCredits("reply", "strong"), 10); eq(signalCredits("reply", "outstanding"), 20);
