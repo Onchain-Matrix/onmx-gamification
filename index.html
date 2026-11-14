@@ -111,14 +111,15 @@ html{scroll-behavior:smooth}
 }
 
 #heroMusic{display:none!important}
-.music-toggle{position:fixed;right:16px;bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:20;width:40px;height:40px;border-radius:99px;border:1px solid rgba(7,233,251,.28);background:rgba(8,17,33,.78);color:var(--txt);cursor:pointer;display:grid;place-items:center;padding:0;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent}
-.music-toggle:hover{border-color:var(--cyan);color:var(--cyan)}
-.music-toggle:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.music-toggle svg{width:18px;height:18px;display:block;fill:currentColor}
+.music-dock{position:fixed;right:16px;bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:20;display:flex;gap:8px;align-items:center}
+.music-dock button{width:40px;height:40px;border-radius:99px;border:1px solid rgba(7,233,251,.28);background:rgba(8,17,33,.78);color:var(--txt);cursor:pointer;display:grid;place-items:center;padding:0;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent}
+.music-dock button:hover{border-color:var(--cyan);color:var(--cyan)}
+.music-dock button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.music-dock svg{width:18px;height:18px;display:block;fill:currentColor}
 .music-toggle .ic-on{display:none}
 .music-toggle.on .ic-off{display:none}
 .music-toggle.on .ic-on{display:block}
-footer{padding-right:56px}
+footer{padding-right:108px}
 /* Matrix Signals + referral (rendered only when PUBLIC_UI.signals/referral are on, or in owner preview) */
 .sigtable-wrap{overflow-x:auto}.sigtable{border-collapse:collapse;font-size:13px;margin:8px 0;min-width:320px}
 .sigtable caption{text-align:left;color:var(--violet-text);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
@@ -134,8 +135,9 @@ label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;let
 .linkbtn{all:unset;cursor:pointer;color:var(--mute);text-decoration:underline;font-size:12px}
 @media (max-width:640px){.sgform{grid-template-columns:1fr}}
 @media (max-width:640px){
-  .music-toggle{right:12px;bottom:max(12px,env(safe-area-inset-bottom,0px));width:44px;height:44px}
-  .wrap{padding-bottom:72px;padding-right:60px}
+  .music-dock{right:12px;bottom:max(12px,env(safe-area-inset-bottom,0px))}
+  .music-dock button{width:44px;height:44px}
+  .wrap{padding-bottom:72px;padding-right:116px}
 }
 </style></head><body>
 <video class="hero-bg" id="heroVideo" autoplay muted loop playsinline preload="metadata" poster="assets/hero-alley-poster.webp?v=20261113-heroflow1" aria-hidden="true">
@@ -151,13 +153,18 @@ label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;let
 </section>
 
 <audio id="heroMusic" loop preload="metadata">
-  <source src="assets/hero-music.ogg?v=20261113-hero3" type="audio/ogg; codecs=opus">
-  <source src="assets/hero-music.mp3?v=20261113-hero3" type="audio/mpeg">
+  <source src="assets/hero-music.ogg?v=20261114-music1" type="audio/ogg; codecs=opus">
+  <source src="assets/hero-music.mp3?v=20261114-music1" type="audio/mpeg">
 </audio>
-<button type="button" class="music-toggle" id="musicToggle" aria-label="Turn music on" aria-pressed="false">
-  <svg class="ic-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h3.2L14 21V3L7.2 9H4zm12.5 3c0-1.8-1-3.3-2.5-4v8c1.5-.7 2.5-2.2 2.5-4z"/><path d="M19.1 4.9 17.7 6.3l5 5-5 5 1.4 1.4 5-5.05-1.4-1.4-3.6-3.55z" opacity=".95"/></svg>
-  <svg class="ic-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h3.2L14 21V3L7.2 9H4zm12.5 3c0-1.8-1-3.3-2.5-4v8c1.5-.7 2.5-2.2 2.5-4z"/><path d="M16.5 12c0-2.5-1.4-4.7-3.5-5.8v2.1c1.2.8 2 2.1 2 3.7s-.8 2.9-2 3.7v2.1c2.1-1.1 3.5-3.3 3.5-5.8z"/><path d="M16 6.1v2.2c2.3 1 3.8 3.2 3.8 5.7s-1.5 4.7-3.8 5.7v2.2c3.4-1.2 5.8-4.3 5.8-7.9S19.4 7.3 16 6.1z"/></svg>
-</button>
+<div class="music-dock" id="musicDock">
+  <button type="button" class="music-next" id="musicNext" aria-label="Next track: Lower Circuit" title="Neon Alley">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6v12l8.5-6L6 6zm9.5 0h2v12h-2z"/></svg>
+  </button>
+  <button type="button" class="music-toggle" id="musicToggle" aria-label="Turn music on" aria-pressed="false">
+    <svg class="ic-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h3.2L14 21V3L7.2 9H4zm12.5 3c0-1.8-1-3.3-2.5-4v8c1.5-.7 2.5-2.2 2.5-4z"/><path d="M19.1 4.9 17.7 6.3l5 5-5 5 1.4 1.4 5-5.05-1.4-1.4-3.6-3.55z" opacity=".95"/></svg>
+    <svg class="ic-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h3.2L14 21V3L7.2 9H4zm12.5 3c0-1.8-1-3.3-2.5-4v8c1.5-.7 2.5-2.2 2.5-4z"/><path d="M16.5 12c0-2.5-1.4-4.7-3.5-5.8v2.1c1.2.8 2 2.1 2 3.7s-.8 2.9-2 3.7v2.1c2.1-1.1 3.5-3.3 3.5-5.8z"/><path d="M16 6.1v2.2c2.3 1 3.8 3.2 3.8 5.7s-1.5 4.7-3.8 5.7v2.2c3.4-1.2 5.8-4.3 5.8-7.9S19.4 7.3 16 6.1z"/></svg>
+  </button>
+</div>
 <div id="dashboard"><div class="wrap" id="app">
 <header>
   <div class="brand"><img src="/onmx-gamification/assets/onchainmatrix-logo.png?v=20261113-hero3" width="170" height="58" alt="Onchain Matrix"><div class="tag">Contributor Credits</div></div>
@@ -198,7 +205,7 @@ label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;let
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261114-howtoplay1";
+const ASSET_V = "20261114-music1";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -682,20 +689,48 @@ __onmxMain();
 <script>
 (() => {
   const KEY = "onmx-hero-music";
+  const TRACK_KEY = "onmx-hero-music-track";
   const VOL = 0.38;
+  const ASSET = "20261114-music1";
+  const TRACKS = [
+    { id: "synthwave", title: "Neon Alley", src: "assets/hero-music" },
+    { id: "darksynth", title: "Lower Circuit", src: "assets/hero-music-darksynth" },
+    { id: "lofi", title: "Rain on Neon", src: "assets/hero-music-lofi" },
+    { id: "taiko", title: "Blade Lock", src: "assets/hero-music-taiko" },
+    { id: "koto", title: "Koto Line", src: "assets/hero-music-koto" }
+  ];
   const audio = document.getElementById("heroMusic");
   const btn = document.getElementById("musicToggle");
+  const nextBtn = document.getElementById("musicNext");
   if (!audio || !btn) return;
   audio.loop = true;
   let fadeId = 0;
   const store = {
-    get() { try { return localStorage.getItem(KEY); } catch { return null; } },
-    set(v) { try { localStorage.setItem(KEY, v); } catch {} }
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
+  const wantedOn = () => store.get(KEY) !== "off";
+  let idx = TRACKS.findIndex(t => t.id === store.get(TRACK_KEY));
+  if (idx < 0) idx = 0;
   const setUi = (on) => {
     btn.setAttribute("aria-pressed", on ? "true" : "false");
     btn.setAttribute("aria-label", on ? "Turn music off" : "Turn music on");
     btn.classList.toggle("on", on);
+  };
+  const setTrackUi = () => {
+    const cur = TRACKS[idx];
+    const nxt = TRACKS[(idx + 1) % TRACKS.length];
+    if (nextBtn) {
+      nextBtn.setAttribute("aria-label", "Next track: " + nxt.title);
+      nextBtn.setAttribute("title", cur.title);
+    }
+  };
+  const applySources = () => {
+    const t = TRACKS[idx];
+    audio.innerHTML =
+      '<source src="' + t.src + ".ogg?v=" + ASSET + '" type="audio/ogg; codecs=opus">' +
+      '<source src="' + t.src + ".mp3?v=" + ASSET + '" type="audio/mpeg">';
+    audio.load();
   };
   const fadeIn = () => {
     cancelAnimationFrame(fadeId);
@@ -710,29 +745,57 @@ __onmxMain();
     fadeId = requestAnimationFrame(tick);
   };
   const start = () => {
+    if (!wantedOn()) return;
     audio.volume = 0;
     const play = audio.play();
-    const ok = () => { fadeIn(); store.set("on"); setUi(true); };
+    const ok = () => { fadeIn(); store.set(KEY, "on"); setUi(true); };
     if (play && typeof play.then === "function") play.then(ok).catch(() => setUi(false));
     else ok();
   };
   const stop = () => {
     cancelAnimationFrame(fadeId);
     audio.pause();
-    store.set("off");
+    store.set(KEY, "off");
     setUi(false);
   };
-  btn.addEventListener("click", () => { if (audio.paused) start(); else stop(); });
-  setUi(false);
-  if (store.get() === "on") {
-    const resume = (e) => {
-      if (e.target && e.target.closest && e.target.closest("#musicToggle")) return;
-      document.removeEventListener("pointerdown", resume, true);
-      document.removeEventListener("keydown", resume, true);
-      if (audio.paused && store.get() === "on") start();
-    };
-    document.addEventListener("pointerdown", resume, true);
-    document.addEventListener("keydown", resume, true);
+  const isDock = (e) => e.target && e.target.closest && e.target.closest("#musicDock");
+  const tryUnlock = (e) => {
+    if (isDock(e)) return;
+    if (e.type === "keydown" && (e.metaKey || e.ctrlKey || e.altKey)) return;
+    if (!wantedOn() || !audio.paused) return;
+    start();
+  };
+  btn.addEventListener("click", () => {
+    if (!audio.paused) stop();
+    else { store.set(KEY, "on"); start(); }
+  });
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      const wasPlaying = !audio.paused;
+      idx = (idx + 1) % TRACKS.length;
+      store.set(TRACK_KEY, TRACKS[idx].id);
+      setTrackUi();
+      applySources();
+      if (!wasPlaying && !wantedOn()) return;
+      const startNew = () => {
+        store.set(KEY, "on");
+        audio.volume = 0;
+        const play = audio.play();
+        const ok = () => { fadeIn(); setUi(true); };
+        if (play && typeof play.then === "function") play.then(ok).catch(() => setUi(false));
+        else ok();
+      };
+      if (audio.readyState >= 2) startNew();
+      else audio.addEventListener("canplay", startNew, { once: true });
+    });
   }
+  document.addEventListener("pointerdown", tryUnlock, true);
+  document.addEventListener("keydown", tryUnlock, true);
+  document.addEventListener("scroll", tryUnlock, { capture: true, passive: true });
+  document.addEventListener("wheel", tryUnlock, { capture: true, passive: true });
+  document.addEventListener("touchmove", tryUnlock, { capture: true, passive: true });
+  setUi(false);
+  setTrackUi();
+  if (idx !== 0) applySources();
 })();
 </script>
