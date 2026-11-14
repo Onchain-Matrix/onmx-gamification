@@ -40,7 +40,7 @@ const KEY = "onmx_admin_token";
 const BASE = { reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 };
 const MULT = { accepted: 1, strong: 2, outstanding: 4 };
 const BONUS = { kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 };
-const BONUS_LABEL = { kolReplied: "Target account replied", kolFollowed: "Target followed @OnchainMatrix", directInterest: "Someone asked about ONMX / DM", introduction: "Introduction / partnership lead" };
+const BONUS_LABEL = { kolReplied: "Target account replied", kolFollowed: "Target followed @Onchain_Matrix", directInterest: "Someone asked about ONMX / DM", introduction: "Introduction / partnership lead" };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const xLink = u => (typeof u === "string" && /^https:\/\/x\.com\/[A-Za-z0-9_]{1,15}(\/status\/\d+)?$/.test(u)) ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer nofollow">${esc(u.replace("https://", ""))}</a>` : "—";
 let tok = sessionStorage.getItem(KEY) || "";

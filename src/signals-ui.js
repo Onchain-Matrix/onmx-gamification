@@ -97,7 +97,7 @@ export function creditTableHtml(SIGNALS, tasks, { preview = false } = {}) {
   const ob = SIGNALS.outcomeBonus;
   return `<div class="sigtable-wrap"><table class="sigtable"><caption>${preview ? "Proposed " : ""}Credits per approved signal</caption>
     <thead><tr><th scope="col">Type</th>${tiers.map(([k]) => `<th scope="col">${tierName[k] || esc(k)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="note">Outcome bonus (confirmed by a reviewer): account you replied to answers +${ob.kolReplied}, follows @OnchainMatrix +${ob.kolFollowed}, someone asks about Onchain Matrix +${ob.directInterest}, leads to an introduction or partnership talk +${ob.introduction} (max +${SIGNALS.bonusCapPerSignal} per signal). Low-effort, copy-paste, off-topic or spammy signals earn 0.</p>`;
+    <p class="note">Outcome bonus (confirmed by a reviewer): account you replied to answers +${ob.kolReplied}, follows @Onchain_Matrix +${ob.kolFollowed}, someone asks about Onchain Matrix +${ob.directInterest}, leads to an introduction or partnership talk +${ob.introduction} (max +${SIGNALS.bonusCapPerSignal} per signal). Low-effort, copy-paste, off-topic or spammy signals earn 0.</p>`;
 }
 
 export function tasksListHtml(tasks) {
@@ -126,7 +126,7 @@ export async function mountSignalsPanel(opts) {
       refLine = r && r.json && r.json.valid ? `<p class="note">Invited by <b>${esc(r.json.referrer)}</b>. Your inviter earns Credits when your first signal is approved.</p>` : "";
     }
     root.innerHTML = `<h3>Matrix Signals</h3>${banner}
-      <p class="note">Find an X conversation where Onchain Matrix genuinely belongs, add something useful, and mention <b>@OnchainMatrix</b> only when it fits. A reviewer approves each signal; quality beats volume.</p>
+      <p class="note">Find an X conversation where Onchain Matrix genuinely belongs, add something useful, and mention <b>@Onchain_Matrix</b> only when it fits. A reviewer approves each signal; quality beats volume.</p>
       ${refLine}
       <form class="s" id="sgJoin" autocomplete="off"><input id="sgHandle" maxlength="16" placeholder="@your_handle" aria-label="Your X handle"><button class="btn" type="submit">Join</button></form>
       <p class="note">No X login. Reviewers check that every signal you submit was posted from this handle.</p>
@@ -177,7 +177,7 @@ export async function mountSignalsPanel(opts) {
         <div class="full"><label for="sgUrl">Your post link</label><input id="sgUrl" type="url" inputmode="url" placeholder="https://x.com/${esc(me.handle.slice(1))}/status/…"></div>
         <div class="full"><label for="sgTarget">Post you replied to / quoted (Discover: account or post)</label><input id="sgTarget" type="url" inputmode="url" placeholder="https://x.com/…"></div>
         <div class="full"><label for="sgWhy">Why was Onchain Matrix relevant here?</label><textarea id="sgWhy" maxlength="280" rows="2" placeholder="One or two sentences"></textarea></div>
-        <div class="full sgrow"><label class="inl"><input id="sgMention" type="checkbox"> I mentioned @OnchainMatrix</label><button class="btn" type="submit">Submit for review</button></div>
+        <div class="full sgrow"><label class="inl"><input id="sgMention" type="checkbox"> I mentioned @Onchain_Matrix</label><button class="btn" type="submit">Submit for review</button></div>
         <div class="full note" id="sgMsg" aria-live="polite"></div>
       </form>
       <p class="note">Up to ${SIGNALS.maxSubmissionsPerDay} per day, one per target post. Credits are added only after a reviewer approves your signal.</p>

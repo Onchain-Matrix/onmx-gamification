@@ -27,7 +27,7 @@ export const SEASON = Object.freeze({
   // Credits are granted only by a reviewer approving the submission in the Worker — never self-awarded.
   tasks: Object.freeze([
     Object.freeze({ id: "signal_reply", label: "Reply", points: 500,
-      desc: "Read the whole thread first, then reply with a useful thought, question or second-order point in your own words. Mention @OnchainMatrix only if it genuinely adds to the conversation." }),
+      desc: "Read the whole thread first, then reply with a useful thought, question or second-order point in your own words. Mention @Onchain_Matrix only if it genuinely adds to the conversation." }),
     Object.freeze({ id: "signal_quote", label: "Quote post", points: 400,
       desc: "Quote a relevant post when you can add a stronger thesis for your own followers. Contribute first, mention second, never copy a script." }),
     Object.freeze({ id: "signal_connect", label: "Connect", points: 600,
