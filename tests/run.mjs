@@ -352,7 +352,8 @@ t("How to Play tiles read live SIGNALS values; referral tile uses REFERRAL_TIERS
   ok(!/qualifying_thread|notifications task|10 \/ 25 \/ 50/i.test(how), "old 10/25/50/5 tiles removed");
   ok(!/one per target per day|one claim per target account per day/i.test(how), "no one-per-target-per-day");
   ok(/Use your own X handle/.test(how) && /before payout/.test(how), "X handle rule");
-  ok(/Credits start counting at launch/.test(how), "credits start at launch");
+  ok(/Points start counting at launch/.test(how), "points start at launch");
+  ok(!/Credits start counting at launch/.test(how), "no Credits start line");
   ok(!/convert into tokens at TGE/i.test(how), "no TGE sentence");
   ok(!/link your X handle to your game profile/i.test(how), "no X-login implication");
   ok(!/\+10 Credits|Referral Credits/.test(how), "How to Play referral copy uses points");
