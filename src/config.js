@@ -2,6 +2,9 @@
 // EVERY value here is an ASSUMPTION / PLACEHOLDER unless marked as an owner decision.
 // Edit the SEASON block below as the single source for season dates, prizes, referrals, and task points.
 
+import { REFERRAL_TIERS } from "./referral-tiers.js";
+export { REFERRAL_TIERS, referralL1Points, referralL2Points, referralTierHeadline, referralTierRangeLabel, referralHowToCopy, referralPanelCopy, referralRulesLines, formatPoints } from "./referral-tiers.js";
+
 /** Single editable season/campaign block. Bump number/start/end for Season 2+; never retie lifetimeStart. */
 export const SEASON = Object.freeze({
   number: 1,
@@ -46,21 +49,23 @@ export const SEASON = Object.freeze({
     Object.freeze({ id: "circle_onboard", label: "Circle onboard", points: 25 }),
     Object.freeze({ id: "video_watch", label: "Video watch (one-time)", points: 5 })
   ]),
-  // Season 1 referral — SERVER-SIDE (Worker + D1), replaces the browser-local prototype. Owner approved Nov 13 2026; UI behind PUBLIC_UI.referral.
+  // Season 1 referral — SERVER-SIDE (Worker + D1). Owner approved Nov 14 2026 (tiered points); UI behind PUBLIC_UI.referral.
   // A referral QUALIFIES only when the referred player's FIRST Matrix Signal is APPROVED by a reviewer.
-  // Then: referrer +10 Credits (level 1), referrer's referrer +5 Credits (level 2, only if that referrer is an approved contributor).
-  // No self-referral; one referrer per player, set at registration and immutable; cap 20 qualified per referrer per season.
-  // Referral Credits stay LIFETIME-ONLY (never season / BNB ranking) per the 6 Nov 2026 owner policy.
+  // Level-1 points depend on how many qualified referrals that referrer already has THIS SEASON, counting this one:
+  // #1–10 → 10, #11–25 → 5, #26–50 → 2, #51–100 → 1. Level 2 is always half of that referral's level-1 value.
+  // No self-referral; one referrer per player, set at registration and immutable; test cap 100 qualified per referrer per season.
+  // Referral points stay LIFETIME-ONLY (never season / BNB ranking) per the 6 Nov 2026 owner policy. No welcome bonus.
   referral: Object.freeze({
     enabled: true,
     enabledSeasons: Object.freeze([1]),
-    model: "server-flat-v1",
-    referrerCredits: 10,   // level 1
-    level2Credits: 5,      // level 2
-    welcomeCredits: 0,     // owner approved Nov 13 2026: level 2 (+5), no welcome bonus
-    capQualifiedPerSeason: 20,
+    model: "referral-tiered-v1",
+    referrerCredits: 10,   // first-tier L1 (referrals 1–10); later tiers use REFERRAL_TIERS
+    level2Credits: 5,      // first-tier L2 (half of 10); later tiers are always half of that referral's L1
+    welcomeCredits: 0,     // no welcome bonus
+    capQualifiedPerSeason: 100, // test max; owner approved Nov 14 2026
     qualifyOn: "first_approved_signal",
-    campaignId: "onmx-campaign"
+    campaignId: "onmx-campaign",
+    tiers: REFERRAL_TIERS.tiers
   }),
   // PROPOSED / PROVISIONAL treasury buy-in bonus (raw SCORING POINTS, not Credits).
   // Continuous bounded formula (no bracket cliffs): points = cap * (1 - exp(-USD / scaleUsd)),
@@ -217,9 +222,11 @@ export const CONFIG = Object.freeze({
   DECAY: { graceDays: 7, ratePerDay: 0.02 },
   SEED_BANDS: [ { minUsd: 0, mult: 1.0 }, { minUsd: 10, mult: 1.1 }, { minUsd: 1000, mult: 1.25 }, { minUsd: 10000, mult: 1.5 }, { minUsd: 100000, mult: 2.0 } ],
   // LEGACY (5 Nov brainstorm): % of referee base energy, L1 10% / L2 5%, 30/60-day gates. NOT the Season 1 model.
-  // Kept only for the old engine helper referralEnergy() + sim. Season 1 uses REFERRAL_FLAT (server-side, flat Credits).
+  // Kept only for the old engine helper referralEnergy() + sim.
   REFERRAL: { legacy: true, levels: [0.10, 0.05] },
-  REFERRAL_FLAT: { l1Credits: 10, l2Credits: 5, capQualifiedPerSeason: 20, qualifyOn: "first_approved_signal", scope: "lifetime_only" },
+  // LEGACY flat model (owner approved Nov 13 2026, replaced Nov 14 by REFERRAL_TIERS).
+  REFERRAL_FLAT: { legacy: true, l1Credits: 10, l2Credits: 5, capQualifiedPerSeason: 20, qualifyOn: "first_approved_signal", scope: "lifetime_only" },
+  REFERRAL_TIERS,
   GATES: [ { day: 30, share: 0.5 }, { day: 60, share: 0.5 } ],
   F1_POINTS: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1],
   // Next-round head start (raw scoring points): #1–5 +25, #6–10 +15, #11–20 +5; #21+ 0. = 0.25/0.15/0.05 Credits at 100 pts/Credit.

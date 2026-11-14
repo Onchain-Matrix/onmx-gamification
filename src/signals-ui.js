@@ -3,6 +3,8 @@
  * or in owner preview (?preview=signals + admin token verified against the Worker, kept in this tab only).
  * Credits come only from reviewer approval in the Worker; this client never computes or stores awards.
  */
+import { referralPanelCopy } from "./referral-tiers.js";
+
 const PLAYER_KEY = "onmx_player_v1";
 const PREVIEW_KEY = "onmx_admin_preview";
 const REF_KEY = "onmx_pending_ref";
@@ -170,7 +172,7 @@ export async function mountSignalsPanel(opts) {
     const list = me.signals.length ? me.signals.slice(0, 10).map((s) => `<li>${chip(s)} <b>${esc(TYPE_LABEL[s.type] || s.type)}</b> · ${esc(TOPIC_LABEL[s.topic] || s.topic)}${s.signalUrl ? ` · <a href="${esc(s.signalUrl)}" target="_blank" rel="noopener nofollow">post</a>` : ""}${s.status === "rejected" && s.rejectReason ? `<div class="note">${esc(s.rejectReason)}</div>` : ""}</li>`).join("") : `<li class="note">No signals yet.</li>`;
     const sigHtml = showSignals ? `
       <div class="sgstats"><div><div class="big" style="font-size:26px">${me.credits.seasonSignal}</div><div class="unit">Season ${me.season} signal Credits</div></div>
-        ${showReferral ? `<div><div class="big" style="font-size:26px">${me.credits.referralLifetime}</div><div class="unit">Referral Credits (lifetime)</div></div>` : ""}</div>
+        ${showReferral ? `<div><div class="big" style="font-size:26px">${me.credits.referralLifetime}</div><div class="unit">Referral points (lifetime)</div></div>` : ""}</div>
       <form id="sgForm" class="sgform" autocomplete="off">
         <div><label for="sgType">Signal type</label><select id="sgType" required>${Object.entries(TYPE_LABEL).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select></div>
         <div><label for="sgTopic">Topic</label><select id="sgTopic" required>${SIGNALS.topics.map((k) => `<option value="${k}">${esc(TOPIC_LABEL[k] || k)}</option>`).join("")}</select></div>
@@ -185,8 +187,8 @@ export async function mountSignalsPanel(opts) {
     const refHtml = showReferral ? `
       <div class="refbox"><div><b>Your referral link</b></div>
         <div class="rowline"><input readonly id="sgRefLink" value="${esc(link)}" aria-label="Your referral link"><button type="button" class="btn" id="sgRefCopy">Copy</button></div>
-        <div class="note">Pending: <b>${me.referrals.pending}</b> · Qualified: <b>${me.referrals.qualified}</b>${me.referrals.overCap ? ` · over the season cap: <b>${me.referrals.overCap}</b>` : ""} · Referral Credits earned: <b>${me.referrals.l1Credits + me.referrals.l2Credits}</b></div>
-        <p class="note">A referral qualifies when your friend's first signal is approved: you get +${SEASON.referral.referrerCredits} Credits, and +${SEASON.referral.level2Credits} when someone they invite qualifies. Up to ${SEASON.referral.capQualifiedPerSeason} qualified referrals per season. Referral Credits count toward lifetime Credits, not the Season ${me.season} prize ranking.</p>
+        <div class="note">Pending: <b>${me.referrals.pending}</b> · Qualified: <b>${me.referrals.qualified}</b>${me.referrals.overCap ? ` · over the season cap: <b>${me.referrals.overCap}</b>` : ""} · Referral points earned: <b>${me.referrals.l1Credits + me.referrals.l2Credits}</b></div>
+        <p class="note">${esc(referralPanelCopy(me.season))}</p>
         ${me.referredBy ? `<p class="note">You joined via ${esc(me.referredBy.handle)} (${me.referredBy.status === "qualified" ? "qualified" : "qualifies when your first signal is approved"}).</p>` : ""}</div>` : "";
     const keyHtml = justJoined ? `<div class="refbox"><b>Your player key</b><div class="rowline"><input readonly id="sgKeyShow" value="${esc(player.key)}" aria-label="Your player key"><button type="button" class="btn ghost" id="sgKeyCopy">Copy</button></div>
       <p class="warnproto">Saved in this browser. Keep a copy to use another device — anyone with this key can submit as you. It is shown only once.</p></div>` : "";

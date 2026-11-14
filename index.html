@@ -214,12 +214,12 @@ label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;let
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261114-music2";
+const ASSET_V = "20261114-reftiers1";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
 const E = await import(ASSET_BASE + "src/engine.js?v=" + ASSET_V);
-const { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, SIGNALS, HOW_TO_PLAY, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd } = await import(ASSET_BASE + "src/config.js?v=" + ASSET_V);
+const { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, SIGNALS, HOW_TO_PLAY, REFERRAL_TIERS, referralTierHeadline, referralTierRangeLabel, referralHowToCopy, referralRulesLines, toInstantMs, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd } = await import(ASSET_BASE + "src/config.js?v=" + ASSET_V);
 const R = await import(ASSET_BASE + "src/referral.js?v=" + ASSET_V);
 const CURRENT_SEASON = SEASON.number;
 const LIFETIME_START = SEASON.lifetimeStart;
@@ -288,7 +288,6 @@ document.getElementById("prizeCopy").innerHTML = esc(PRIZE_COPY) + (UI.showPrize
 // Task list: Matrix Signals when PUBLIC_UI.signals is on (or owner preview); otherwise the unchanged legacy list.
 let SG = null;
 function renderHow(sigOn = !!UI.signals, refOn = !!UI.referral, preview = false) {
-const ref = SEASON.referral;
 const tiers = Object.entries(SIGNALS.tierMultiplier);
 const typeTiles = SEASON.tasks.map(t => {
   const type = t.id.replace(/^signal_/, "");
@@ -311,10 +310,12 @@ const bonusTile = `<article class="play-tile" data-tile="bonuses">
   <div class="play-tiers">${esc(bonusNames)}</div>
   <p>Capped at +${SIGNALS.bonusCapPerSignal} points per signal. A reviewer confirms each outcome.</p>
 </article>`;
+const refRules = referralRulesLines(REFERRAL_TIERS);
 const invite = `<article class="play-tile play-invite" data-tile="invite">
   <h4>${esc(HOW_TO_PLAY.inviteTitle)}</h4>
-  <div class="play-pts">+${ref.referrerCredits} points</div>
-  <p>You earn +${ref.referrerCredits} points when your friend's first signal is approved. If they invite someone later, you get +${ref.level2Credits} points when that player's first signal is approved. Referral points count toward your lifetime total only, never toward the Season 1 prize ranking.</p>
+  <div class="play-pts">${esc(referralTierHeadline(REFERRAL_TIERS))}</div>
+  <div class="play-tiers">Referrals ${esc(referralTierRangeLabel(REFERRAL_TIERS))}</div>
+  <p>${esc(referralHowToCopy(REFERRAL_TIERS))}</p>
 </article>`;
 document.getElementById("howBody").innerHTML = `
 <p class="note">Do contribution and verification work to earn <b>points</b>. Points convert to Credits at the end of each season. No wallet needed to play Season 1. Before rewards are paid, you'll link your X account and wallet.</p>
@@ -349,7 +350,9 @@ ${UI.showAirdropConversion ? `<p class="note"><b>Two rewards:</b> (1) ${esc(PRIZ
       <li>No self-referral.</li>
       <li>One referrer per player, set at registration and can't be changed.</li>
       <li>A referral counts only after the new player's first signal is approved.</li>
-      <li>Up to ${ref.capQualifiedPerSeason} qualified referrals per referrer per season.</li>
+      <li>${esc(refRules.tiers)}</li>
+      <li>${esc(refRules.level2)}</li>
+      <li>${esc(refRules.cap)}</li>
       <li>Referral points count toward lifetime only and never count toward Season 1 prizes paid in BNB.</li>
     </ul>
     <h4>Referee checks</h4>

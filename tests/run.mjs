@@ -1,7 +1,7 @@
 // Deterministic tests for the shared engine (src/engine.js). Writes tests/results.json.
 import { writeFileSync, readFileSync } from "node:fs";
 import * as E from "../src/engine.js";
-import { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal, SIGNALS, HOW_TO_PLAY, signalCredits, signalToTask } from "../src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal, SIGNALS, HOW_TO_PLAY, REFERRAL_TIERS, referralL1Points, referralL2Points, referralTierHeadline, referralHowToCopy, referralPanelCopy, signalCredits, signalToTask } from "../src/config.js";
 import * as Ref from "../src/referral.js";
 import { transform } from "../tools/export-roster.mjs";
 import { makeAccounts, makeTasks } from "../sim/synth.js";
@@ -328,7 +328,7 @@ t("Matrix Signals tasks replace the five legacy tasks; ids/labels/descriptions; 
   ok(!/\bfollow (us|@|for)|retweet|repost for|like for/i.test(SEASON.tasks.map(x => x.desc).join(" ")), "no follow/retweet-for-points tasks");
   eq(SIGNALS.status, "approved");
 });
-t("How to Play tiles read live SIGNALS values; Credit table and referral unchanged", () => {
+t("How to Play tiles read live SIGNALS values; referral tile uses REFERRAL_TIERS", () => {
   eq(SIGNALS.baseCredits, { reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 });
   eq(SIGNALS.tierMultiplier, { accepted: 1, strong: 2, outstanding: 4 });
   eq(SIGNALS.outcomeBonus, { kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 });
@@ -336,12 +336,14 @@ t("How to Play tiles read live SIGNALS values; Credit table and referral unchang
   eq(SIGNALS.maxSubmissionsPerDay, 5);
   eq(SIGNALS.maxPendingTotal, 10);
   eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.welcomeCredits, 0);
+  eq(SEASON.referral.capQualifiedPerSeason, 100); eq(SEASON.referral.model, "referral-tiered-v1");
   eq(HOW_TO_PLAY.inviteTitle, "Invite a friend");
   ok(!("tiles" in HOW_TO_PLAY), "no hardcoded HOW_TO_PLAY tiles");
   const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const how = h.slice(h.indexOf("function renderHow"), h.indexOf("if (UI.signals)"));
   ok(/SIGNALS\.baseCredits/.test(how) && /SIGNALS\.tierMultiplier/.test(how) && /SIGNALS\.outcomeBonus/.test(how), "tiles read SIGNALS");
   ok(/SIGNALS\.maxSubmissionsPerDay/.test(how) && /SIGNALS\.maxPendingTotal/.test(how), "claim limits read SIGNALS");
+  ok(/referralTierHeadline\(REFERRAL_TIERS\)/.test(how) && /referralHowToCopy\(REFERRAL_TIERS\)/.test(how) && /referralRulesLines\(REFERRAL_TIERS\)/.test(how), "invite + rules read REFERRAL_TIERS");
   ok(/Points convert to Credits at the end of each season/.test(how), "conversion line");
   ok(!/100 scoring points = 1 Credit/.test(how), "no 100:1 ratio in How to Play");
   ok(!/500 pts|1,000 pts|1000 pts/.test(how), "no 100× multiplied display values");
@@ -353,6 +355,9 @@ t("How to Play tiles read live SIGNALS values; Credit table and referral unchang
   ok(/Credits start counting at launch/.test(how), "credits start at launch");
   ok(!/convert into tokens at TGE/i.test(how), "no TGE sentence");
   ok(!/link your X handle to your game profile/i.test(how), "no X-login implication");
+  ok(!/\+10 Credits|Referral Credits/.test(how), "How to Play referral copy uses points");
+  eq(referralTierHeadline(), "10 / 5 / 2 / 1 points");
+  ok(/half of what they earn/.test(referralHowToCopy()) && /2\.5/.test(referralHowToCopy()) && /0\.5/.test(referralHowToCopy()));
 });
 t("signalCredits: type × tier + capped outcome bonus; unknown/rejected = 0", () => {
   eq(signalCredits("reply", "accepted"), 5); eq(signalCredits("reply", "strong"), 10); eq(signalCredits("reply", "outstanding"), 20);
@@ -371,25 +376,45 @@ t("signalToTask feeds the existing engine: approved strong reply = 1000 pts = 10
   const b = E.baseEnergy(rows, { from: SEASON.start, to: SEASON.end });
   eq(b.get("@a"), 1000); eq(b.get("@a") / CONFIG.POINTS_PER_BATTERY, 10);
 });
-t("referral: legacy % model marked legacy; flat server model 10/5, cap 20, qualifies on first approved signal", () => {
+t("referral: legacy % and flat models marked legacy; tiered model 10/5/2/1, cap 100, qualifies on first approved signal", () => {
   eq(CONFIG.REFERRAL.legacy, true);
-  eq(CONFIG.REFERRAL_FLAT, { l1Credits: 10, l2Credits: 5, capQualifiedPerSeason: 20, qualifyOn: "first_approved_signal", scope: "lifetime_only" });
-  eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.capQualifiedPerSeason, 20);
+  eq(CONFIG.REFERRAL_FLAT, { legacy: true, l1Credits: 10, l2Credits: 5, capQualifiedPerSeason: 20, qualifyOn: "first_approved_signal", scope: "lifetime_only" });
+  eq(CONFIG.REFERRAL_TIERS, REFERRAL_TIERS);
+  eq(REFERRAL_TIERS.version, "referral-tiered-v1");
+  eq(REFERRAL_TIERS.welcomeCredits, 0);
+  eq(REFERRAL_TIERS.capQualifiedPerSeason, 100);
+  eq(REFERRAL_TIERS.qualifyOn, "first_approved_signal");
+  eq(REFERRAL_TIERS.creditsScope, "lifetime_only");
+  eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.capQualifiedPerSeason, 100);
+  eq(SEASON.referral.model, "referral-tiered-v1");
+  eq(SEASON.referral.welcomeCredits, 0);
+  const bounds = { 10: 10, 11: 5, 25: 5, 26: 2, 50: 2, 51: 1, 100: 1, 101: 0, 0: 0 };
+  for (const [n, l1] of Object.entries(bounds)) {
+    eq(referralL1Points(Number(n)), l1, "L1 nth " + n);
+    eq(referralL2Points(l1), l1 / 2, "L2 half of " + l1);
+  }
+  eq(referralL2Points(5), 2.5);
+  eq(referralL2Points(1), 0.5);
 });
 t("PUBLIC_UI: signals + referral ON (owner approved Nov 13 2026); legacy local referral OFF", () => {
   eq(PUBLIC_UI.signals, true); eq(PUBLIC_UI.referral, true); eq(PUBLIC_UI.showReferral, false); // owner approved Nov 13 2026
 });
-t("Worker signal policy mirrors src/config.js SIGNALS", () => {
+t("Worker signal policy mirrors src/config.js SIGNALS; referral uses shared REFERRAL_TIERS", () => {
   const w = readFileSync(new URL("../worker/src/signals/policy.js", import.meta.url), "utf8");
+  const ui = readFileSync(new URL("../src/signals-ui.js", import.meta.url), "utf8");
   ok(w.includes("baseCredits: Object.freeze({ reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 })"), "base");
   ok(w.includes("tierMultiplier: Object.freeze({ accepted: 1, strong: 2, outstanding: 4 })"), "tiers");
   ok(w.includes("outcomeBonus: Object.freeze({ kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 })"), "bonus");
-  ok(w.includes("bonusCapPerSignal: 25") && w.includes("l1Credits: 10") && w.includes("l2Credits: 5") && w.includes("capQualifiedPerSeason: 20"), "caps");
+  ok(w.includes("bonusCapPerSignal: 25"), "bonus cap");
   ok(w.includes("maxSubmissionsPerDay: 5") && w.includes("maxPendingTotal: 10"), "submission limits");
-  ok(w.includes('version: "signals-policy-v1"') && w.includes('version: "referral-flat-v1"'), "policy versions unchanged");
+  ok(w.includes('version: "signals-policy-v1"') && w.includes("REFERRAL_POLICY = REFERRAL_TIERS") && w.includes("src/referral-tiers.js"), "shared referral policy");
+  ok(!w.includes("referral-flat-v1"), "flat referral policy replaced");
   eq(SIGNALS.policyVersion, "signals-policy-v1");
   eq(SIGNALS.maxSubmissionsPerDay, 5);
   eq(SIGNALS.maxPendingTotal, 10);
+  ok(ui.includes("Referral points (lifetime)") && ui.includes("Referral points earned") && ui.includes("referralPanelCopy"), "referral panel uses points");
+  ok(!ui.includes("Referral Credits"), "no Credits earning label in referral panel");
+  ok(/lifetime total, not the Season/.test(referralPanelCopy(1)) && /test max 100/.test(referralPanelCopy(1)));
 });
 
 t("S9 wiring: season board/search use /v1/leaderboard only when signals flag or owner preview is on", () => {

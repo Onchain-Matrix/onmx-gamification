@@ -1,7 +1,12 @@
+import { REFERRAL_TIERS, referralL1Points, referralL2Points } from "../../../src/referral-tiers.js";
+
 /**
- * Matrix Signals + referral policy (owner approved Nov 13 2026).
- * Mirrors SIGNALS / REFERRAL_FLAT in src/config.js. The Worker is the source of truth for granted Credits.
+ * Matrix Signals + referral policy (Signals table: owner approved Nov 13 2026;
+ * referral tiers: owner approved Nov 14 2026).
+ * Mirrors SIGNALS / REFERRAL_TIERS in src/config.js. The Worker is the source of truth for granted points.
  */
+export const REFERRAL_POLICY = REFERRAL_TIERS;
+export { referralL1Points, referralL2Points };
 export const SIGNAL_POLICY = Object.freeze({
   version: "signals-policy-v1",
   // Credits for an APPROVED signal at the "accepted" tier. strong = x2, outstanding = x4. Rejected / spam = 0.
@@ -16,16 +21,6 @@ export const SIGNAL_POLICY = Object.freeze({
   maxPendingTotal: 10,          // per player at any time
   whyMin: 10,
   whyMax: 280,
-});
-
-export const REFERRAL_POLICY = Object.freeze({
-  version: "referral-flat-v1",
-  l1Credits: 10,               // referrer, when the referred player's FIRST signal is approved
-  l2Credits: 5,                // referrer's referrer (only if the referrer has an approved signal themselves)
-  welcomeCredits: 0,           // owner approved Nov 13 2026: level 2, no welcome bonus
-  capQualifiedPerSeason: 20,   // per referrer per season (L1 and L2 each)
-  qualifyOn: "first_approved_signal",
-  creditsScope: "lifetime_only", // never season / BNB ranking (6 Nov owner policy)
 });
 
 export function signalBaseCredits(type, tier, p = SIGNAL_POLICY) {

@@ -215,7 +215,7 @@
    "pass": true
   },
   {
-   "name": "How to Play tiles read live SIGNALS values; Credit table and referral unchanged",
+   "name": "How to Play tiles read live SIGNALS values; referral tile uses REFERRAL_TIERS",
    "pass": true
   },
   {
@@ -227,7 +227,7 @@
    "pass": true
   },
   {
-   "name": "referral: legacy % model marked legacy; flat server model 10/5, cap 20, qualifies on first approved signal",
+   "name": "referral: legacy % and flat models marked legacy; tiered model 10/5/2/1, cap 100, qualifies on first approved signal",
    "pass": true
   },
   {
@@ -235,7 +235,7 @@
    "pass": true
   },
   {
-   "name": "Worker signal policy mirrors src/config.js SIGNALS",
+   "name": "Worker signal policy mirrors src/config.js SIGNALS; referral uses shared REFERRAL_TIERS",
    "pass": true
   },
   {

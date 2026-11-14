@@ -2,7 +2,7 @@ import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:
 import { describe, it, expect, beforeAll } from "vitest";
 import { createWorker } from "../src/index.js";
 import { applyMigrations } from "./apply-migrations.js";
-import { validateSubmission, parseStatusUrl, signalBaseCredits, signalBonusCredits, SIGNAL_POLICY, REFERRAL_POLICY } from "../src/signals/policy.js";
+import { validateSubmission, parseStatusUrl, signalBaseCredits, signalBonusCredits, SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points } from "../src/signals/policy.js";
 
 const ORIGIN = "https://onchain-matrix.github.io";
 const ADMIN = "test-admin-token-0123456789abcdef";
@@ -48,8 +48,16 @@ describe("signals policy (pure)", () => {
     expect(signalBaseCredits("connect", "nope")).toBe(0);
     expect(signalBonusCredits({ kolReplied: true, kolFollowed: true, directInterest: true, introduction: true })).toBe(SIGNAL_POLICY.bonusCapPerSignal);
     expect(signalBonusCredits({ kolReplied: "yes" })).toBe(0);
-    expect(REFERRAL_POLICY.l1Credits).toBe(10);
-    expect(REFERRAL_POLICY.l2Credits).toBe(5);
+    expect(REFERRAL_POLICY.version).toBe("referral-tiered-v1");
+    expect(REFERRAL_POLICY.welcomeCredits).toBe(0);
+    expect(REFERRAL_POLICY.capQualifiedPerSeason).toBe(100);
+    const bounds = [[10, 10], [11, 5], [25, 5], [26, 2], [50, 2], [51, 1], [100, 1], [101, 0]];
+    for (const [nth, l1] of bounds) {
+      expect(referralL1Points(nth)).toBe(l1);
+      expect(referralL2Points(l1)).toBe(l1 / 2);
+    }
+    expect(referralL2Points(5)).toBe(2.5);
+    expect(referralL2Points(1)).toBe(0.5);
   });
   it("URL validation: x.com/twitter.com status only; author must be the player; discover target may be a profile", () => {
     expect(parseStatusUrl("https://twitter.com/Alice_1/status/123456789?s=20").url).toBe("https://x.com/Alice_1/status/123456789");
@@ -216,6 +224,67 @@ describe("signals API", () => {
     expect(res.json).toEqual({ ok: true, valid: true, referrer: "@self_a" });
   });
 
+  it("tier boundaries: 10th→10, 11th→5, 25th→5, 26th→2, 50th→2, 51st→1, 100th→1, 101st→0 overCap; L2 is half", async () => {
+    const top = await register("tier_top");
+    const mid = await register("tier_mid", top.json.refCode);
+    const midKey = mid.json.playerKey;
+    const midId = mid.json.playerId;
+    const topId = top.json.playerId;
+    // mid must be an approved contributor for L2 to pay
+    const m1 = await submit(midKey, "tier_mid");
+    expect((await approve(m1.json.id)).json.referral.status).toBe("qualified");
+    expect((await ledger(topId)).find((x) => x.kind === "referral_l1").credits).toBe(10);
+
+    const seedQualified = async (already) => {
+      const now = new Date().toISOString();
+      const stmts = [];
+      for (let i = 0; i < already; i++) {
+        const id = "c" + String(already).padStart(3, "0") + String(i).padStart(4, "0") + "d".repeat(24);
+        const handle = ("t" + already + "f" + i).slice(0, 15);
+        const code = ("S" + String(already).padStart(3, "0") + String(i).padStart(4, "0"));
+        stmts.push(env.DB.prepare(`INSERT INTO signal_players (id, handle, ref_code, token_hash, referrer_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`).bind(id, handle, code, "th" + already + "x" + i, midId, now));
+        stmts.push(env.DB.prepare(`INSERT INTO referrals (referred_id, referrer_id, status, season, created_at) VALUES (?, ?, 'qualified', 1, ?)`).bind(id, midId, now));
+      }
+      for (let i = 0; i < stmts.length; i += 40) await env.DB.batch(stmts.slice(i, i + 40));
+    };
+    const qualifyNth = async (nth, expectL1, expectStatus = "qualified") => {
+      // clear previously seeded qualified rows (not mid's own referral to top) and any L1/L2 from prior cases
+      await env.DB.prepare(`DELETE FROM referrals WHERE referrer_id = ?`).bind(midId).run();
+      await env.DB.prepare(`DELETE FROM credit_ledger WHERE player_id IN (?, ?) AND kind LIKE 'referral_%'`).bind(midId, topId).run();
+      // restore top's L1 from mid (mid's first approval) so leftover checks stay isolated
+      await seedQualified(nth - 1);
+      const handle = ("tnth" + nth).slice(0, 15);
+      const n = await register(handle, mid.json.refCode);
+      const s = await submit(n.json.playerKey, handle);
+      const ap = await approve(s.json.id);
+      expect(ap.json.referral.status).toBe(expectStatus);
+      if (expectStatus === "over_cap") {
+        expect(ap.json.referral.grants || []).toEqual([]);
+        expect((await ledger(midId)).filter((x) => x.kind === "referral_l1").length).toBe(0);
+        expect((await ledger(topId)).filter((x) => x.kind === "referral_l2").length).toBe(0);
+        const row = await env.DB.prepare(`SELECT status FROM referrals WHERE referred_id = ?`).bind(n.json.playerId).first();
+        expect(row.status).toBe("over_cap");
+        return;
+      }
+      expect(ap.json.referral.nth).toBe(nth);
+      expect(ap.json.referral.grants).toEqual([
+        { kind: "referral_l1", credits: expectL1 },
+        { kind: "referral_l2", credits: expectL1 / 2 },
+      ]);
+      expect((await ledger(midId)).find((x) => x.kind === "referral_l1").credits).toBe(expectL1);
+      expect((await ledger(topId)).find((x) => x.kind === "referral_l2").credits).toBe(expectL1 / 2);
+    };
+
+    await qualifyNth(10, 10);
+    await qualifyNth(11, 5);
+    await qualifyNth(25, 5);
+    await qualifyNth(26, 2);
+    await qualifyNth(50, 2);
+    await qualifyNth(51, 1);
+    await qualifyNth(100, 1);
+    await qualifyNth(101, 0, "over_cap");
+  });
+
   it("qualified referrals capped per referrer per season (over_cap pays 0)", async () => {
     const r = await register("cap_ref");
     const rid = r.json.playerId;
@@ -227,7 +296,7 @@ describe("signals API", () => {
       stmts.push(env.DB.prepare(`INSERT INTO signal_players (id, handle, ref_code, token_hash, referrer_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`).bind(id, "capf" + i, "CAPF" + (1000 + i), "h" + i, rid, now));
       stmts.push(env.DB.prepare(`INSERT INTO referrals (referred_id, referrer_id, status, season, created_at) VALUES (?, ?, 'qualified', 1, ?)`).bind(id, rid, now));
     }
-    await env.DB.batch(stmts);
+    for (let i = 0; i < stmts.length; i += 40) await env.DB.batch(stmts.slice(i, i + 40));
     const n = await register("cap_new21", r.json.refCode);
     const s = await submit(n.json.playerKey, "cap_new21");
     const ap = await approve(s.json.id);

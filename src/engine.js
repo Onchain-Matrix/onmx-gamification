@@ -81,7 +81,7 @@ export function gateShare(bindDate, lastActiveDate, asOf, cfg = CONFIG) {
   return Math.min(1, s);
 }
 
-// LEGACY referral model (% of referee energy) — superseded by the server-side flat model (CONFIG.REFERRAL_FLAT / worker).
+// LEGACY referral model (% of referee energy) — superseded by the server-side tiered model (CONFIG.REFERRAL_TIERS / worker).
 // Referral (airdrop-only) energy. Uses referees' BASE energy (no Seed amplification), max cfg levels.
 export function referralEnergy(tree, base, lastActive, asOf, cfg = CONFIG) {
   const out = new Map();
