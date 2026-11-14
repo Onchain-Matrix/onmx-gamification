@@ -4,6 +4,8 @@ All tracks below are original compositions, generated programmatically with Pyth
 
 Licence: original work created for the Onchain Matrix site. All rights in these files belong to the project.
 
+The live page defaults to Neon Alley. A Neon / Taiko control next to the speaker switches to Blade Lock and remembers the choice.
+
 ## Neon Alley (default) — `hero-music.{ogg,mp3}`
 
 - Style: original synthwave bed
