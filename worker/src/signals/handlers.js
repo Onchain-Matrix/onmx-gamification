@@ -7,6 +7,7 @@
 import { SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, canonHandle, validateSubmission, cleanOutcomes, signalBaseCredits, signalBonusCredits } from "./policy.js";
 import { randomId, randomBytes, sha256Hex, timingSafeEqual } from "../lib/crypto.js";
 import { rateLimit } from "../lib/rate.js";
+import { scoreRowToPublic } from "./ai-review.js";
 
 const REF_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -262,8 +263,25 @@ export async function handleResolveRef(env, url) {
 const ADMIN_SELECT = `SELECT s.*, p.handle AS player_handle, p.ip_hash AS player_ip, p.referrer_id AS player_referrer,
   rp.handle AS referrer_handle, rp.ip_hash AS referrer_ip,
   (SELECT COUNT(*) FROM signals s2 WHERE s2.target_key = s.target_key AND s2.id <> s.id AND s.target_key IS NOT NULL) AS same_target_count,
-  (SELECT COUNT(*) FROM signals s3 WHERE s3.player_id = s.player_id AND s3.status = 'approved') AS player_approved_count
-  FROM signals s JOIN signal_players p ON p.id = s.player_id LEFT JOIN signal_players rp ON rp.id = p.referrer_id`;
+  (SELECT COUNT(*) FROM signals s3 WHERE s3.player_id = s.player_id AND s3.status = 'approved') AS player_approved_count,
+  sc.status AS score_status,
+  sc.prescreen_version AS score_prescreen_version,
+  sc.prescreen_verdict AS score_prescreen_verdict,
+  sc.reject_reason AS score_reject_reason,
+  sc.cluster_id AS score_cluster_id,
+  sc.cluster_size AS score_cluster_size,
+  sc.auto_approve_blocked AS score_auto_approve_blocked,
+  sc.model AS score_model,
+  sc.prompt_version AS score_prompt_version,
+  sc.substance AS score_substance,
+  sc.confidence AS score_confidence,
+  sc.suggested_tier AS score_suggested_tier,
+  sc.reasons_json AS score_reasons_json,
+  sc.flags_json AS score_flags_json,
+  sc.would_auto_approve AS score_would_auto_approve,
+  sc.scored_at AS score_scored_at
+  FROM signals s JOIN signal_players p ON p.id = s.player_id LEFT JOIN signal_players rp ON rp.id = p.referrer_id
+  LEFT JOIN signal_scores sc ON sc.signal_id = s.id`;
 
 function adminRow(r) {
   let outcomes = null;
@@ -287,15 +305,43 @@ function adminRow(r) {
       otherSignalsOnTarget: Number(r.same_target_count) || 0,
       firstApproval: (Number(r.player_approved_count) || 0) === 0,
     },
+    score: r.score_status
+      ? scoreRowToPublic({
+          status: r.score_status,
+          prescreen_version: r.score_prescreen_version,
+          prescreen_verdict: r.score_prescreen_verdict,
+          reject_reason: r.score_reject_reason,
+          cluster_id: r.score_cluster_id,
+          cluster_size: r.score_cluster_size,
+          auto_approve_blocked: r.score_auto_approve_blocked,
+          model: r.score_model,
+          prompt_version: r.score_prompt_version,
+          substance: r.score_substance,
+          confidence: r.score_confidence,
+          suggested_tier: r.score_suggested_tier,
+          reasons_json: r.score_reasons_json,
+          flags_json: r.score_flags_json,
+          would_auto_approve: r.score_would_auto_approve,
+          scored_at: r.score_scored_at,
+        })
+      : null,
   };
 }
 
 export async function adminList(env, url) {
   const status = String(url.searchParams.get("status") || "pending");
   const limit = Math.min(500, Math.max(1, Number(url.searchParams.get("limit")) || 100));
-  const where = ["pending", "approved", "rejected"].includes(status) ? `WHERE s.status = ?` : "";
-  const stmt = env.DB.prepare(`${ADMIN_SELECT} ${where} ORDER BY s.submitted_at ${status === "pending" ? "ASC" : "DESC"} LIMIT ${limit}`);
-  const rows = where ? await stmt.bind(status).all() : await stmt.all();
+  let where = "";
+  let bind = [];
+  if (["pending", "approved", "rejected"].includes(status)) {
+    where = "WHERE s.status = ?";
+    bind = [status];
+  } else if (status === "borderline") {
+    where = "WHERE s.status = 'pending' AND sc.signal_id IS NOT NULL AND sc.would_auto_approve = 0 AND sc.status IN ('scored','prescreen_reject')";
+  }
+  const order = status === "pending" || status === "borderline" ? "ASC" : "DESC";
+  const stmt = env.DB.prepare(`${ADMIN_SELECT} ${where} ORDER BY s.submitted_at ${order} LIMIT ${limit}`);
+  const rows = bind.length ? await stmt.bind(...bind).all() : await stmt.all();
   return [200, { ok: true, status, signals: (rows.results || []).map(adminRow) }];
 }
 
@@ -487,6 +533,7 @@ function deletePlayerStmts(env, id) {
   return [
     env.DB.prepare(`DELETE FROM credit_ledger WHERE player_id = ? OR source_id = ? OR source_id IN (SELECT id FROM signals WHERE player_id = ?)`).bind(id, id, id),
     env.DB.prepare(`DELETE FROM referrals WHERE referred_id = ? OR referrer_id = ?`).bind(id, id),
+    env.DB.prepare(`DELETE FROM signal_scores WHERE signal_id IN (SELECT id FROM signals WHERE player_id = ?)`).bind(id),
     env.DB.prepare(`DELETE FROM signals WHERE player_id = ?`).bind(id),
     env.DB.prepare(`UPDATE signal_players SET referrer_id = NULL WHERE referrer_id = ?`).bind(id),
     env.DB.prepare(`DELETE FROM signal_players WHERE id = ?`).bind(id),

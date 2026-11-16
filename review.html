@@ -13,6 +13,9 @@ button{cursor:pointer;background:linear-gradient(135deg,var(--violet),#6f5fe0);c
 button.ghost{background:transparent;border:1px solid var(--line)}button.danger{background:#7a2433}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.mute{color:var(--mute);font-size:12px}a{color:var(--cyan)}
 .flag{display:inline-block;font-size:11px;border-radius:99px;padding:1px 7px;border:1px solid var(--line);color:var(--mute);margin-right:4px}.flag.warn{color:#ffd27a;border-color:#ffd27a66}
+.flag.auto{color:#00ff88;border-color:#00ff8866}.flag.queue{color:#07E9FB;border-color:#07E9FB66}
+.scorebox{background:#050b17;border-radius:8px;padding:8px;margin:6px 0;font-size:12px;color:var(--mute)}
+.scorebox strong{color:var(--txt)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-top:8px}
 .why{white-space:pre-wrap;background:#050b17;border-radius:8px;padding:8px;margin:6px 0}
 .tabs button{background:transparent;border:1px solid var(--line)}.tabs button.on{background:linear-gradient(135deg,var(--cyan),#5887F4);color:#030612}
@@ -25,8 +28,10 @@ button.ghost{background:transparent;border:1px solid var(--line)}button.danger{b
   <button id="tokSave">Unlock</button><button class="ghost" id="tokClear">Forget token</button><span id="who" class="mute"></span>
 </div>
 <div class="card row tabs" id="ctl" hidden>
-  <button data-st="pending" class="on">Pending</button><button data-st="approved">Approved</button><button data-st="rejected">Rejected</button><button data-st="all">All</button>
+  <button data-st="pending" class="on">Pending</button><button data-st="borderline">Borderline</button><button data-st="approved">Approved</button><button data-st="rejected">Rejected</button><button data-st="all">All</button>
   <span style="flex:1"></span>
+  <button class="ghost" id="scorePending">Score pending</button>
+  <button class="ghost" id="aiStats">Agreement stats</button>
   <button class="ghost" id="csv">Download Signal Log CSV</button>
   <button class="ghost" id="players">Players</button>
   <button class="danger" id="purge">Purge preview rows</button>
@@ -56,15 +61,28 @@ async function api(path, { method = "GET", body } = {}) {
 async function unlock() {
   const r = await api("/v1/admin/ping");
   if (r.status !== 200) { $("#who").textContent = "Token rejected (" + r.status + ")"; $("#ctl").hidden = true; $("#list").innerHTML = ""; return; }
-  $("#who").textContent = "Unlocked · Signals open: " + (r.json.signals.open ? "yes" : "no (preview only)");
+  const mode = r.json.aiReview && r.json.aiReview.mode ? r.json.aiReview.mode : "off";
+  $("#who").textContent = "Unlocked · Signals open: " + (r.json.signals.open ? "yes" : "no (preview only)") + " · AI review: " + mode + " (auto-approve off)";
   $("#ctl").hidden = false; load();
 }
 function credits(type, tier, o) { let b = 0; for (const k in BONUS) if (o[k]) b += BONUS[k]; return (BASE[type] || 0) * (MULT[tier] || 0) + Math.min(25, b); }
+function scoreBox(s) {
+  const sc = s.score;
+  if (!sc) return `<div class="scorebox mute">AI score: not yet scored (shadow only; never changes Credits)</div>`;
+  const flags = (sc.flags || []).map(x => `<span class="flag warn">${esc(x)}</span>`).join(" ");
+  const reasons = (sc.reasons || []).map(x => esc(x)).join(" · ");
+  const cluster = sc.clusterId ? `cluster ${esc(sc.clusterId)} (${sc.clusterSize || "?"})${sc.autoApproveBlocked ? " · auto-approve blocked" : ""}` : "no cluster";
+  const nums = sc.status === "scored" ? `<strong>substance ${esc(sc.substance)}</strong> · confidence ${esc(sc.confidence)} · suggested ${esc(sc.suggestedTier)}` : esc(sc.status) + (sc.rejectReason ? " · " + esc(sc.rejectReason) : "");
+  const badge = sc.wouldAutoApprove ? `<span class="flag auto">would auto-approve</span>` : `<span class="flag queue">would not auto-approve</span>`;
+  return `<div class="scorebox">${badge} ${nums}<div>Reasons: ${reasons || "—"} ${flags}</div><div>Cluster: ${cluster} · prescreen ${esc(sc.prescreenVerdict || "—")}${sc.prescreenVerdict === "reject" && sc.rejectReason ? " (" + esc(sc.rejectReason) + ")" : ""}</div></div>`;
+}
 function card(s) {
   const f = s.flags || {};
   const flags = [s.preview ? `<span class="flag">preview</span>` : "", f.firstApproval && s.status === "pending" ? `<span class="flag">first signal</span>` : "",
     s.referrer ? `<span class="flag">referred by ${esc(s.referrer)}</span>` : "", f.sameIpAsReferrer ? `<span class="flag warn">same network as referrer</span>` : "",
-    f.otherSignalsOnTarget ? `<span class="flag warn">${f.otherSignalsOnTarget} other signal(s) on this target</span>` : ""].join("");
+    f.otherSignalsOnTarget ? `<span class="flag warn">${f.otherSignalsOnTarget} other signal(s) on this target</span>` : "",
+    s.score && s.score.wouldAutoApprove ? `<span class="flag auto">would auto-approve</span>` : "",
+    s.score && !s.score.wouldAutoApprove && (s.score.status === "scored" || s.score.status === "prescreen_reject") ? `<span class="flag queue">review queue</span>` : ""].join("");
   const o = s.outcomes || {};
   const outcomeInputs = `<div class="grid">${Object.keys(BONUS).map(k => `<label class="mute"><input type="checkbox" data-o="${k}" ${o[k] ? "checked" : ""}> ${BONUS_LABEL[k]} (+${BONUS[k]})</label>`).join("")}
     <label class="mute">Impressions <input data-m="impressions" type="number" min="0" value="${o.impressions ?? ""}" style="width:100%"></label>
@@ -81,7 +99,7 @@ function card(s) {
     <div class="row"><h2>${esc(s.handle)} · ${esc(s.type)} · ${esc(s.topic)}</h2><span class="mute">${esc(s.submittedAt)}</span>
       <span class="flag">${esc(s.status)}${s.status === "approved" ? " · " + esc(s.tier) + " · " + s.credits + " Credits" : ""}</span>${flags}</div>
     <div class="mute">Signal: ${xLink(s.signalUrl)} · Target: ${xLink(s.targetUrl)} ${s.targetHandle ? "(" + esc(s.targetHandle) + ")" : ""} · ONMX mentioned: ${s.onmxMentioned ? "yes" : "no"}</div>
-    <div class="why">${esc(s.why)}</div>${s.rejectReason ? `<div class="mute">Reason: ${esc(s.rejectReason)}</div>` : ""}${actions}</div>`;
+    <div class="why">${esc(s.why)}</div>${scoreBox(s)}${s.rejectReason ? `<div class="mute">Reason: ${esc(s.rejectReason)}</div>` : ""}${actions}</div>`;
 }
 function readOutcomes(el) {
   const o = {}; el.querySelectorAll("[data-o]").forEach(i => o[i.dataset.o] = i.checked);
@@ -123,6 +141,26 @@ $("#players").onclick = async () => {
   const r = await api("/v1/admin/players");
   if (r.status !== 200) { msg("Players failed"); return; }
   $("#list").innerHTML = `<div class="card"><h2>Players (${r.json.players.length})</h2>${r.json.players.map(p => `<div class="mute">${esc(p.handle)} · code ${esc(p.refCode)} · ${p.preview ? "preview · " : ""}referrals pending ${p.referrals.pending} / qualified ${p.referrals.qualified} · ledger ${esc(JSON.stringify(p.ledger))}</div>`).join("")}</div>`;
+};
+$("#scorePending").onclick = async () => {
+  msg("Scoring pending signals (shadow only)…");
+  const r = await api("/v1/admin/signals/score", { method: "POST", body: {} });
+  if (r.status !== 200) { msg("Score failed: " + (r.json?.error || r.status)); return; }
+  msg("Scored " + r.json.scored + " signal(s). Status and Credits were not changed.");
+  load();
+};
+$("#aiStats").onclick = async () => {
+  const r = await api("/v1/admin/signals/ai-stats");
+  if (r.status !== 200) { msg("Stats failed: " + (r.json?.error || r.status)); return; }
+  const s = r.json;
+  const pct = (x) => x == null ? "—" : (Math.round(x * 1000) / 10) + "%";
+  const c = s.confusion || {};
+  $("#list").innerHTML = `<div class="card"><h2>Agreement stats (model vs human)</h2>
+    <div class="mute">Mode: ${esc(s.mode)} · auto-approve: off · thresholds: substance ≥ ${esc(s.thresholds?.substanceMin)} and confidence ≥ ${esc(s.thresholds?.confidenceMin)}, accepted tier only.</div>
+    <div class="mute">Reviewed ${s.reviewed} of ${s.total} scored signal(s). Would-auto-approve (reviewed): ${s.wouldAutoApproveReviewed}. ${s.preliminary ? "Preliminary — need " + s.sampleSizeTarget + " would-auto-approve cases reviewed before a go-live call." : "Sample size target met."}</div>
+    <div class="scorebox">False approvals: ${s.falseApprovals} (rate ${pct(s.falseApprovalRate)}) · False rejects: ${s.falseRejects} · Agreement ${pct(s.agreement)} · Cohen's κ ${s.kappa == null ? "—" : Math.round(s.kappa * 1000) / 1000}</div>
+    <div class="mute">Confusion: model approve / human approve ${c.modelApproveHumanApprove || 0}; model approve / human reject ${c.modelApproveHumanReject || 0}; model reject / human approve ${c.modelRejectHumanApprove || 0}; model reject / human reject ${c.modelRejectHumanReject || 0}.</div>
+  </div>`;
 };
 $("#purge").onclick = async () => {
   if (!confirm("Delete every player and signal created in preview mode?")) return;

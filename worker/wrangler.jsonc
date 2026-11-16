@@ -22,8 +22,19 @@
     "ETH_RPC_URL": "https://ethereum.publicnode.com",
     "PRODUCTION_GRANTS_ENABLED": "0",
     "SIGNALS_OPEN": "1",
-    "LEADERBOARD_CACHE_SECONDS": "60"
+    "LEADERBOARD_CACHE_SECONDS": "60",
+    "AI_REVIEW_MODE": "off",
+    "AI_REVIEW_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "AI_AUTO_APPROVE": "0",
+    "AI_REVIEW_SUBSTANCE_MIN": "80",
+    "AI_REVIEW_CONFIDENCE_MIN": "0.85"
   },
+  "ai": {
+    "binding": "AI"
+  },
+  "rules": [
+    { "type": "Text", "globs": ["**/*.txt"] }
+  ],
   "d1_databases": [
     {
       "binding": "DB",

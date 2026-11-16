@@ -48,6 +48,7 @@ import {
   adminDeletePlayer,
   adminPurgePreview,
 } from "./signals/handlers.js";
+import { scoreSignal, scorePending, adminAgreementStats, reviewPublicConfig } from "./signals/ai-review.js";
 
 function respond(env, request, body, status = 200) {
   const { headers: cors } = corsHeaders(env, request);
@@ -136,6 +137,7 @@ export function createWorker(deps = {}) {
   // claimVerifier(env, body) → { ok, purchaseUsd, purchaseAtMs, chainId, txHash, logIndex } or fail
   const claimVerifier = deps.claimVerifier || ((env, input, opts) => verifySeedPurchaseReceipt(env, input, opts));
   const allowClaimInsert = !!deps.allowClaimInsert;
+  const reviewIo = () => ({ fetchImpl, aiRun: deps.aiRun });
 
   return {
     async fetch(request, env, ctx) {
@@ -181,6 +183,11 @@ export function createWorker(deps = {}) {
           const g = requireSameSiteMutation(env, request);
           if (!g.ok) return respond(env, request, { ok: false, error: g.error }, 403);
           const [st, body] = await handleSubmit(env, request, await readJson(request, 8_000));
+          if (st === 200 && body && body.id) {
+            ctx.waitUntil(scoreSignal(env, body.id, reviewIo()).catch((err) => {
+              console.log("ai_review_score_failed", String(err && (err.message || err)));
+            }));
+          }
           return respond(env, request, body, st);
         }
         if (path === "/v1/leaderboard" && request.method === "GET") {
@@ -203,11 +210,20 @@ export function createWorker(deps = {}) {
             if (!g.ok) return respond(env, request, { ok: false, error: g.error }, 403);
           }
           if (path === "/v1/admin/ping" && request.method === "GET") {
-            return respond(env, request, { ok: true, admin: true, signals: signalsPublicConfig(env) });
+            return respond(env, request, { ok: true, admin: true, signals: signalsPublicConfig(env), aiReview: reviewPublicConfig(env) });
           }
           if (path === "/v1/admin/signals" && request.method === "GET") {
             const [st, body] = await adminList(env, url);
             return respond(env, request, body, st);
+          }
+          if (path === "/v1/admin/signals/score" && request.method === "POST") {
+            const body = await readJson(request, 8_000);
+            const out = await scorePending(env, { ids: body.ids || (body.id ? [body.id] : null), limit: body.limit }, reviewIo());
+            return respond(env, request, out, out.ok ? 200 : (out.error === "ai_auto_approve_not_implemented" ? 500 : 409));
+          }
+          if (path === "/v1/admin/signals/ai-stats" && request.method === "GET") {
+            const body = await adminAgreementStats(env);
+            return respond(env, request, body, 200);
           }
           if (path === "/v1/admin/signals.csv" && request.method === "GET") {
             const { headers: cors } = corsHeaders(env, request);
