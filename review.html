@@ -104,7 +104,19 @@ async function load() {
       if ((act === "reject" || act === "revoke") && (body.reason || "").trim().length < 3) { msg("Add a reason first."); return; }
       b.disabled = true;
       const res = await api(`/v1/admin/signals/${id}/${act}`, { method: "POST", body });
-      if (res.status !== 200) { msg(act + " failed: " + (res.json?.error || res.status)); b.disabled = false; return; }
+      if (res.status !== 200) {
+        if (res.json?.error === "season_not_started") {
+          const when = res.json.startsAt ? new Date(res.json.startsAt) : null;
+          const label = when && !Number.isNaN(+when)
+            ? when.toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) + " ET"
+            : "launch";
+          msg("Season has not started yet. This signal stays pending — you can approve it after " + label + ".");
+        } else {
+          msg(act + " failed: " + (res.json?.error || res.status));
+        }
+        b.disabled = false;
+        return;
+      }
       msg(act + " OK" + (res.json.referral && res.json.referral.status !== "none" ? " · referral " + res.json.referral.status : ""));
       load();
     });

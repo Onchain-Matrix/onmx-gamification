@@ -4,7 +4,7 @@
  * - Credits are written ONLY by reviewer approval (admin token). Players can never self-award.
  * - While SIGNALS_OPEN !== "1", player endpoints require a valid admin preview header (owner preview / smoke tests).
  */
-import { SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, canonHandle, validateSubmission, cleanOutcomes, signalBaseCredits, signalBonusCredits } from "./policy.js";
+import { SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, canonHandle, validateSubmission, cleanOutcomes, signalBaseCredits, signalBonusCredits, currentTimeMs, isSeasonStarted, seasonNotStartedBody } from "./policy.js";
 import { randomId, randomBytes, sha256Hex, timingSafeEqual } from "../lib/crypto.js";
 import { rateLimit } from "../lib/rate.js";
 
@@ -22,6 +22,12 @@ export function signalsPublicConfig(env) {
 function season(env) {
   const n = Number(env.SEASON_NUMBER || 1);
   return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
+/** 409 + season_not_started before SEASON start; otherwise null. Signal is left untouched. */
+function seasonGuard(env) {
+  if (isSeasonStarted(currentTimeMs(env))) return null;
+  return [409, seasonNotStartedBody()];
 }
 
 function newRefCode() {
@@ -299,7 +305,8 @@ export async function adminList(env, url) {
   return [200, { ok: true, status, signals: (rows.results || []).map(adminRow) }];
 }
 
-async function qualifyReferral(env, referredId, signalId, s, now) {
+export async function qualifyReferral(env, referredId, signalId, s, now) {
+  if (!isSeasonStarted(currentTimeMs(env))) return { status: "season_not_started", grants: [] };
   const ref = await env.DB.prepare(`SELECT * FROM referrals WHERE referred_id = ?`).bind(referredId).first();
   if (!ref || ref.status !== "pending") return { status: ref ? ref.status : "none" };
   const P = REFERRAL_POLICY;
@@ -350,6 +357,8 @@ export async function adminApprove(env, id, body) {
   const row = await env.DB.prepare(`SELECT s.*, p.handle FROM signals s JOIN signal_players p ON p.id = s.player_id WHERE s.id = ?`).bind(id).first();
   if (!row) return [404, { ok: false, error: "not_found" }];
   if (row.status !== "pending") return [409, { ok: false, error: "not_pending", status: row.status }];
+  const blocked = seasonGuard(env);
+  if (blocked) return blocked;
   const outcomes = cleanOutcomes(body.outcomes || {});
   const base = signalBaseCredits(row.signal_type, tier);
   const bonus = signalBonusCredits(outcomes);
@@ -395,6 +404,8 @@ export async function adminOutcomes(env, id, body) {
   const row = await env.DB.prepare(`SELECT * FROM signals WHERE id = ?`).bind(id).first();
   if (!row) return [404, { ok: false, error: "not_found" }];
   if (row.status !== "approved") return [409, { ok: false, error: "not_approved" }];
+  const blocked = seasonGuard(env);
+  if (blocked) return blocked;
   const outcomes = cleanOutcomes(body.outcomes || {});
   const bonus = signalBonusCredits(outcomes);
   const now = new Date().toISOString();

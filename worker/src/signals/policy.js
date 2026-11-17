@@ -1,4 +1,8 @@
 import { REFERRAL_TIERS, referralL1Points, referralL2Points } from "../../../src/referral-tiers.js";
+import { POLICY, toInstantMs } from "../claims/policy.js";
+
+export { POLICY, toInstantMs };
+
 
 /**
  * Matrix Signals + referral policy (Signals table: owner approved Nov 13 2026;
@@ -134,4 +138,40 @@ export function cleanOutcomes(o = {}) {
     introduction: o.introduction === true,
     notes: String(o.notes ?? "").slice(0, 500),
   };
+}
+
+/** Season start from the existing Worker policy (SEASON start in claims/policy.js). Do not hardcode a second date. */
+export function seasonStartMs(policy = POLICY) {
+  return toInstantMs(policy.seasonStart);
+}
+
+export function seasonEndMs(policy = POLICY) {
+  return toInstantMs(policy.seasonEnd);
+}
+
+/** Inclusive start: approval at the exact season start instant is allowed. */
+export function isSeasonStarted(nowMs, policy = POLICY) {
+  return Number(nowMs) >= seasonStartMs(policy);
+}
+
+/**
+ * Injectable clock for tests. Production uses Date.now().
+ * env.nowMs may be a function or a number; env.NOW_MS may be a numeric binding.
+ */
+export function currentTimeMs(env) {
+  if (typeof env?.nowMs === "function") {
+    const n = Number(env.nowMs());
+    if (Number.isFinite(n)) return n;
+  }
+  if (typeof env?.nowMs === "number" && Number.isFinite(env.nowMs)) return env.nowMs;
+  const raw = env?.NOW_MS;
+  if (raw != null && String(raw) !== "") {
+    const n = Number(raw);
+    if (Number.isFinite(n)) return n;
+  }
+  return Date.now();
+}
+
+export function seasonNotStartedBody(policy = POLICY) {
+  return { ok: false, error: "season_not_started", startsAt: policy.seasonStart };
 }

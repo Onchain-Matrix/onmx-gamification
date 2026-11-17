@@ -1,8 +1,10 @@
 import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { createWorker } from "../src/index.js";
 import { applyMigrations } from "./apply-migrations.js";
-import { validateSubmission, parseStatusUrl, signalBaseCredits, signalBonusCredits, SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points } from "../src/signals/policy.js";
+import { validateSubmission, parseStatusUrl, signalBaseCredits, signalBonusCredits, SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, currentTimeMs, isSeasonStarted, seasonStartMs, seasonEndMs, POLICY, toInstantMs } from "../src/signals/policy.js";
+import { qualifyReferral } from "../src/signals/handlers.js";
+
 
 const ORIGIN = "https://onchain-matrix.github.io";
 const ADMIN = "test-admin-token-0123456789abcdef";
@@ -10,12 +12,22 @@ const worker = createWorker();
 let seq = 0;
 const sid = () => String(1900000000000000000n + BigInt(++seq) * 7919n);
 
-async function call(path, { method = "GET", body, headers = {} } = {}) {
+// Injectable clock. Default to the season start so existing approval tests still grant points
+// (wall-clock now is before launch). Production uses Date.now() via currentTimeMs().
+const START_MS = seasonStartMs();
+const END_MS = seasonEndMs();
+const clock = { nowMs: START_MS };
+
+function envAt(ms = clock.nowMs) {
+  return Object.assign(Object.create(env), { nowMs: () => ms });
+}
+
+async function call(path, { method = "GET", body, headers = {}, nowMs } = {}) {
   const h = { Origin: ORIGIN, ...headers };
   if (body !== undefined) h["Content-Type"] = "application/json";
   const req = new Request("https://onmx-gamification-claims.onmx.workers.dev" + path, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) });
   const ctx = createExecutionContext();
-  const res = await worker.fetch(req, env, ctx);
+  const res = await worker.fetch(req, envAt(nowMs ?? clock.nowMs), ctx);
   await waitOnExecutionContext(ctx);
   const text = await res.text();
   let json = null; try { json = JSON.parse(text); } catch {}
@@ -58,6 +70,19 @@ describe("signals policy (pure)", () => {
     }
     expect(referralL2Points(5)).toBe(2.5);
     expect(referralL2Points(1)).toBe(0.5);
+  });
+  it("season dates come from policy.js; start is inclusive; clock is injectable", () => {
+    expect(POLICY.seasonStart).toBe("2026-11-18T12:00:00-05:00");
+    expect(POLICY.seasonEnd).toBe("2026-12-09T12:00:00-05:00");
+    expect(START_MS).toBe(toInstantMs(POLICY.seasonStart));
+    expect(START_MS).toBe(Date.parse("2026-11-18T17:00:00Z"));
+    expect(isSeasonStarted(START_MS - 1)).toBe(false);
+    expect(isSeasonStarted(START_MS)).toBe(true);
+    expect(isSeasonStarted(START_MS + 1)).toBe(true);
+    expect(isSeasonStarted(END_MS)).toBe(true); // no end-of-season grant block today
+    const fake = { nowMs: () => START_MS - 1 };
+    expect(currentTimeMs(fake)).toBe(START_MS - 1);
+    expect(currentTimeMs({ NOW_MS: String(START_MS) })).toBe(START_MS);
   });
   it("URL validation: x.com/twitter.com status only; author must be the player; discover target may be a profile", () => {
     expect(parseStatusUrl("https://twitter.com/Alice_1/status/123456789?s=20").url).toBe("https://x.com/Alice_1/status/123456789");
@@ -316,5 +341,108 @@ describe("signals API", () => {
   it("CSRF: mutations from a foreign origin are rejected", async () => {
     const r = await call("/v1/signals/register", { method: "POST", body: { handle: "evil1" }, headers: { ...preview, Origin: "https://evil.example" } });
     expect(r.status).toBe(403);
+  });
+});
+
+describe("launch date guard", () => {
+  afterEach(() => { clock.nowMs = START_MS; });
+
+  it("approval before the start returns 409 season_not_started, leaves the signal pending, and writes no ledger rows", async () => {
+    clock.nowMs = START_MS - 1;
+    const r = await register("guard_before");
+    const s = await submit(r.json.playerKey, "guard_before");
+    expect(s.status).toBe(200);
+    expect(s.json.status).toBe("pending");
+    const ap = await approve(s.json.id);
+    expect(ap.status).toBe(409);
+    expect(ap.json.error).toBe("season_not_started");
+    expect(ap.json.startsAt).toBe(POLICY.seasonStart);
+    const row = await env.DB.prepare(`SELECT status, base_credits, bonus_credits, reviewed_at FROM signals WHERE id = ?`).bind(s.json.id).first();
+    expect(row.status).toBe("pending");
+    expect(row.base_credits).toBe(0);
+    expect(row.reviewed_at).toBeNull();
+    expect((await ledger(r.json.playerId)).length).toBe(0);
+  });
+
+  it("approval at the start instant succeeds and writes ledger rows; 1ms before still refused", async () => {
+    const r = await register("guard_atstart");
+    const s = await submit(r.json.playerKey, "guard_atstart");
+    const early = await call(`/v1/admin/signals/${s.json.id}/approve`, { method: "POST", headers: admin, body: { tier: "accepted" }, nowMs: START_MS - 1 });
+    expect(early.status).toBe(409);
+    expect(early.json.error).toBe("season_not_started");
+    const ap = await call(`/v1/admin/signals/${s.json.id}/approve`, { method: "POST", headers: admin, body: { tier: "accepted" }, nowMs: START_MS });
+    expect(ap.status).toBe(200);
+    expect(ap.json.status).toBe("approved");
+    expect(ap.json.baseCredits).toBe(5);
+    const l = await ledger(r.json.playerId);
+    expect(l.map((x) => [x.kind, x.credits])).toEqual([["signal", 5]]);
+  });
+
+  it("referral qualification before the start gives nothing (approve path and qualifyReferral itself), including L2", async () => {
+    clock.nowMs = START_MS; // set up players and a pending referral at/after start
+    const top = await register("guard_l2top");
+    const mid = await register("guard_l2mid", top.json.refCode);
+    const m1 = await submit(mid.json.playerKey, "guard_l2mid");
+    expect((await approve(m1.json.id)).json.referral.status).toBe("qualified"); // mid is an approved contributor
+    const newbie = await register("guard_l2new", mid.json.refCode);
+    const n1 = await submit(newbie.json.playerKey, "guard_l2new");
+
+    clock.nowMs = START_MS - 1;
+    const ap = await approve(n1.json.id);
+    expect(ap.status).toBe(409);
+    expect(ap.json.error).toBe("season_not_started");
+    const ref = await env.DB.prepare(`SELECT status, qualified_at, qualifying_signal_id FROM referrals WHERE referred_id = ?`).bind(newbie.json.playerId).first();
+    expect(ref.status).toBe("pending");
+    expect(ref.qualified_at).toBeNull();
+    expect((await ledger(mid.json.playerId)).filter((x) => x.kind === "referral_l1").length).toBe(0);
+    expect((await ledger(top.json.playerId)).filter((x) => x.kind === "referral_l2").length).toBe(0);
+
+    // Direct call: still no writes if someone invoked qualification before the start
+    const direct = await qualifyReferral(envAt(START_MS - 1), newbie.json.playerId, n1.json.id, 1, new Date(START_MS - 1).toISOString());
+    expect(direct).toEqual({ status: "season_not_started", grants: [] });
+    const ref2 = await env.DB.prepare(`SELECT status FROM referrals WHERE referred_id = ?`).bind(newbie.json.playerId).first();
+    expect(ref2.status).toBe("pending");
+    expect((await ledger(mid.json.playerId)).filter((x) => x.kind === "referral_l1").length).toBe(0);
+    expect((await ledger(top.json.playerId)).filter((x) => x.kind === "referral_l2").length).toBe(0);
+  });
+
+  it("outcome bonus grants are refused before the start and the existing bonus is left unchanged", async () => {
+    clock.nowMs = START_MS;
+    const r = await register("guard_bonus");
+    const s = await submit(r.json.playerKey, "guard_bonus");
+    const ap = await approve(s.json.id, "accepted", { kolReplied: true });
+    expect(ap.status).toBe(200);
+    expect(ap.json.bonusCredits).toBe(5);
+    clock.nowMs = START_MS - 1;
+    const out = await call(`/v1/admin/signals/${s.json.id}/outcomes`, { method: "POST", headers: admin, body: { outcomes: { kolReplied: true, introduction: true } } });
+    expect(out.status).toBe(409);
+    expect(out.json.error).toBe("season_not_started");
+    const row = await env.DB.prepare(`SELECT bonus_credits FROM signals WHERE id = ?`).bind(s.json.id).first();
+    expect(row.bonus_credits).toBe(5);
+    const l = await ledger(r.json.playerId);
+    expect(l.filter((x) => x.kind === "signal_bonus").map((x) => x.credits)).toEqual([5]);
+  });
+
+  it("submissions and rejects stay allowed before the start", async () => {
+    clock.nowMs = START_MS - 1;
+    const r = await register("guard_submit");
+    const s = await submit(r.json.playerKey, "guard_submit");
+    expect(s.status).toBe(200);
+    expect(s.json.status).toBe("pending");
+    const rj = await call(`/v1/admin/signals/${s.json.id}/reject`, { method: "POST", headers: admin, body: { reason: "off topic reply" } });
+    expect(rj.status).toBe(200);
+    expect(rj.json.status).toBe("rejected");
+    expect((await ledger(r.json.playerId)).length).toBe(0);
+  });
+
+  it("after the season end, approval still grants points (no end-of-season block today)", async () => {
+    clock.nowMs = END_MS;
+    const r = await register("guard_afterend");
+    const s = await submit(r.json.playerKey, "guard_afterend");
+    const ap = await approve(s.json.id);
+    expect(ap.status).toBe(200);
+    expect(ap.json.status).toBe("approved");
+    expect(ap.json.baseCredits).toBe(5);
+    expect((await ledger(r.json.playerId)).map((x) => [x.kind, x.credits])).toEqual([["signal", 5]]);
   });
 });
