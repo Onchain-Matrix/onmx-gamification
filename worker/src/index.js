@@ -48,6 +48,7 @@ import {
   adminDeletePlayer,
   adminPurgePreview,
 } from "./signals/handlers.js";
+import { handleReferralRedirect } from "./signals/referral-link.js";
 
 function respond(env, request, body, status = 200) {
   const { headers: cors } = corsHeaders(env, request);
@@ -148,6 +149,11 @@ export function createWorker(deps = {}) {
       }
 
       try {
+        // Share link: /referral/<handle> → 302 to the join page (signed 30-day token + cookie when the handle is known).
+        if ((path === "/referral" || path.startsWith("/referral/")) && (request.method === "GET" || request.method === "HEAD")) {
+          return await handleReferralRedirect(env, request, path.slice("/referral/".length).split("/")[0]);
+        }
+
         if (path === "/health" && request.method === "GET") {
           return respond(env, request, {
             ok: true,

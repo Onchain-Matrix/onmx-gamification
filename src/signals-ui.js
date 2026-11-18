@@ -8,6 +8,8 @@ import { referralPanelCopy } from "./referral-tiers.js";
 const PLAYER_KEY = "onmx_player_v1";
 const PREVIEW_KEY = "onmx_admin_preview";
 const REF_KEY = "onmx_pending_ref";
+const REF_LINK_KEY = "onmx_ref_link_v1"; // signed token from a /referral/<handle> link, kept 30 days (localStorage)
+const REF_LINK_MAX_MS = 30 * 864e5;
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const TYPE_LABEL = { reply: "Reply", quote: "Quote post", connect: "Connect", discover: "Discover", standalone: "Standalone post" };
@@ -33,6 +35,7 @@ const ERR = {
   signals_not_open: "Matrix Signals isn't open yet.",
   rate_limited: "Too many attempts. Try again later.",
 };
+const fmtPts = (n) => Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 6 });
 const errText = (j, st) => ERR[j && j.error] || `Something went wrong (${esc((j && j.error) || st)}).`;
 
 const store = {
@@ -47,6 +50,31 @@ export function previewRequested(search = location.search) {
 export function readRefParam(search = location.search) {
   const r = String(new URLSearchParams(search).get("ref") || "").trim().toUpperCase();
   return /^[A-Z0-9]{8}$/.test(r) ? r : null;
+}
+
+/**
+ * /referral/<handle> links redirect here with ?ref=CODE&rt=TOKEN. The Worker's own cookie can't be read from this site,
+ * so the signed token is kept in localStorage until its expiry (30 days max) and sent at join; the Worker re-checks it.
+ */
+export function readRefTokenParam(search = location.search) {
+  const t = String(new URLSearchParams(search).get("rt") || "").trim();
+  const m = /^v1\.([A-Z0-9]{4,16})\.(\d{9,11})\.[0-9a-f]{32}$/.exec(t);
+  return m ? { token: t, code: m[1], expMs: Number(m[2]) * 1000 } : null;
+}
+export function captureRefLink(search = location.search, now = Date.now(), ls = localStorage) {
+  const fresh = readRefTokenParam(search);
+  if (fresh && fresh.expMs > now) {
+    store.set(REF_LINK_KEY, { ...fresh, expMs: Math.min(fresh.expMs, now + REF_LINK_MAX_MS) }, ls);
+    return fresh;
+  }
+  const saved = store.get(REF_LINK_KEY, ls);
+  if (saved && saved.token && Number(saved.expMs) > now) return saved;
+  if (saved) store.del(REF_LINK_KEY, ls);
+  return null;
+}
+export function referralShareLink(base, handle) {
+  const h = String(handle || "").replace(/^@+/, "");
+  return String(base || "") + encodeURIComponent(h);
 }
 
 function api(apiBase, adminPreview) {
@@ -97,7 +125,7 @@ export function creditTableHtml(SIGNALS, tasks, { preview = false } = {}) {
     return `<tr><th scope="row">${esc(t.label)}</th>${tiers.map(([, m]) => `<td>${b * m}</td>`).join("")}</tr>`;
   }).join("");
   const ob = SIGNALS.outcomeBonus;
-  return `<div class="sigtable-wrap"><table class="sigtable"><caption>${preview ? "Proposed " : ""}Credits per approved signal</caption>
+  return `<div class="sigtable-wrap"><table class="sigtable"><caption>${preview ? "Proposed " : ""}Points per approved signal</caption>
     <thead><tr><th scope="col">Type</th>${tiers.map(([k]) => `<th scope="col">${tierName[k] || esc(k)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>
     <p class="note">Outcome bonus (confirmed by a reviewer): account you replied to answers +${ob.kolReplied}, follows @Onchain_Matrix +${ob.kolFollowed}, someone asks about Onchain Matrix +${ob.directInterest}, leads to an introduction or partnership talk +${ob.introduction} (max +${SIGNALS.bonusCapPerSignal} per signal). Low-effort, copy-paste, off-topic or spammy signals earn 0.</p>`;
 }
@@ -114,9 +142,14 @@ export async function mountSignalsPanel(opts) {
   const { root, apiBase, SIGNALS, SEASON, showSignals, showReferral, adminPreview } = opts;
   const call = api(apiBase, adminPreview || null);
   const preview = !!adminPreview;
-  const urlRef = readRefParam();
+  const refLink = captureRefLink();
+  const urlRef = refLink ? null : readRefParam();
   if (urlRef) store.set(REF_KEY, urlRef, sessionStorage);
-  const pendingRef = urlRef || store.get(REF_KEY, sessionStorage);
+  const pendingRef = refLink ? refLink.code : urlRef || store.get(REF_KEY, sessionStorage);
+  if (new URLSearchParams(location.search).has("rt")) {
+    // Keep the token out of the address bar / shares once it is saved.
+    try { const u = new URL(location.href); u.searchParams.delete("rt"); history.replaceState(null, "", u.toString()); } catch {}
+  }
   root.hidden = false;
   const banner = preview ? `<p class="warnproto">Owner preview — not live. Values are proposed until approved. Rows created here are marked preview and can be purged.</p>` : "";
   let player = store.get(PLAYER_KEY);
@@ -125,7 +158,7 @@ export async function mountSignalsPanel(opts) {
     let refLine = "";
     if (pendingRef && showReferral) {
       const r = await call(`/v1/referral/resolve?code=${encodeURIComponent(pendingRef)}`).catch(() => null);
-      refLine = r && r.json && r.json.valid ? `<p class="note">Invited by <b>${esc(r.json.referrer)}</b>. Your inviter earns Credits when your first signal is approved.</p>` : "";
+      refLine = r && r.json && r.json.valid ? `<p class="note">Invited by <b>${esc(r.json.referrer)}</b>. Your inviter earns a share of the points from your approved signals.</p>` : "";
     }
     root.innerHTML = `<h3>Matrix Signals</h3>${banner}
       <p class="note">Find an X conversation where Onchain Matrix genuinely belongs, add something useful, and mention <b>@Onchain_Matrix</b> only when it fits. A reviewer approves each signal; quality beats volume.</p>
@@ -141,11 +174,12 @@ export async function mountSignalsPanel(opts) {
       const handle = root.querySelector("#sgHandle").value.trim();
       if (!/^@?[A-Za-z0-9_]{1,15}$/.test(handle)) { msg.textContent = ERR.invalid_handle; return; }
       msg.textContent = "Joining…";
-      const r = await call("/v1/signals/register", { method: "POST", body: { handle, ref: showReferral ? pendingRef || undefined : undefined } });
+      const r = await call("/v1/signals/register", { method: "POST", body: showReferral ? (refLink ? { handle, refToken: refLink.token } : { handle, ref: pendingRef || undefined }) : { handle } });
       if (!r.ok) { msg.textContent = errText(r.json, r.status); return; }
       player = { handle: r.json.handle, key: r.json.playerKey, refCode: r.json.refCode };
       store.set(PLAYER_KEY, player);
       store.del(REF_KEY, sessionStorage);
+      store.del(REF_LINK_KEY);
       await renderPlayer({ justJoined: true });
     };
     root.querySelector("#sgKeyForm").onsubmit = async (ev) => {
@@ -167,11 +201,11 @@ export async function mountSignalsPanel(opts) {
       return;
     }
     const me = r.json;
-    const link = location.origin + location.pathname.replace(/index\.html$/, "") + "?ref=" + encodeURIComponent(me.refCode);
+    const link = referralShareLink(SIGNALS.referralLinkBase, me.handle);
     const chip = (s) => s.status === "approved" ? `<span class="chip ok">Approved · +${s.credits}</span>` : s.status === "rejected" ? `<span class="chip no">Not approved</span>` : `<span class="chip">In review</span>`;
     const list = me.signals.length ? me.signals.slice(0, 10).map((s) => `<li>${chip(s)} <b>${esc(TYPE_LABEL[s.type] || s.type)}</b> · ${esc(TOPIC_LABEL[s.topic] || s.topic)}${s.signalUrl ? ` · <a href="${esc(s.signalUrl)}" target="_blank" rel="noopener nofollow">post</a>` : ""}${s.status === "rejected" && s.rejectReason ? `<div class="note">${esc(s.rejectReason)}</div>` : ""}</li>`).join("") : `<li class="note">No signals yet.</li>`;
     const sigHtml = showSignals ? `
-      <div class="sgstats"><div><div class="big" style="font-size:26px">${me.credits.seasonSignal}</div><div class="unit">Season ${me.season} signal Credits</div></div>
+      <div class="sgstats"><div><div class="big" style="font-size:26px">${me.credits.seasonSignal}</div><div class="unit">Season ${me.season} signal points</div></div>
         ${showReferral ? `<div><div class="big" style="font-size:26px">${me.credits.referralLifetime}</div><div class="unit">Referral points (lifetime)</div></div>` : ""}</div>
       <form id="sgForm" class="sgform" autocomplete="off">
         <div><label for="sgType">Signal type</label><select id="sgType" required>${Object.entries(TYPE_LABEL).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select></div>
@@ -182,14 +216,14 @@ export async function mountSignalsPanel(opts) {
         <div class="full sgrow"><label class="inl"><input id="sgMention" type="checkbox"> I mentioned @Onchain_Matrix</label><button class="btn" type="submit">Submit for review</button></div>
         <div class="full note" id="sgMsg" aria-live="polite"></div>
       </form>
-      <p class="note">Up to ${SIGNALS.maxSubmissionsPerDay} per day, one per target post. Credits are added only after a reviewer approves your signal.</p>
+      <p class="note">Up to ${SIGNALS.maxSubmissionsPerDay} per day, one per target post. Points are added only after a reviewer approves your signal.</p>
       <h3 style="margin-top:10px">Your signals</h3><ul class="sglist">${list}</ul>` : "";
     const refHtml = showReferral ? `
       <div class="refbox"><div><b>Your referral link</b></div>
         <div class="rowline"><input readonly id="sgRefLink" value="${esc(link)}" aria-label="Your referral link"><button type="button" class="btn" id="sgRefCopy">Copy</button></div>
-        <div class="note">Pending: <b>${me.referrals.pending}</b> · Qualified: <b>${me.referrals.qualified}</b>${me.referrals.overCap ? ` · over the season cap: <b>${me.referrals.overCap}</b>` : ""} · Referral points earned: <b>${me.referrals.l1Credits + me.referrals.l2Credits}</b></div>
+        <div class="note">Joined with your link: <b>${me.referrals.pending + me.referrals.qualified}</b> · With an approved signal: <b>${me.referrals.qualified}</b> · Referral points this season: <b>${fmtPts(me.referrals.seasonPoints || 0)}</b> of ${fmtPts(me.referrals.cap)} · Lifetime: <b>${fmtPts(me.referrals.l1Credits + me.referrals.l2Credits)}</b></div>
         <p class="note">${esc(referralPanelCopy(me.season))}</p>
-        ${me.referredBy ? `<p class="note">You joined via ${esc(me.referredBy.handle)} (${me.referredBy.status === "qualified" ? "qualified" : "qualifies when your first signal is approved"}).</p>` : ""}</div>` : "";
+        ${me.referredBy ? `<p class="note">You joined via ${esc(me.referredBy.handle)}.</p>` : ""}</div>` : "";
     const keyHtml = justJoined ? `<div class="refbox"><b>Your player key</b><div class="rowline"><input readonly id="sgKeyShow" value="${esc(player.key)}" aria-label="Your player key"><button type="button" class="btn ghost" id="sgKeyCopy">Copy</button></div>
       <p class="warnproto">Saved in this browser. Keep a copy to use another device — anyone with this key can submit as you. It is shown only once.</p></div>` : "";
     root.innerHTML = `<h3>Matrix Signals · ${esc(me.handle)}</h3>${banner}${keyHtml}${sigHtml}${refHtml}

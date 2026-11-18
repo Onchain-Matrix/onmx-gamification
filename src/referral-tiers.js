@@ -1,75 +1,84 @@
 /**
- * Season 1 referral tiers (owner approved Nov 14 2026). Shared by the public UI and the Worker.
- * The Worker is authoritative for granted points. Referral earnings are lifetime-only
- * (never season / BNB ranking) per the 6 Nov 2026 owner policy.
+ * Season 1 referral policy (owner approved Nov 18 2026, pre-launch correction; replaces referral-tiered-v1).
+ * Shared by the public UI and the Worker. The Worker is authoritative for granted points.
  *
- * Level-1 points depend on how many qualified referrals that referrer already has THIS
- * SEASON, counting the one being credited: #1–10 → 10, #11–25 → 5, #26–50 → 2, #51–100 → 1.
- * Level 2 is always half of that referral's level-1 value (5 / 2.5 / 1 / 0.5).
- * Over the test cap (100 qualified per referrer per season) the row is tracked as over_cap and earns 0.
- * Halves are stored as REAL ledger values (2.5, 0.5) — not rounded.
+ * - Level 1: the inviter earns 5% of the points their invited player earns from approved signals
+ *   (base + reviewer-confirmed outcome bonus).
+ * - Level 2: the inviter's own inviter earns 2.5% of those points.
+ * - Cap: 250,000 referral points per account per season (level 1 + level 2 combined). Above the cap a grant is cut to the
+ *   remaining room, then 0.
+ * - One inviter per player, set only when the player joins (never added later, never changed). No self-referral.
+ * - Referral links (/referral/<handle>) are remembered for 30 days. No retroactive claims after that.
+ * - Referral points are lifetime-only (never the season prize ranking), per the 6 Nov 2026 owner policy.
+ * Shares are stored as exact REAL ledger values (e.g. 0.25, 0.125) — not rounded to whole points.
  */
-export const REFERRAL_TIERS = Object.freeze({
-  version: "referral-tiered-v1",
+export const REFERRAL_POLICY = Object.freeze({
+  version: "referral-pct-v1",
+  l1Percent: 5,
+  l2Percent: 2.5,
+  capPointsPerSeason: 250000,
+  linkDays: 30,
   welcomeCredits: 0,
-  capQualifiedPerSeason: 100, // test max; owner approved Nov 14 2026
-  qualifyOn: "first_approved_signal",
+  earnOn: "approved_signal_points",
   creditsScope: "lifetime_only",
-  // Inclusive 1-based ranges. Last tier ends at the season cap.
-  tiers: Object.freeze([
-    Object.freeze({ from: 1, to: 10, l1: 10 }),
-    Object.freeze({ from: 11, to: 25, l1: 5 }),
-    Object.freeze({ from: 26, to: 50, l1: 2 }),
-    Object.freeze({ from: 51, to: 100, l1: 1 }),
-  ]),
 });
+/** @deprecated alias kept for older imports; same object as REFERRAL_POLICY. */
+export const REFERRAL_TIERS = REFERRAL_POLICY;
 
-/** Level-1 points for the n-th qualified referral this season (1-based, including this one). Over cap or invalid → 0. */
-export function referralL1Points(nth, p = REFERRAL_TIERS) {
-  const n = Number(nth);
-  if (!Number.isFinite(n) || n < 1 || n > p.capQualifiedPerSeason) return 0;
-  for (const t of p.tiers) {
-    if (n >= t.from && n <= t.to) return t.l1;
-  }
-  return 0;
+/** Round to 6 decimals so 5% / 2.5% shares of whole or half points store exactly (0.25, 0.125, 0.0625…). */
+function r6(x) {
+  return Math.round(x * 1e6) / 1e6;
 }
 
-/** Level 2 is always half the level-1 value of the referral being credited. */
-export function referralL2Points(l1) {
-  return Number(l1) / 2;
+/** Level-1 share of a recruit's approved points. */
+export function referralL1Points(points, p = REFERRAL_POLICY) {
+  const x = Number(points);
+  if (!Number.isFinite(x) || x <= 0) return 0;
+  return r6((x * p.l1Percent) / 100);
+}
+
+/** Level-2 share of a recruit's approved points. */
+export function referralL2Points(points, p = REFERRAL_POLICY) {
+  const x = Number(points);
+  if (!Number.isFinite(x) || x <= 0) return 0;
+  return r6((x * p.l2Percent) / 100);
+}
+
+/** Apply the per-season cap: grant at most the room left. */
+export function capReferralGrant(amount, alreadyThisSeason, p = REFERRAL_POLICY) {
+  const a = Number(amount) || 0;
+  const used = Number(alreadyThisSeason) || 0;
+  const room = Math.max(0, p.capPointsPerSeason - used);
+  return r6(Math.max(0, Math.min(a, room)));
 }
 
 export function formatPoints(n) {
   const x = Number(n);
   if (!Number.isFinite(x)) return "0";
-  return Number.isInteger(x) ? String(x) : String(x);
+  return x.toLocaleString("en-US", { maximumFractionDigits: 6 });
 }
 
-export function referralTierHeadline(p = REFERRAL_TIERS) {
-  return p.tiers.map((t) => formatPoints(t.l1)).join(" / ") + " points";
+export function referralTierHeadline(p = REFERRAL_POLICY) {
+  return `${formatPoints(p.l1Percent)}% + ${formatPoints(p.l2Percent)}%`;
 }
 
-export function referralTierRangeLabel(p = REFERRAL_TIERS) {
-  return p.tiers.map((t) => `${t.from}–${t.to}`).join(" / ");
+export function referralTierRangeLabel(p = REFERRAL_POLICY) {
+  return `Level 1 · Level 2 · cap ${formatPoints(p.capPointsPerSeason)} per season`;
 }
 
-export function referralHowToCopy(p = REFERRAL_TIERS) {
-  const [a, b, c, d] = p.tiers;
-  const halves = p.tiers.map((t) => formatPoints(referralL2Points(t.l1))).join(" / ");
-  return `You earn ${formatPoints(a.l1)} points for each of your first ${a.to} qualified referrals this season, then ${formatPoints(b.l1)} for referrals ${b.from}–${b.to}, ${formatPoints(c.l1)} for ${c.from}–${c.to}, and ${formatPoints(d.l1)} for ${d.from}–${d.to}. If a friend you invited refers someone, you get half of what they earn for that referral (${halves} points). Referral points count toward your lifetime total only, never toward the Season 1 prize ranking.`;
+export function referralHowToCopy(p = REFERRAL_POLICY) {
+  return `Share your referral link. You earn ${formatPoints(p.l1Percent)}% of the points your invited friends earn from approved signals, and ${formatPoints(p.l2Percent)}% of the points earned by players they invite. Referral points are capped at ${formatPoints(p.capPointsPerSeason)} per account per season and count toward your lifetime total only, never toward the Season 1 prize ranking.`;
 }
 
-export function referralPanelCopy(seasonNumber, p = REFERRAL_TIERS) {
-  const [a, b, c, d] = p.tiers;
-  return `A referral qualifies when your friend's first signal is approved. You earn ${formatPoints(a.l1)} points for each of your first ${a.to} qualified referrals this season, then ${formatPoints(b.l1)} for referrals ${b.from}–${b.to}, ${formatPoints(c.l1)} for ${c.from}–${c.to}, and ${formatPoints(d.l1)} for ${d.from}–${d.to} (test max ${p.capQualifiedPerSeason} per season). If someone you invited refers a player, you get half of what they earn for that referral. Referral points count toward your lifetime total, not the Season ${seasonNumber} prize ranking.`;
+export function referralPanelCopy(seasonNumber, p = REFERRAL_POLICY) {
+  return `You earn ${formatPoints(p.l1Percent)}% of the points your invited friends earn from approved signals, and ${formatPoints(p.l2Percent)}% of the points earned by players they invite (cap ${formatPoints(p.capPointsPerSeason)} referral points per season). Your link is remembered for ${p.linkDays} days after a friend opens it; a friend who joins after that, or without your link, can't be added later. Referral points count toward your lifetime total, not the Season ${seasonNumber} prize ranking.`;
 }
 
-export function referralRulesLines(p = REFERRAL_TIERS) {
-  const halves = p.tiers.map((t) => formatPoints(referralL2Points(t.l1))).join(" / ");
-  const tiers = p.tiers.map((t) => `${formatPoints(t.l1)} for ${t.from}–${t.to}`).join(", ");
+export function referralRulesLines(p = REFERRAL_POLICY) {
   return {
-    tiers: `Points per qualified referral this season: ${tiers}.`,
-    level2: `If someone you invited refers a player, you get half of what they earn for that referral (${halves} points).`,
-    cap: `Up to ${p.capQualifiedPerSeason} qualified referrals per referrer per season (test max). Further referrals are tracked but earn 0.`,
+    tiers: `Level 1: you earn ${formatPoints(p.l1Percent)}% of the points your invited friends earn from approved signals.`,
+    level2: `Level 2: you earn ${formatPoints(p.l2Percent)}% of the points earned by players your friends invite.`,
+    cap: `Referral points are capped at ${formatPoints(p.capPointsPerSeason)} per account per season (level 1 and level 2 combined).`,
+    link: `A referral link is remembered for ${p.linkDays} days after it is opened. A player who joins without it, or after it expires, can't have an inviter added later.`,
   };
 }

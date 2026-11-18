@@ -1,4 +1,4 @@
-import { REFERRAL_TIERS, referralL1Points, referralL2Points } from "../../../src/referral-tiers.js";
+import { REFERRAL_POLICY as SHARED_REFERRAL_POLICY, referralL1Points, referralL2Points, capReferralGrant } from "../../../src/referral-tiers.js";
 import { POLICY, toInstantMs } from "../claims/policy.js";
 
 export { POLICY, toInstantMs };
@@ -6,11 +6,11 @@ export { POLICY, toInstantMs };
 
 /**
  * Matrix Signals + referral policy (Signals table: owner approved Nov 13 2026;
- * referral tiers: owner approved Nov 14 2026).
+ * referral-pct-v1: owner approved Nov 18 2026, replacing the Nov 14 tiers).
  * Mirrors SIGNALS / REFERRAL_TIERS in src/config.js. The Worker is the source of truth for granted points.
  */
-export const REFERRAL_POLICY = REFERRAL_TIERS;
-export { referralL1Points, referralL2Points };
+export const REFERRAL_POLICY = SHARED_REFERRAL_POLICY;
+export { referralL1Points, referralL2Points, capReferralGrant };
 export const SIGNAL_POLICY = Object.freeze({
   version: "signals-policy-v1",
   // Credits for an APPROVED signal at the "accepted" tier. strong = x2, outstanding = x4. Rejected / spam = 0.

@@ -1,7 +1,7 @@
 // Deterministic tests for the shared engine (src/engine.js). Writes tests/results.json.
 import { writeFileSync, readFileSync } from "node:fs";
 import * as E from "../src/engine.js";
-import { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal, SIGNALS, HOW_TO_PLAY, REFERRAL_TIERS, referralL1Points, referralL2Points, referralTierHeadline, referralHowToCopy, referralPanelCopy, signalCredits, signalToTask } from "../src/config.js";
+import { CONFIG, SEASON, SEASON_HISTORY, PUBLIC_UI, PRIZE_COPY, toInstantMs, inHalfOpenWindow, seasonStatus, completedSeasons, cumulativeChampionship, treasuryBuyPoints, proposedPrizeGrowthUsd, freezeTreasuryBuyClaim, queueTreasuryBuyForNextSeason, seasonBuyPointsTotal, SIGNALS, HOW_TO_PLAY, REFERRAL_TIERS, referralL1Points, referralL2Points, referralTierHeadline, referralHowToCopy, referralPanelCopy, referralRulesLines, signalCredits, signalToTask } from "../src/config.js";
 import * as Ref from "../src/referral.js";
 import { transform } from "../tools/export-roster.mjs";
 import { makeAccounts, makeTasks } from "../sim/synth.js";
@@ -118,7 +118,7 @@ t("season vs lifetime: prelaunch fixture => both 0; no NaN; lifetimeStart exclud
   }
   eq(seaPos, 0, "no sample tasks inside Season 1 window");
   eq(lifePos, 0, "sample tasks are all prelaunch — lifetime from Nov 18 also 0");
-  ok(SEASON.lifetimeStart === "2026-11-18T12:00:00-05:00");
+  ok(SEASON.lifetimeStart === "2026-11-18T18:00:00-05:00");
   ok(html.includes("LIFETIME_START"));
 });
 t("season/lifetime boundaries: prelaunch excluded from both; launch included; season end excluded from season but in lifetime; lifetimeStart fixed if season moves", () => {
@@ -137,7 +137,7 @@ t("season/lifetime boundaries: prelaunch excluded from both; launch included; se
   ok(!life.get("@u") || !tk.some(() => false));
   ok(!(E.baseEnergy(tk, { from: lifetimeStart, to: "2026-11-09" }).get("@u"))); // empty if asOf==start
   // future season bump moves season start; lifetimeStart stays fixed in HTML config
-  ok(SEASON.lifetimeStart === "2026-11-18T12:00:00-05:00");
+  ok(SEASON.lifetimeStart === "2026-11-18T18:00:00-05:00");
   const bumpedSeasonStart = "2026-12-07";
   const sea2 = E.baseEnergy(tk, { from: bumpedSeasonStart, to: "2026-12-21" });
   eq(sea2.get("@u"), undefined, "Dec 1 task is before a bumped Season 2 start");
@@ -148,30 +148,32 @@ t("season/lifetime boundaries: prelaunch excluded from both; launch included; se
   ok(lifeLater.get("@u") > life.get("@u"));
 });
 
-t("SEASON config: prize $600 paid in BNB, 300/200/100; Nov 18–Dec 9 noon ET; tasks drive TASK_WEIGHTS; offsets -05:00", () => {
+t("SEASON config: prize $600 paid in BNB, 300/200/100; Nov 18 6 PM ET–Dec 9 noon ET; tasks drive TASK_WEIGHTS; offsets -05:00", () => {
   eq(SEASON.prizes.usdTotal, 600); eq(SEASON.prizes.usdSplit, [300,200,100]); eq(SEASON.prizes.payoutAsset, "BNB");
   eq(SEASON.prizes.usdSplit.reduce((a, b) => a + b, 0), SEASON.prizes.usdTotal);
   ok(!("bnbTotal" in SEASON.prizes) && !("usdIllustrativeBand" in SEASON.prizes), "no 1 BNB figure / $600–$700 band in config");
-  eq(SEASON.start, "2026-11-18T12:00:00-05:00"); eq(SEASON.end, "2026-12-09T12:00:00-05:00"); eq(SEASON.lifetimeStart, SEASON.start);
-  eq((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / 864e5, 21, "three weeks");
+  eq(SEASON.start, "2026-11-18T18:00:00-05:00"); eq(SEASON.end, "2026-12-09T12:00:00-05:00"); eq(SEASON.lifetimeStart, SEASON.start);
+  eq((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / 36e5, 21 * 24 - 6, "three weeks less 6 hours (6 PM start, noon end)");
+  eq(Math.round((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / (7 * 864e5)), 3, "copy still says three weeks");
   ok(SEASON.start.endsWith("-05:00") && SEASON.end.endsWith("-05:00") && SEASON.lifetimeStart.endsWith("-05:00"));
   for (const t of SEASON.tasks) eq(CONFIG.TASK_WEIGHTS[t.id], t.points);
   eq(CONFIG.TASK_WEIGHTS.receipt_check, 10); eq(CONFIG.TASK_WEIGHTS.architect_ship, 60);
 });
-t("toInstantMs / inHalfOpenWindow: date-only=noon-05; exact noon; 11:59:59; end exclusive", () => {
+t("toInstantMs / inHalfOpenWindow: date-only=noon-05; exact 6 PM start; 17:59:59; end exclusive", () => {
   const noon = toInstantMs("2026-11-18T12:00:00-05:00");
   eq(toInstantMs("2026-11-18"), noon);
-  ok(inHalfOpenWindow("2026-11-18T12:00:00-05:00", SEASON.start, SEASON.end));
+  ok(inHalfOpenWindow("2026-11-18T18:00:00-05:00", SEASON.start, SEASON.end));
   ok(inHalfOpenWindow("2026-11-18T11:59:59-05:00", "2026-11-18T11:59:59-05:00", SEASON.end));
-  ok(!inHalfOpenWindow("2026-11-18T11:59:59-05:00", SEASON.start, SEASON.end), "1 min before launch excluded from season");
-  ok(inHalfOpenWindow("2026-11-18", SEASON.start, SEASON.end), "date-only launch day = noon included");
+  ok(!inHalfOpenWindow("2026-11-18T17:59:59-05:00", SEASON.start, SEASON.end), "1 s before launch excluded from season");
+  ok(!inHalfOpenWindow("2026-11-18T12:00:00-05:00", SEASON.start, SEASON.end), "noon on launch day is before the 6 PM start");
+  ok(!inHalfOpenWindow("2026-11-18", SEASON.start, SEASON.end), "date-only launch day = noon, before the 6 PM start");
   ok(!inHalfOpenWindow("2026-12-09T12:00:00-05:00", SEASON.start, SEASON.end), "end exclusive");
   ok(inHalfOpenWindow("2026-12-09T11:59:59-05:00", SEASON.start, SEASON.end));
   // engine uses same helper
   const a = [{ account: "@u", handle: "u", seedUsd: 0 }];
   const tk = [
-    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-18T11:59:59-05:00" },
-    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-18T12:00:00-05:00" },
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-18T17:59:59-05:00" },
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-18T18:00:00-05:00" },
     { account: "@u", type: "receipt_check", effort: 1, date: "2026-12-09T11:59:59-05:00" },
     { account: "@u", type: "receipt_check", effort: 1, date: "2026-12-09T12:00:00-05:00" }
   ];
@@ -195,7 +197,7 @@ t("index: launch-clean copy (no sample/provisional wording), PRIZE_COPY, bar sta
   ok(/not affiliated with Warner Bros\. or The Matrix films/.test(h), "non-affiliation footer");
 });
 // LEGACY prototype config (6 Nov: 10 referrer / 5 welcome) — the browser-local prototype is retired; kept for helper coverage.
-const LEGACY_REF_SEASON = { ...SEASON, referral: { ...SEASON.referral, welcomeCredits: 5 } };
+const LEGACY_REF_SEASON = { ...SEASON, referral: { ...SEASON.referral, referrerCredits: 10, welcomeCredits: 5 } };
 t("LEGACY referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; pending before launch; lifetime-only raw; disable", () => {
   const mem = () => { let s=null; return { get:()=>s, set:v=>{s=v;} }; };
   const store = mem();
@@ -209,7 +211,7 @@ t("LEGACY referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; 
   const pre = Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "fresh_user1", rosterAccounts: ["@sample_syn_0103"], cfg, now: "2026-11-08T12:00:00-05:00", storeApi: store });
   eq(pre.ok, true); eq(pre.status, "pending"); eq(pre.referrerCredits, 10); eq(pre.welcomeCredits, 5);
   eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 0);
-  eq(Ref.activatePending({ cfg, now: "2026-11-18T12:00:00-05:00", storeApi: store }).activated, 1);
+  eq(Ref.activatePending({ cfg, now: "2026-11-18T18:00:00-05:00", storeApi: store }).activated, 1);
   eq(Ref.statsFor("@sample_syn_0103", store).bonusCredits, 10);
   eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 1000);
   eq(Ref.lifetimeReferralRaw("@fresh_user1", store, 100), 500);
@@ -221,8 +223,8 @@ t("LEGACY referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; 
 
 t("season status boundaries + completed list only configured", () => {
   const s1 = SEASON_HISTORY[0];
-  eq(seasonStatus(s1, toInstantMs("2026-11-18T11:59:59-05:00")), "upcoming");
-  eq(seasonStatus(s1, toInstantMs("2026-11-18T12:00:00-05:00")), "active");
+  eq(seasonStatus(s1, toInstantMs("2026-11-18T17:59:59-05:00")), "upcoming");
+  eq(seasonStatus(s1, toInstantMs("2026-11-18T18:00:00-05:00")), "active");
   eq(seasonStatus(s1, toInstantMs("2026-12-09T11:59:59-05:00")), "active");
   eq(seasonStatus(s1, toInstantMs("2026-12-09T12:00:00-05:00")), "completed");
   eq(completedSeasons(SEASON_HISTORY, toInstantMs("2026-11-05T12:00:00-05:00")).length, 0);
@@ -314,7 +316,7 @@ t("referral pending welcome on stats; launch activate 10/5 idempotent", () => {
   eq(pre.status, "pending");
   eq(Ref.statsFor("@onmx_test_1105b", store).asReferred.welcomeCredits, 5);
   eq(Ref.lifetimeReferralRaw("@onmx_test_1105b", store, 100), 0);
-  eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-18T12:00:00-05:00", storeApi: store }).activated, 1);
+  eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-18T18:00:00-05:00", storeApi: store }).activated, 1);
   eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-19T12:00:00-05:00", storeApi: store }).activated, 0);
   eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 1000);
   eq(Ref.lifetimeReferralRaw("@onmx_test_1105b", store, 100), 500);
@@ -328,22 +330,23 @@ t("Matrix Signals tasks replace the five legacy tasks; ids/labels/descriptions; 
   ok(!/\bfollow (us|@|for)|retweet|repost for|like for/i.test(SEASON.tasks.map(x => x.desc).join(" ")), "no follow/retweet-for-points tasks");
   eq(SIGNALS.status, "approved");
 });
-t("How to Play tiles read live SIGNALS values; referral tile uses REFERRAL_TIERS", () => {
+t("How to Play tiles read live SIGNALS values; referral tile uses REFERRAL_POLICY", () => {
   eq(SIGNALS.baseCredits, { reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 });
   eq(SIGNALS.tierMultiplier, { accepted: 1, strong: 2, outstanding: 4 });
   eq(SIGNALS.outcomeBonus, { kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 });
   eq(SIGNALS.bonusCapPerSignal, 25);
   eq(SIGNALS.maxSubmissionsPerDay, 5);
   eq(SIGNALS.maxPendingTotal, 10);
-  eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.welcomeCredits, 0);
-  eq(SEASON.referral.capQualifiedPerSeason, 100); eq(SEASON.referral.model, "referral-tiered-v1");
+  eq(SEASON.referral.l1Percent, 5); eq(SEASON.referral.l2Percent, 2.5); eq(SEASON.referral.welcomeCredits, 0);
+  eq(SEASON.referral.capPointsPerSeason, 250000); eq(SEASON.referral.model, "referral-pct-v1");
   eq(HOW_TO_PLAY.inviteTitle, "Invite a friend");
   ok(!("tiles" in HOW_TO_PLAY), "no hardcoded HOW_TO_PLAY tiles");
   const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const how = h.slice(h.indexOf("function renderHow"), h.indexOf("if (UI.signals)"));
   ok(/SIGNALS\.baseCredits/.test(how) && /SIGNALS\.tierMultiplier/.test(how) && /SIGNALS\.outcomeBonus/.test(how), "tiles read SIGNALS");
   ok(/SIGNALS\.maxSubmissionsPerDay/.test(how) && /SIGNALS\.maxPendingTotal/.test(how), "claim limits read SIGNALS");
-  ok(/referralTierHeadline\(REFERRAL_TIERS\)/.test(how) && /referralHowToCopy\(REFERRAL_TIERS\)/.test(how) && /referralRulesLines\(REFERRAL_TIERS\)/.test(how), "invite + rules read REFERRAL_TIERS");
+  ok(/referralTierHeadline\(REFERRAL_POLICY\)/.test(how) && /referralHowToCopy\(REFERRAL_POLICY\)/.test(how) && /referralRulesLines\(REFERRAL_POLICY\)/.test(how), "invite + rules read REFERRAL_POLICY");
+  ok(/refRules\.link/.test(how) && !/first signal is approved/.test(how), "rules: 30-day link line; no first-signal qualification line");
   ok(/Points convert to Credits at the end of each season/.test(how), "conversion line");
   ok(!/100 scoring points = 1 Credit/.test(how), "no 100:1 ratio in How to Play");
   ok(!/500 pts|1,000 pts|1000 pts/.test(how), "no 100× multiplied display values");
@@ -357,8 +360,9 @@ t("How to Play tiles read live SIGNALS values; referral tile uses REFERRAL_TIERS
   ok(!/convert into tokens at TGE/i.test(how), "no TGE sentence");
   ok(!/link your X handle to your game profile/i.test(how), "no X-login implication");
   ok(!/\+10 Credits|Referral Credits/.test(how), "How to Play referral copy uses points");
-  eq(referralTierHeadline(), "10 / 5 / 2 / 1 points");
-  ok(/half of what they earn/.test(referralHowToCopy()) && /2\.5/.test(referralHowToCopy()) && /0\.5/.test(referralHowToCopy()));
+  eq(referralTierHeadline(), "5% + 2.5%");
+  eq(referralHowToCopy(), "Share your referral link. You earn 5% of the points your invited friends earn from approved signals, and 2.5% of the points earned by players they invite. Referral points are capped at 250,000 per account per season and count toward your lifetime total only, never toward the Season 1 prize ranking.");
+  ok(!/10 \/ 5 \/ 2 \/ 1|half of what they earn|test max/.test(referralHowToCopy() + JSON.stringify(referralRulesLines()) + referralPanelCopy(1)), "no tiered-model copy left");
 });
 t("signalCredits: type × tier + capped outcome bonus; unknown/rejected = 0", () => {
   eq(signalCredits("reply", "accepted"), 5); eq(signalCredits("reply", "strong"), 10); eq(signalCredits("reply", "outstanding"), 20);
@@ -377,25 +381,23 @@ t("signalToTask feeds the existing engine: approved strong reply = 1000 pts = 10
   const b = E.baseEnergy(rows, { from: SEASON.start, to: SEASON.end });
   eq(b.get("@a"), 1000); eq(b.get("@a") / CONFIG.POINTS_PER_BATTERY, 10);
 });
-t("referral: legacy % and flat models marked legacy; tiered model 10/5/2/1, cap 100, qualifies on first approved signal", () => {
+t("referral: legacy models marked legacy; referral-pct-v1 5% / 2.5% of approved points, cap 250,000 per season", () => {
   eq(CONFIG.REFERRAL.legacy, true);
   eq(CONFIG.REFERRAL_FLAT, { legacy: true, l1Credits: 10, l2Credits: 5, capQualifiedPerSeason: 20, qualifyOn: "first_approved_signal", scope: "lifetime_only" });
   eq(CONFIG.REFERRAL_TIERS, REFERRAL_TIERS);
-  eq(REFERRAL_TIERS.version, "referral-tiered-v1");
+  eq(REFERRAL_TIERS.version, "referral-pct-v1");
   eq(REFERRAL_TIERS.welcomeCredits, 0);
-  eq(REFERRAL_TIERS.capQualifiedPerSeason, 100);
-  eq(REFERRAL_TIERS.qualifyOn, "first_approved_signal");
+  eq(REFERRAL_TIERS.l1Percent, 5); eq(REFERRAL_TIERS.l2Percent, 2.5);
+  eq(REFERRAL_TIERS.capPointsPerSeason, 250000);
+  eq(REFERRAL_TIERS.linkDays, 30);
   eq(REFERRAL_TIERS.creditsScope, "lifetime_only");
-  eq(SEASON.referral.referrerCredits, 10); eq(SEASON.referral.level2Credits, 5); eq(SEASON.referral.capQualifiedPerSeason, 100);
-  eq(SEASON.referral.model, "referral-tiered-v1");
+  eq(SEASON.referral.model, "referral-pct-v1");
   eq(SEASON.referral.welcomeCredits, 0);
-  const bounds = { 10: 10, 11: 5, 25: 5, 26: 2, 50: 2, 51: 1, 100: 1, 101: 0, 0: 0 };
-  for (const [n, l1] of Object.entries(bounds)) {
-    eq(referralL1Points(Number(n)), l1, "L1 nth " + n);
-    eq(referralL2Points(l1), l1 / 2, "L2 half of " + l1);
+  for (const [pts, l1, l2] of [[5, 0.25, 0.125], [3, 0.15, 0.075], [10, 0.5, 0.25], [31, 1.55, 0.775], [0, 0, 0]]) {
+    eq(referralL1Points(pts), l1, "L1 of " + pts);
+    eq(referralL2Points(pts), l2, "L2 of " + pts);
   }
-  eq(referralL2Points(5), 2.5);
-  eq(referralL2Points(1), 0.5);
+  eq(SIGNALS.referralLinkBase, "https://onmx-gamification-claims.onmx.workers.dev/referral/");
 });
 t("PUBLIC_UI: signals + referral ON (owner approved Nov 13 2026); legacy local referral OFF", () => {
   eq(PUBLIC_UI.signals, true); eq(PUBLIC_UI.referral, true); eq(PUBLIC_UI.showReferral, false); // owner approved Nov 13 2026
@@ -408,14 +410,15 @@ t("Worker signal policy mirrors src/config.js SIGNALS; referral uses shared REFE
   ok(w.includes("outcomeBonus: Object.freeze({ kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 })"), "bonus");
   ok(w.includes("bonusCapPerSignal: 25"), "bonus cap");
   ok(w.includes("maxSubmissionsPerDay: 5") && w.includes("maxPendingTotal: 10"), "submission limits");
-  ok(w.includes('version: "signals-policy-v1"') && w.includes("REFERRAL_POLICY = REFERRAL_TIERS") && w.includes("src/referral-tiers.js"), "shared referral policy");
+  ok(w.includes('version: "signals-policy-v1"') && w.includes("REFERRAL_POLICY = SHARED_REFERRAL_POLICY") && w.includes("src/referral-tiers.js"), "shared referral policy");
   ok(!w.includes("referral-flat-v1"), "flat referral policy replaced");
   eq(SIGNALS.policyVersion, "signals-policy-v1");
   eq(SIGNALS.maxSubmissionsPerDay, 5);
   eq(SIGNALS.maxPendingTotal, 10);
-  ok(ui.includes("Referral points (lifetime)") && ui.includes("Referral points earned") && ui.includes("referralPanelCopy"), "referral panel uses points");
-  ok(!ui.includes("Referral Credits"), "no Credits earning label in referral panel");
-  ok(/lifetime total, not the Season/.test(referralPanelCopy(1)) && /test max 100/.test(referralPanelCopy(1)));
+  ok(ui.includes("Referral points (lifetime)") && ui.includes("Referral points this season") && ui.includes("referralPanelCopy"), "referral panel uses points");
+  ok(!ui.includes("Referral Credits") && !/signal Credits|Credits are added|inviter earns Credits/.test(ui), "player copy says points, not Credits");
+  ok(ui.includes("referralShareLink(SIGNALS.referralLinkBase, me.handle)"), "copy-my-link uses /referral/<handle>");
+  ok(/lifetime total, not the Season/.test(referralPanelCopy(1)) && /30 days/.test(referralPanelCopy(1)) && /250,000/.test(referralPanelCopy(1)));
 });
 
 t("S9 wiring: season board/search use /v1/leaderboard only when signals flag or owner preview is on", () => {
@@ -428,6 +431,23 @@ t("S9 wiring: season board/search use /v1/leaderboard only when signals flag or 
   ok(/if \(UI\.signals \|\| UI\.referral\)/.test(boot) && /get\("preview"\) === "signals"/.test(boot), "boot gated by flags or ?preview=signals");
   ok(ui.includes("/v1/leaderboard?"), "client calls /v1/leaderboard");
   ok(!/headStart|HEADSTART/.test(ui), "head-start rules stay back-end only");
+});
+
+const SG = await import("../src/signals-ui.js");
+t("page referral link handoff: /referral/<handle> share link; rt token kept 30 days in localStorage; expired dropped; ?ref= still read", () => {
+  eq(SG.referralShareLink(SIGNALS.referralLinkBase, "@Alice_1"), "https://onmx-gamification-claims.onmx.workers.dev/referral/Alice_1");
+  const mk = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
+  const ls = mk();
+  const now = Date.parse("2026-11-20T12:00:00Z");
+  const exp = Math.floor(now / 1000) + 30 * 86400;
+  const tok = `v1.ABCD2345.${exp}.${"a".repeat(32)}`;
+  const got = SG.captureRefLink(`?ref=ABCD2345&rt=${tok}`, now, ls);
+  eq(got.code, "ABCD2345"); eq(got.token, tok);
+  eq(SG.captureRefLink("", now + 29 * 864e5, ls).token, tok, "remembered on a later visit without the param");
+  eq(SG.captureRefLink("", now + 30 * 864e5 + 1000, ls), null, "expired after 30 days");
+  eq(ls.getItem("onmx_ref_link_v1"), null, "expired token deleted");
+  eq(SG.captureRefLink("?rt=garbage", now, ls), null);
+  eq(SG.readRefParam("?ref=abcd2345"), "ABCD2345");
 });
 
 const summary = { total: results.length, passed: results.filter(r => r.pass).length, failed: results.filter(r => !r.pass).length, engine: CONFIG.version };

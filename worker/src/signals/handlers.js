@@ -4,9 +4,10 @@
  * - Credits are written ONLY by reviewer approval (admin token). Players can never self-award.
  * - While SIGNALS_OPEN !== "1", player endpoints require a valid admin preview header (owner preview / smoke tests).
  */
-import { SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, canonHandle, validateSubmission, cleanOutcomes, signalBaseCredits, signalBonusCredits, currentTimeMs, isSeasonStarted, seasonNotStartedBody } from "./policy.js";
+import { SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, capReferralGrant, canonHandle, validateSubmission, cleanOutcomes, signalBaseCredits, signalBonusCredits, currentTimeMs, isSeasonStarted, seasonNotStartedBody } from "./policy.js";
 import { randomId, randomBytes, sha256Hex, timingSafeEqual } from "../lib/crypto.js";
 import { rateLimit } from "../lib/rate.js";
+import { verifyRefToken, readCookie, REF_COOKIE } from "./referral-link.js";
 
 const REF_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -97,7 +98,7 @@ function publicSignal(r) {
   };
 }
 
-async function referralStats(env, playerId) {
+async function referralStats(env, playerId, seasonNum = null) {
   const rows = await env.DB.prepare(`SELECT status, COUNT(*) AS n FROM referrals WHERE referrer_id = ? GROUP BY status`).bind(playerId).all();
   const by = Object.fromEntries((rows.results || []).map((r) => [r.status, Number(r.n)]));
   const credits = await env.DB.prepare(
@@ -111,7 +112,12 @@ async function referralStats(env, playerId) {
     l1Credits: ck.referral_l1 || 0,
     l2Credits: ck.referral_l2 || 0,
     welcomeCredits: ck.referral_welcome || 0,
-    cap: REFERRAL_POLICY.capQualifiedPerSeason,
+    seasonPoints: seasonNum == null ? null : Number((await env.DB.prepare(
+      `SELECT COALESCE(SUM(credits),0) AS c FROM credit_ledger WHERE player_id = ? AND season = ? AND kind IN ('referral_l1','referral_l2')`
+    ).bind(playerId, seasonNum).first())?.c) || 0,
+    cap: REFERRAL_POLICY.capPointsPerSeason,
+    l1Percent: REFERRAL_POLICY.l1Percent,
+    l2Percent: REFERRAL_POLICY.l2Percent,
   };
 }
 
@@ -130,7 +136,20 @@ export async function handleRegister(env, request, body) {
 
   let referrer = null;
   let referral = { status: "none" };
-  const code = String(body.ref || "").trim().toUpperCase();
+  // Referral source, in order: signed token from a /referral/<handle> link (sent by the page, or the Worker's own cookie
+  // when the browser sends it), else a legacy ?ref=CODE. A token that is present but expired/invalid means NO referral
+  // (no retroactive claims) — it never falls back to the plain code.
+  let code = "";
+  let via = null;
+  const token = String(body.refToken || "").trim() || readCookie(request, REF_COOKIE) || "";
+  if (token) {
+    const v = await verifyRefToken(env, token, currentTimeMs(env));
+    if (v.ok) { code = v.code; via = "link"; }
+    else referral = { status: "ignored", reason: v.error };
+  } else {
+    code = String(body.ref || "").trim().toUpperCase();
+    if (code) via = "code";
+  }
   if (code) {
     referrer = await env.DB.prepare(`SELECT id, handle, token_hash FROM signal_players WHERE ref_code = ?`).bind(code).first();
     if (!referrer) {
@@ -142,7 +161,7 @@ export async function handleRegister(env, request, body) {
       if (referrer.handle === handle || (held && held === referrer.token_hash)) {
         return [400, { ok: false, error: "self_referral" }];
       }
-      referral = { status: "pending", referrer: "@" + referrer.handle };
+      referral = { status: "pending", referrer: "@" + referrer.handle, via };
     }
   }
 
@@ -211,7 +230,7 @@ export async function handleMe(env, request) {
       lifetimeSignal: Number(cred.lifetimeSignal) || 0,
       referralLifetime: Number(cred.referral) || 0,
     },
-    referrals: await referralStats(env, p.id),
+    referrals: await referralStats(env, p.id, s),
     signals: (sig.results || []).map(publicSignal),
     limits: { perDay: SIGNAL_POLICY.maxSubmissionsPerDay, pendingMax: SIGNAL_POLICY.maxPendingTotal },
   }];
@@ -305,50 +324,44 @@ export async function adminList(env, url) {
   return [200, { ok: true, status, signals: (rows.results || []).map(adminRow) }];
 }
 
-export async function qualifyReferral(env, referredId, signalId, s, now) {
+/**
+ * referral-pct-v1: on every approved signal (and on outcome-bonus changes) the referred player's inviter earns 5% and the
+ * inviter's inviter 2.5% of that signal's points (base + bonus). Rows are keyed by the signal id, so recomputing replaces
+ * them. Cap: 250,000 referral points (L1 + L2) per account per season — a grant is cut to the room left.
+ * The referrals row is marked qualified on the recruit's first approved signal (stats only; no flat bonus).
+ */
+export async function grantReferralShares(env, recruitId, signalId, s, points, now) {
   if (!isSeasonStarted(currentTimeMs(env))) return { status: "season_not_started", grants: [] };
-  const ref = await env.DB.prepare(`SELECT * FROM referrals WHERE referred_id = ?`).bind(referredId).first();
-  if (!ref || ref.status !== "pending") return { status: ref ? ref.status : "none" };
+  const recruit = await env.DB.prepare(`SELECT id, handle, referrer_id FROM signal_players WHERE id = ?`).bind(recruitId).first();
+  const stmts = [env.DB.prepare(`DELETE FROM credit_ledger WHERE source_id = ? AND kind IN ('referral_l1','referral_l2')`).bind(signalId)];
+  if (!recruit || !recruit.referrer_id) {
+    await env.DB.batch(stmts);
+    return { status: "none", grants: [] };
+  }
+  await env.DB.prepare(
+    `UPDATE referrals SET status = 'qualified', season = ?, qualified_at = ?, qualifying_signal_id = ? WHERE referred_id = ? AND status = 'pending'`
+  ).bind(s, now, signalId, recruitId).run();
   const P = REFERRAL_POLICY;
-  const q = await env.DB.prepare(`SELECT COUNT(*) AS n FROM referrals WHERE referrer_id = ? AND status = 'qualified' AND season = ?`).bind(ref.referrer_id, s).first();
-  const nth = (Number(q?.n) || 0) + 1; // 1-based, including this referral
-  const overCap = nth > P.capQualifiedPerSeason;
-  const l1 = overCap ? 0 : referralL1Points(nth, P);
-  const l2 = referralL2Points(l1);
-  const upd = await env.DB.prepare(
-    `UPDATE referrals SET status = ?, season = ?, qualified_at = ?, qualifying_signal_id = ? WHERE referred_id = ? AND status = 'pending'`
-  ).bind(overCap ? "over_cap" : "qualified", s, now, signalId, referredId).run();
-  if (!upd.meta?.changes) return { status: "race" };
-  const referred = await env.DB.prepare(`SELECT handle FROM signal_players WHERE id = ?`).bind(referredId).first();
   const grants = [];
-  const stmts = [];
-  if (!overCap && l1 > 0) {
-    stmts.push(env.DB.prepare(
-      `INSERT OR IGNORE INTO credit_ledger (id, player_id, season, kind, credits, label, source_id, created_at) VALUES (?, ?, ?, 'referral_l1', ?, ?, ?, ?)`
-    ).bind(randomId(16), ref.referrer_id, s, l1, `Referral (level 1): @${referred.handle} first approved signal`, referredId, now));
-    grants.push({ kind: "referral_l1", credits: l1 });
-  }
-  if (P.welcomeCredits > 0) {
-    stmts.push(env.DB.prepare(
-      `INSERT OR IGNORE INTO credit_ledger (id, player_id, season, kind, credits, label, source_id, created_at) VALUES (?, ?, ?, 'referral_welcome', ?, ?, ?, ?)`
-    ).bind(randomId(16), referredId, s, P.welcomeCredits, `Referral welcome`, referredId, now));
-    grants.push({ kind: "referral_welcome", credits: P.welcomeCredits });
-  }
-  // Level 2: the referrer's referrer, only if the referrer is themselves an approved contributor.
-  // Always half of this referral's L1; no separate L2 cap (the mid referrer's qualified cap already gates it).
-  if (!overCap && l2 > 0) {
-    const mid = await env.DB.prepare(
-      `SELECT p.referrer_id AS up, (SELECT COUNT(*) FROM signals WHERE player_id = p.id AND status = 'approved') AS approved FROM signal_players p WHERE p.id = ?`
-    ).bind(ref.referrer_id).first();
-    if (mid && mid.up && Number(mid.approved) > 0 && mid.up !== referredId) {
+  const used = async (pid) => Number((await env.DB.prepare(
+    `SELECT COALESCE(SUM(credits),0) AS c FROM credit_ledger WHERE player_id = ? AND season = ? AND kind IN ('referral_l1','referral_l2') AND source_id != ?`
+  ).bind(pid, s, signalId).first())?.c) || 0;
+  const l1To = recruit.referrer_id;
+  const mid = await env.DB.prepare(`SELECT referrer_id FROM signal_players WHERE id = ?`).bind(l1To).first();
+  const l2To = mid && mid.referrer_id && mid.referrer_id !== recruitId && mid.referrer_id !== l1To ? mid.referrer_id : null;
+  const plan = [["referral_l1", l1To, referralL1Points(points, P), 1]];
+  if (l2To) plan.push(["referral_l2", l2To, referralL2Points(points, P), 2]);
+  for (const [kind, to, share, lvl] of plan) {
+    const amt = capReferralGrant(share, await used(to), P);
+    if (amt > 0) {
       stmts.push(env.DB.prepare(
-        `INSERT OR IGNORE INTO credit_ledger (id, player_id, season, kind, credits, label, source_id, created_at) VALUES (?, ?, ?, 'referral_l2', ?, ?, ?, ?)`
-      ).bind(randomId(16), mid.up, s, l2, `Referral (level 2): @${referred.handle} first approved signal`, referredId, now));
-      grants.push({ kind: "referral_l2", credits: l2 });
+        `INSERT OR IGNORE INTO credit_ledger (id, player_id, season, kind, credits, label, source_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(randomId(16), to, s, kind, amt, `Referral (level ${lvl}, ${lvl === 1 ? P.l1Percent : P.l2Percent}%): @${recruit.handle} approved signal`, signalId, now));
     }
+    grants.push({ kind, credits: amt, share, capped: amt < share });
   }
-  if (stmts.length) await env.DB.batch(stmts);
-  return { status: overCap ? "over_cap" : "qualified", nth, grants };
+  await env.DB.batch(stmts);
+  return { status: "granted", grants };
 }
 
 export async function adminApprove(env, id, body) {
@@ -379,10 +392,8 @@ export async function adminApprove(env, id, body) {
     ).bind(randomId(16), row.player_id, row.season, bonus, `Matrix Signal outcome bonus`, id, now));
   }
   await env.DB.batch(stmts);
-  // Referral qualifies on the referred player's FIRST approved signal.
-  const approvedCount = await env.DB.prepare(`SELECT COUNT(*) AS n FROM signals WHERE player_id = ? AND status = 'approved'`).bind(row.player_id).first();
-  let referral = { status: "none" };
-  if (Number(approvedCount?.n) === 1) referral = await qualifyReferral(env, row.player_id, id, row.season, now);
+  // referral-pct-v1: inviter 5%, inviter's inviter 2.5% of this signal's points (capped per season).
+  const referral = await grantReferralShares(env, row.player_id, id, row.season, base + bonus, now);
   return [200, { ok: true, id, status: "approved", tier, baseCredits: base, bonusCredits: bonus, referral }];
 }
 
@@ -416,7 +427,8 @@ export async function adminOutcomes(env, id, body) {
       `INSERT INTO credit_ledger (id, player_id, season, kind, credits, label, source_id, created_at) VALUES (?, ?, ?, 'signal_bonus', ?, ?, ?, ?)`
     ).bind(randomId(16), row.player_id, row.season, bonus, `Matrix Signal outcome bonus`, id, now)] : []),
   ]);
-  return [200, { ok: true, id, bonusCredits: bonus }];
+  const referral = await grantReferralShares(env, row.player_id, id, row.season, (Number(row.base_credits) || 0) + bonus, now);
+  return [200, { ok: true, id, bonusCredits: bonus, referral }];
 }
 
 /** Revoke an approved signal (reviewer error / later-found spam). Removes its Credits; un-qualifies a referral it triggered. */
@@ -428,12 +440,15 @@ export async function adminRevoke(env, id, body) {
   if (row.status !== "approved") return [409, { ok: false, error: "not_approved" }];
   const stmts = [
     env.DB.prepare(`UPDATE signals SET status = 'rejected', reject_reason = ?, base_credits = 0, bonus_credits = 0, reviewed_at = ? WHERE id = ?`).bind("revoked: " + reason, new Date().toISOString(), id),
-    env.DB.prepare(`DELETE FROM credit_ledger WHERE source_id = ? AND kind IN ('signal','signal_bonus')`).bind(id),
+    env.DB.prepare(`DELETE FROM credit_ledger WHERE source_id = ? AND kind IN ('signal','signal_bonus','referral_l1','referral_l2')`).bind(id),
   ];
   const ref = await env.DB.prepare(`SELECT * FROM referrals WHERE qualifying_signal_id = ?`).bind(id).first();
   if (ref) {
-    stmts.push(env.DB.prepare(`UPDATE referrals SET status = 'pending', season = NULL, qualified_at = NULL, qualifying_signal_id = NULL WHERE referred_id = ?`).bind(ref.referred_id));
-    stmts.push(env.DB.prepare(`DELETE FROM credit_ledger WHERE source_id = ? AND kind LIKE 'referral_%'`).bind(ref.referred_id));
+    // Re-point to another approved signal if the recruit has one; otherwise back to pending.
+    const other = await env.DB.prepare(`SELECT id, season, reviewed_at FROM signals WHERE player_id = ? AND status = 'approved' AND id != ? ORDER BY reviewed_at ASC LIMIT 1`).bind(ref.referred_id, id).first();
+    stmts.push(other
+      ? env.DB.prepare(`UPDATE referrals SET qualifying_signal_id = ?, season = ?, qualified_at = ? WHERE referred_id = ?`).bind(other.id, other.season, other.reviewed_at, ref.referred_id)
+      : env.DB.prepare(`UPDATE referrals SET status = 'pending', season = NULL, qualified_at = NULL, qualifying_signal_id = NULL WHERE referred_id = ?`).bind(ref.referred_id));
   }
   await env.DB.batch(stmts);
   return [200, { ok: true, id, status: "rejected", referralReset: !!ref }];

@@ -2,19 +2,19 @@
 // EVERY value here is an ASSUMPTION / PLACEHOLDER unless marked as an owner decision.
 // Edit the SEASON block below as the single source for season dates, prizes, referrals, and task points.
 
-import { REFERRAL_TIERS } from "./referral-tiers.js";
-export { REFERRAL_TIERS, referralL1Points, referralL2Points, referralTierHeadline, referralTierRangeLabel, referralHowToCopy, referralPanelCopy, referralRulesLines, formatPoints } from "./referral-tiers.js";
+import { REFERRAL_POLICY, REFERRAL_TIERS } from "./referral-tiers.js";
+export { REFERRAL_POLICY, REFERRAL_TIERS, capReferralGrant, referralL1Points, referralL2Points, referralTierHeadline, referralTierRangeLabel, referralHowToCopy, referralPanelCopy, referralRulesLines, formatPoints } from "./referral-tiers.js";
 
 /** Single editable season/campaign block. Bump number/start/end for Season 2+; never retie lifetimeStart. */
 export const SEASON = Object.freeze({
   number: 1,
-  // Owner-approved schedule (Nov 13 2026): Wed Nov 18 noon ET → Wed Dec 9 noon ET (three weeks).
-  // Explicit -05:00 (EST) so browsers in any TZ parse noon Eastern correctly.
-  start: "2026-11-18T12:00:00-05:00",
+  // Owner-approved schedule: Wed Nov 18 6:00 PM ET (owner correction Nov 18 2026; was noon) → Wed Dec 9 noon ET.
+  // Explicit -05:00 (EST) so browsers in any TZ parse Eastern times correctly.
+  start: "2026-11-18T18:00:00-05:00",
   end: "2026-12-09T12:00:00-05:00",
   timeZone: "America/New_York",
   // FIXED campaign launch — both season/lifetime credit bars count from here; do not change when bumping SEASON.number.
-  lifetimeStart: "2026-11-18T12:00:00-05:00",
+  lifetimeStart: "2026-11-18T18:00:00-05:00",
   // Season 1 prize (owner decision Nov 13 2026). Visible copy lives in PRIZE_COPY below.
   prizes: Object.freeze({
     // Owner decision (Nov 13 2026): $600 total, paid in BNB — $300 / $200 / $100 for places 1–3.
@@ -49,23 +49,21 @@ export const SEASON = Object.freeze({
     Object.freeze({ id: "circle_onboard", label: "Circle onboard", points: 25 }),
     Object.freeze({ id: "video_watch", label: "Video watch (one-time)", points: 5 })
   ]),
-  // Season 1 referral — SERVER-SIDE (Worker + D1). Owner approved Nov 14 2026 (tiered points); UI behind PUBLIC_UI.referral.
-  // A referral QUALIFIES only when the referred player's FIRST Matrix Signal is APPROVED by a reviewer.
-  // Level-1 points depend on how many qualified referrals that referrer already has THIS SEASON, counting this one:
-  // #1–10 → 10, #11–25 → 5, #26–50 → 2, #51–100 → 1. Level 2 is always half of that referral's level-1 value.
-  // No self-referral; one referrer per player, set at registration and immutable; test cap 100 qualified per referrer per season.
-  // Referral points stay LIFETIME-ONLY (never season / BNB ranking) per the 6 Nov 2026 owner policy. No welcome bonus.
+  // Season 1 referral — SERVER-SIDE (Worker + D1). Owner approved Nov 18 2026 (pre-launch correction): referral-pct-v1.
+  // Level 1 earns 5% and level 2 earns 2.5% of the referred player's approved signal points; cap 250,000 referral points
+  // per account per season. No self-referral; one referrer per player, set at registration and immutable.
+  // Links /referral/<handle> are remembered 30 days; no retroactive claims. Referral points stay LIFETIME-ONLY. No welcome bonus.
   referral: Object.freeze({
     enabled: true,
     enabledSeasons: Object.freeze([1]),
-    model: "referral-tiered-v1",
-    referrerCredits: 10,   // first-tier L1 (referrals 1–10); later tiers use REFERRAL_TIERS
-    level2Credits: 5,      // first-tier L2 (half of 10); later tiers are always half of that referral's L1
+    model: REFERRAL_POLICY.version,
+    l1Percent: REFERRAL_POLICY.l1Percent,
+    l2Percent: REFERRAL_POLICY.l2Percent,
     welcomeCredits: 0,     // no welcome bonus
-    capQualifiedPerSeason: 100, // test max; owner approved Nov 14 2026
-    qualifyOn: "first_approved_signal",
-    campaignId: "onmx-campaign",
-    tiers: REFERRAL_TIERS.tiers
+    capPointsPerSeason: REFERRAL_POLICY.capPointsPerSeason,
+    linkDays: REFERRAL_POLICY.linkDays,
+    earnOn: REFERRAL_POLICY.earnOn,
+    campaignId: "onmx-campaign"
   }),
   // PROPOSED / PROVISIONAL treasury buy-in bonus (raw SCORING POINTS, not Credits).
   // Continuous bounded formula (no bracket cliffs): points = cap * (1 - exp(-USD / scaleUsd)),
@@ -106,6 +104,8 @@ export const SIGNALS = Object.freeze({
   status: "approved", // owner approved Nov 13 2026
   policyVersion: "signals-policy-v1",
   apiBase: "https://onmx-gamification-claims.onmx.workers.dev",
+  // Share links: <referralLinkBase><handle>. Worker route on workers.dev until onchainmatrix.com/referral/* is routed to it.
+  referralLinkBase: "https://onmx-gamification-claims.onmx.workers.dev/referral/",
   baseCredits: Object.freeze({ reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 }),
   tierMultiplier: Object.freeze({ accepted: 1, strong: 2, outstanding: 4 }),
   outcomeBonus: Object.freeze({ kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 }),
@@ -224,9 +224,10 @@ export const CONFIG = Object.freeze({
   // LEGACY (5 Nov brainstorm): % of referee base energy, L1 10% / L2 5%, 30/60-day gates. NOT the Season 1 model.
   // Kept only for the old engine helper referralEnergy() + sim.
   REFERRAL: { legacy: true, levels: [0.10, 0.05] },
-  // LEGACY flat model (owner approved Nov 13 2026, replaced Nov 14 by REFERRAL_TIERS).
+  // LEGACY flat model (owner approved Nov 13 2026, replaced Nov 14 by tiered points, then Nov 18 by REFERRAL_POLICY referral-pct-v1).
   REFERRAL_FLAT: { legacy: true, l1Credits: 10, l2Credits: 5, capQualifiedPerSeason: 20, qualifyOn: "first_approved_signal", scope: "lifetime_only" },
-  REFERRAL_TIERS,
+  REFERRAL_TIERS: REFERRAL_POLICY,
+  REFERRAL_POLICY,
   GATES: [ { day: 30, share: 0.5 }, { day: 60, share: 0.5 } ],
   F1_POINTS: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1],
   // Next-round head start (raw scoring points): #1–5 +25, #6–10 +15, #11–20 +5; #21+ 0. = 0.25/0.15/0.05 Credits at 100 pts/Credit.

@@ -2,8 +2,8 @@ import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:
 import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { createWorker } from "../src/index.js";
 import { applyMigrations } from "./apply-migrations.js";
-import { validateSubmission, parseStatusUrl, signalBaseCredits, signalBonusCredits, SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, currentTimeMs, isSeasonStarted, seasonStartMs, seasonEndMs, POLICY, toInstantMs } from "../src/signals/policy.js";
-import { qualifyReferral } from "../src/signals/handlers.js";
+import { validateSubmission, parseStatusUrl, signalBaseCredits, signalBonusCredits, SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, capReferralGrant, currentTimeMs, isSeasonStarted, seasonStartMs, seasonEndMs, POLICY, toInstantMs } from "../src/signals/policy.js";
+import { grantReferralShares } from "../src/signals/handlers.js";
 
 
 const ORIGIN = "https://onchain-matrix.github.io";
@@ -60,16 +60,19 @@ describe("signals policy (pure)", () => {
     expect(signalBaseCredits("connect", "nope")).toBe(0);
     expect(signalBonusCredits({ kolReplied: true, kolFollowed: true, directInterest: true, introduction: true })).toBe(SIGNAL_POLICY.bonusCapPerSignal);
     expect(signalBonusCredits({ kolReplied: "yes" })).toBe(0);
-    expect(REFERRAL_POLICY.version).toBe("referral-tiered-v1");
+    expect(REFERRAL_POLICY.version).toBe("referral-pct-v1");
     expect(REFERRAL_POLICY.welcomeCredits).toBe(0);
-    expect(REFERRAL_POLICY.capQualifiedPerSeason).toBe(100);
-    const bounds = [[10, 10], [11, 5], [25, 5], [26, 2], [50, 2], [51, 1], [100, 1], [101, 0]];
-    for (const [nth, l1] of bounds) {
-      expect(referralL1Points(nth)).toBe(l1);
-      expect(referralL2Points(l1)).toBe(l1 / 2);
+    expect(REFERRAL_POLICY.capPointsPerSeason).toBe(250000);
+    expect(REFERRAL_POLICY.l1Percent).toBe(5);
+    expect(REFERRAL_POLICY.l2Percent).toBe(2.5);
+    for (const [pts, l1, l2] of [[5, 0.25, 0.125], [3, 0.15, 0.075], [10, 0.5, 0.25], [20, 1, 0.5], [2, 0.1, 0.05], [0, 0, 0], [-4, 0, 0]]) {
+      expect(referralL1Points(pts)).toBe(l1);
+      expect(referralL2Points(pts)).toBe(l2);
     }
-    expect(referralL2Points(5)).toBe(2.5);
-    expect(referralL2Points(1)).toBe(0.5);
+    expect(capReferralGrant(0.25, 0)).toBe(0.25);
+    expect(capReferralGrant(0.25, 249999.9)).toBe(0.1);
+    expect(capReferralGrant(0.25, 250000)).toBe(0);
+    expect(capReferralGrant(0.25, 260000)).toBe(0);
   });
   it("season dates come from policy.js; start is inclusive; clock is injectable", () => {
     expect(POLICY.seasonStart).toBe("2026-11-18T18:00:00-05:00");
@@ -185,12 +188,12 @@ describe("signals API", () => {
     expect(csv.text).toContain("Rejected: Generic mention");
   });
 
-  it("referral qualifies only on the referred player's FIRST approved signal: L1 +10, L2 +5", async () => {
+  it("referral-pct-v1: inviter earns 5% and inviter's inviter 2.5% of every approved signal's points (?ref= codes)", async () => {
     const top = await register("ref_top");
     const mid = await register("ref_mid", top.json.refCode);
     expect(mid.json.referral.status).toBe("pending");
     expect(mid.json.referral.referrer).toBe("@ref_top");
-    // mid becomes an approved contributor (qualifies top's L1)
+    expect(mid.json.referral.via).toBe("code");
     const m1 = await submit(mid.json.playerKey, "ref_mid");
     const new1 = await register("ref_new", mid.json.refCode);
     const n1 = await submit(new1.json.playerKey, "ref_new");
@@ -199,35 +202,53 @@ describe("signals API", () => {
     let meMid = await call("/v1/signals/me", { headers: { ...preview, "X-Player-Key": mid.json.playerKey } });
     expect(meMid.json.referrals.pending).toBe(1);
     expect(meMid.json.referrals.qualified).toBe(0);
+    expect(meMid.json.referrals.cap).toBe(250000);
     expect((await ledger(mid.json.playerId)).length).toBe(0); // no credit for a signup alone
 
-    // rejection does not qualify
+    // rejection pays nothing
     await call(`/v1/admin/signals/${n1.json.id}/reject`, { method: "POST", headers: admin, body: { reason: "spam reply" } });
     expect((await ledger(mid.json.playerId)).length).toBe(0);
 
-    expect((await approve(m1.json.id)).json.referral.status).toBe("qualified");
-    const ap = await approve(n2.json.id);
-    expect(ap.json.referral.status).toBe("qualified");
-    expect(ap.json.referral.grants).toEqual([{ kind: "referral_l1", credits: 10 }, { kind: "referral_l2", credits: 5 }]);
+    // mid's own approved reply (5 points) → top earns 5% = 0.25 (mid has no level-2 above top)
+    const apm = await approve(m1.json.id);
+    expect(apm.json.referral.grants).toEqual([{ kind: "referral_l1", credits: 0.25, share: 0.25, capped: false }]);
+    expect((await ledger(top.json.playerId)).find((x) => x.kind === "referral_l1").credits).toBe(0.25);
 
-    const lm = await ledger(mid.json.playerId);
-    expect(lm.find((x) => x.kind === "referral_l1").credits).toBe(10);
-    const lt = await ledger(top.json.playerId);
-    expect(lt.filter((x) => x.kind === "referral_l1").length).toBe(1); // from mid
-    expect(lt.find((x) => x.kind === "referral_l2").credits).toBe(5);  // from ref_new via mid
+    // ref_new's reply + KOL replied bonus = 10 points → mid 5% = 0.5, top 2.5% = 0.25
+    const ap = await approve(n2.json.id, "accepted", { kolReplied: true });
+    expect(ap.json.referral.status).toBe("granted");
+    expect(ap.json.referral.grants).toEqual([
+      { kind: "referral_l1", credits: 0.5, share: 0.5, capped: false },
+      { kind: "referral_l2", credits: 0.25, share: 0.25, capped: false },
+    ]);
+    let lt = await ledger(top.json.playerId);
+    expect(lt.filter((x) => x.kind === "referral_l2").map((x) => x.credits)).toEqual([0.25]);
     meMid = await call("/v1/signals/me", { headers: { ...preview, "X-Player-Key": mid.json.playerKey } });
     expect(meMid.json.referrals.qualified).toBe(1);
     expect(meMid.json.referrals.pending).toBe(0);
+    expect(meMid.json.referrals.l1Credits).toBe(0.5);
+    expect(meMid.json.referrals.seasonPoints).toBe(0.5);
 
-    // a second approval for ref_new does not pay again
+    // every later approval pays again (not just the first)
     const n3 = await submit(new1.json.playerKey, "ref_new");
-    expect((await approve(n3.json.id)).json.referral.status).toBe("none");
-    expect((await ledger(mid.json.playerId)).filter((x) => x.kind === "referral_l1").length).toBe(1);
+    const ap3 = await approve(n3.json.id, "strong"); // 10 points
+    expect(ap3.json.referral.grants.map((g) => g.credits)).toEqual([0.5, 0.25]);
+    expect((await ledger(mid.json.playerId)).filter((x) => x.kind === "referral_l1").map((x) => x.credits).sort()).toEqual([0.5, 0.5]);
 
-    // revoke the qualifying signal → referral back to pending, referral credits removed
+    // outcome update recomputes the shares for that signal (bonus removed → 5 points → 0.25 / 0.125)
+    const out = await call(`/v1/admin/signals/${n2.json.id}/outcomes`, { method: "POST", headers: admin, body: { outcomes: {} } });
+    expect(out.json.referral.grants.map((g) => g.credits)).toEqual([0.25, 0.125]);
+    const rowsN2 = (await env.DB.prepare(`SELECT kind, credits FROM credit_ledger WHERE source_id = ? AND kind LIKE 'referral_%' ORDER BY kind`).bind(n2.json.id).all()).results;
+    expect(rowsN2).toEqual([{ kind: "referral_l1", credits: 0.25 }, { kind: "referral_l2", credits: 0.125 }]);
+
+    // revoke removes that signal's referral rows; referral stays qualified via the other approved signal
     const rv = await call(`/v1/admin/signals/${n2.json.id}/revoke`, { method: "POST", headers: admin, body: { reason: "found to be copy/paste" } });
     expect(rv.json.referralReset).toBe(true);
-    expect((await ledger(mid.json.playerId)).filter((x) => x.kind === "referral_l1").length).toBe(0);
+    expect((await env.DB.prepare(`SELECT COUNT(*) AS n FROM credit_ledger WHERE source_id = ?`).bind(n2.json.id).first()).n).toBe(0);
+    const ref = await env.DB.prepare(`SELECT status, qualifying_signal_id FROM referrals WHERE referred_id = ?`).bind(new1.json.playerId).first();
+    expect(ref).toEqual({ status: "qualified", qualifying_signal_id: n3.json.id });
+    lt = await ledger(top.json.playerId);
+    expect(lt.filter((x) => x.kind === "referral_l2").map((x) => x.credits)).toEqual([0.25]); // only n3's share left
   });
 
   it("self-referral blocked; referrer immutable; unknown code ignored", async () => {
@@ -249,84 +270,74 @@ describe("signals API", () => {
     expect(res.json).toEqual({ ok: true, valid: true, referrer: "@self_a" });
   });
 
-  it("tier boundaries: 10th→10, 11th→5, 25th→5, 26th→2, 50th→2, 51st→1, 100th→1, 101st→0 overCap; L2 is half", async () => {
-    const top = await register("tier_top");
-    const mid = await register("tier_mid", top.json.refCode);
-    const midKey = mid.json.playerKey;
-    const midId = mid.json.playerId;
-    const topId = top.json.playerId;
-    // mid must be an approved contributor for L2 to pay
-    const m1 = await submit(midKey, "tier_mid");
-    expect((await approve(m1.json.id)).json.referral.status).toBe("qualified");
-    expect((await ledger(topId)).find((x) => x.kind === "referral_l1").credits).toBe(10);
-
-    const seedQualified = async (already) => {
-      const now = new Date().toISOString();
-      const stmts = [];
-      for (let i = 0; i < already; i++) {
-        const id = "c" + String(already).padStart(3, "0") + String(i).padStart(4, "0") + "d".repeat(24);
-        const handle = ("t" + already + "f" + i).slice(0, 15);
-        const code = ("S" + String(already).padStart(3, "0") + String(i).padStart(4, "0"));
-        stmts.push(env.DB.prepare(`INSERT INTO signal_players (id, handle, ref_code, token_hash, referrer_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`).bind(id, handle, code, "th" + already + "x" + i, midId, now));
-        stmts.push(env.DB.prepare(`INSERT INTO referrals (referred_id, referrer_id, status, season, created_at) VALUES (?, ?, 'qualified', 1, ?)`).bind(id, midId, now));
-      }
-      for (let i = 0; i < stmts.length; i += 40) await env.DB.batch(stmts.slice(i, i + 40));
-    };
-    const qualifyNth = async (nth, expectL1, expectStatus = "qualified") => {
-      // clear previously seeded qualified rows (not mid's own referral to top) and any L1/L2 from prior cases
-      await env.DB.prepare(`DELETE FROM referrals WHERE referrer_id = ?`).bind(midId).run();
-      await env.DB.prepare(`DELETE FROM credit_ledger WHERE player_id IN (?, ?) AND kind LIKE 'referral_%'`).bind(midId, topId).run();
-      // restore top's L1 from mid (mid's first approval) so leftover checks stay isolated
-      await seedQualified(nth - 1);
-      const handle = ("tnth" + nth).slice(0, 15);
-      const n = await register(handle, mid.json.refCode);
-      const s = await submit(n.json.playerKey, handle);
-      const ap = await approve(s.json.id);
-      expect(ap.json.referral.status).toBe(expectStatus);
-      if (expectStatus === "over_cap") {
-        expect(ap.json.referral.grants || []).toEqual([]);
-        expect((await ledger(midId)).filter((x) => x.kind === "referral_l1").length).toBe(0);
-        expect((await ledger(topId)).filter((x) => x.kind === "referral_l2").length).toBe(0);
-        const row = await env.DB.prepare(`SELECT status FROM referrals WHERE referred_id = ?`).bind(n.json.playerId).first();
-        expect(row.status).toBe("over_cap");
-        return;
-      }
-      expect(ap.json.referral.nth).toBe(nth);
-      expect(ap.json.referral.grants).toEqual([
-        { kind: "referral_l1", credits: expectL1 },
-        { kind: "referral_l2", credits: expectL1 / 2 },
-      ]);
-      expect((await ledger(midId)).find((x) => x.kind === "referral_l1").credits).toBe(expectL1);
-      expect((await ledger(topId)).find((x) => x.kind === "referral_l2").credits).toBe(expectL1 / 2);
-    };
-
-    await qualifyNth(10, 10);
-    await qualifyNth(11, 5);
-    await qualifyNth(25, 5);
-    await qualifyNth(26, 2);
-    await qualifyNth(50, 2);
-    await qualifyNth(51, 1);
-    await qualifyNth(100, 1);
-    await qualifyNth(101, 0, "over_cap");
-  });
-
-  it("qualified referrals capped per referrer per season (over_cap pays 0)", async () => {
+  it("cap: 250,000 referral points per account per season — a grant is cut to the room left, then 0", async () => {
     const r = await register("cap_ref");
     const rid = r.json.playerId;
     const now = new Date().toISOString();
-    // seed 20 already-qualified referrals for this season directly
-    const stmts = [];
-    for (let i = 0; i < REFERRAL_POLICY.capQualifiedPerSeason; i++) {
-      const id = "f".repeat(28) + String(1000 + i);
-      stmts.push(env.DB.prepare(`INSERT INTO signal_players (id, handle, ref_code, token_hash, referrer_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`).bind(id, "capf" + i, "CAPF" + (1000 + i), "h" + i, rid, now));
-      stmts.push(env.DB.prepare(`INSERT INTO referrals (referred_id, referrer_id, status, season, created_at) VALUES (?, ?, 'qualified', 1, ?)`).bind(id, rid, now));
-    }
-    for (let i = 0; i < stmts.length; i += 40) await env.DB.batch(stmts.slice(i, i + 40));
-    const n = await register("cap_new21", r.json.refCode);
-    const s = await submit(n.json.playerKey, "cap_new21");
-    const ap = await approve(s.json.id);
-    expect(ap.json.referral.status).toBe("over_cap");
-    expect((await ledger(rid)).length).toBe(0);
+    await env.DB.prepare(`INSERT INTO credit_ledger (id, player_id, season, kind, credits, label, source_id, created_at) VALUES (?, ?, 1, 'referral_l1', ?, 'seed', 'seed-src-1', ?)`).bind("seedcap1", rid, 249999.9, now).run();
+    const n = await register("cap_new", r.json.refCode);
+    const s1 = await submit(n.json.playerKey, "cap_new");
+    const ap = await approve(s1.json.id); // 5 points → share 0.25, room 0.1
+    expect(ap.json.referral.grants).toEqual([{ kind: "referral_l1", credits: 0.1, share: 0.25, capped: true }]);
+    const s2 = await submit(n.json.playerKey, "cap_new");
+    const ap2 = await approve(s2.json.id);
+    expect(ap2.json.referral.grants).toEqual([{ kind: "referral_l1", credits: 0, share: 0.25, capped: true }]);
+    const total = await env.DB.prepare(`SELECT SUM(credits) AS c, COUNT(*) AS n FROM credit_ledger WHERE player_id = ? AND kind LIKE 'referral_%'`).bind(rid).first();
+    expect(total.n).toBe(2);
+    expect(Math.round(total.c * 1e6) / 1e6).toBe(250000);
+  });
+
+  it("/referral/<handle>: 302 to the join page with a signed 30-day token + cookie; unknown handle redirects without one", async () => {
+    const a = await register("Link_Owner");
+    const res = await call("/referral/LINK_owner");
+    expect(res.status).toBe(302);
+    const loc = new URL(res.headers.get("Location"));
+    expect(loc.origin + loc.pathname).toBe("https://onchain-matrix.github.io/onmx-gamification/");
+    expect(loc.hash).toBe("#signalsPanel");
+    expect(loc.searchParams.get("ref")).toBe(a.json.refCode);
+    const rt = loc.searchParams.get("rt");
+    expect(rt).toMatch(/^v1\.[A-Z0-9]+\.\d+\.[0-9a-f]{32}$/);
+    const exp = Number(rt.split(".")[2]);
+    expect(exp - Math.floor(Date.now() / 1000)).toBeGreaterThan(30 * 86400 - 60);
+    const cookie = res.headers.get("Set-Cookie");
+    expect(cookie).toBe(`onmx_ref=${rt}; Max-Age=2592000; Path=/; Secure; HttpOnly; SameSite=Lax`);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+
+    const unk = await call("/referral/nobody_here_x");
+    expect(unk.status).toBe(302);
+    expect(unk.headers.get("Set-Cookie")).toBeNull();
+    const ul = new URL(unk.headers.get("Location"));
+    expect(ul.searchParams.get("rt")).toBeNull();
+    expect(ul.searchParams.get("ref")).toBeNull();
+    const bad = await call("/referral/%E0%A4%A");
+    expect(bad.status).toBe(302);
+    expect(bad.headers.get("Set-Cookie")).toBeNull();
+
+    // join with the token (as the page sends it) saves the referrer-recruit pair
+    const j = await call("/v1/signals/register", { method: "POST", body: { handle: "link_recruit", refToken: rt }, headers: preview });
+    expect(j.json.referral).toEqual({ status: "pending", referrer: "@link_owner", via: "link" });
+    const pair = await env.DB.prepare(`SELECT referrer_id, status FROM referrals WHERE referred_id = ?`).bind(j.json.playerId).first();
+    expect(pair).toEqual({ referrer_id: a.json.playerId, status: "pending" });
+
+    // the Worker's own cookie also works when a browser sends it
+    const c = await call("/v1/signals/register", { method: "POST", body: { handle: "link_cookie" }, headers: { ...preview, Cookie: `x=1; onmx_ref=${rt}` } });
+    expect(c.json.referral.via).toBe("link");
+
+    // expired (31 days later) → no referral, and no fallback to the plain code: no retroactive claims
+    const late = await call("/v1/signals/register", { method: "POST", body: { handle: "link_late", refToken: rt, ref: a.json.refCode }, headers: preview, nowMs: Date.now() + 31 * 86400 * 1000 });
+    expect(late.status).toBe(200);
+    expect(late.json.referral).toEqual({ status: "ignored", reason: "ref_token_expired" });
+    expect(await env.DB.prepare(`SELECT 1 FROM referrals WHERE referred_id = ?`).bind(late.json.playerId).first()).toBeNull();
+    // tampered → ignored
+    const forged = rt.replace(/\.[0-9a-f]{32}$/, "." + "0".repeat(32));
+    const f = await call("/v1/signals/register", { method: "POST", body: { handle: "link_forged", refToken: forged }, headers: preview });
+    expect(f.json.referral).toEqual({ status: "ignored", reason: "invalid_ref_token" });
+    // self-referral through a link is still blocked
+    const self = await call("/v1/signals/register", { method: "POST", body: { handle: "link_owner2", refToken: rt }, headers: { ...preview, "X-Player-Key": a.json.playerKey } });
+    expect(self.json.error).toBe("self_referral");
+    // a referred player can't be re-referred: re-registering the same handle is refused, referrer unchanged
+    const again = await call("/v1/signals/register", { method: "POST", body: { handle: "link_recruit", refToken: rt }, headers: preview });
+    expect(again.status).toBe(409);
   });
 
   it("admin delete removes a test player and all rows", async () => {
@@ -378,12 +389,12 @@ describe("launch date guard", () => {
     expect(l.map((x) => [x.kind, x.credits])).toEqual([["signal", 5]]);
   });
 
-  it("referral qualification before the start gives nothing (approve path and qualifyReferral itself), including L2", async () => {
+  it("referral shares before the start give nothing (approve path and grantReferralShares itself), including L2", async () => {
     clock.nowMs = START_MS; // set up players and a pending referral at/after start
     const top = await register("guard_l2top");
     const mid = await register("guard_l2mid", top.json.refCode);
     const m1 = await submit(mid.json.playerKey, "guard_l2mid");
-    expect((await approve(m1.json.id)).json.referral.status).toBe("qualified"); // mid is an approved contributor
+    expect((await approve(m1.json.id)).json.referral.status).toBe("granted"); // top earns 5% of mid's points
     const newbie = await register("guard_l2new", mid.json.refCode);
     const n1 = await submit(newbie.json.playerKey, "guard_l2new");
 
@@ -398,7 +409,7 @@ describe("launch date guard", () => {
     expect((await ledger(top.json.playerId)).filter((x) => x.kind === "referral_l2").length).toBe(0);
 
     // Direct call: still no writes if someone invoked qualification before the start
-    const direct = await qualifyReferral(envAt(START_MS - 1), newbie.json.playerId, n1.json.id, 1, new Date(START_MS - 1).toISOString());
+    const direct = await grantReferralShares(envAt(START_MS - 1), newbie.json.playerId, n1.json.id, 1, 5, new Date(START_MS - 1).toISOString());
     expect(direct).toEqual({ status: "season_not_started", grants: [] });
     const ref2 = await env.DB.prepare(`SELECT status FROM referrals WHERE referred_id = ?`).bind(newbie.json.playerId).first();
     expect(ref2.status).toBe("pending");
