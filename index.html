@@ -214,7 +214,7 @@ label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;let
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261117-launchguard1";
+const ASSET_V = "20261118-pointsboard1";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -414,7 +414,7 @@ function render() {
   if (tab === "board" && SIGBOARD) {
     const all = SIGBOARD.top.slice(0, BOARD_SHOWN);
     if (!all.length) {
-      out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN}</h3><p class="note">No approved signals yet. Rankings use Credits from approved Matrix Signals this season — submit your first signal above.</p></section>`;
+      out.innerHTML = `<section class="card"><h3>Season ${CURRENT_SEASON} · Top ${BOARD_SHOWN}</h3><p class="note">No approved signals yet. Rankings use Points from approved Matrix Signals this season — submit your first signal above.</p></section>`;
     } else {
       const pages = Math.ceil(all.length / PAGE_SIZE) || 1;
       boardPage = Math.min(boardPage, pages - 1);
