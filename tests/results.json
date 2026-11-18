@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 60,
-  "passed": 60,
+  "total": 61,
+  "passed": 61,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -159,7 +159,7 @@
    "pass": true
   },
   {
-   "name": "SEASON config: prize $600 paid in BNB, 300/200/100; Nov 18 6 PM ET–Dec 9 noon ET; tasks drive TASK_WEIGHTS; offsets -05:00",
+   "name": "SEASON config: prize $600 paid in BNB, 300/200/100; Nov 25 6 PM ET–Dec 16 6 PM ET; tasks drive TASK_WEIGHTS; offsets -05:00",
    "pass": true
   },
   {
@@ -240,6 +240,10 @@
   },
   {
    "name": "S9 wiring: season board/search use /v1/leaderboard only when signals flag or owner preview is on",
+   "pass": true
+  },
+  {
+   "name": "season dates: Nov 25 6 PM ET → Dec 16 6 PM ET; no leftover Nov 18 / Dec 9 in page copy",
    "pass": true
   },
   {

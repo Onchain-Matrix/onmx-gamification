@@ -172,6 +172,15 @@ export function currentTimeMs(env) {
   return Date.now();
 }
 
+/** Exclusive end: at the exact season end instant the season is over. Applies to the configured season only. */
+export function isSeasonEnded(nowMs, seasonNum = POLICY.seasonNumber, policy = POLICY) {
+  return Number(seasonNum) === Number(policy.seasonNumber) && Number(nowMs) >= seasonEndMs(policy);
+}
+
+export function seasonEndedBody(policy = POLICY) {
+  return { ok: false, error: "season_ended", endedAt: policy.seasonEnd };
+}
+
 export function seasonNotStartedBody(policy = POLICY) {
   return { ok: false, error: "season_not_started", startsAt: policy.seasonStart };
 }

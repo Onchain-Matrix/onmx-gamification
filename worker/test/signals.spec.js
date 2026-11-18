@@ -76,7 +76,9 @@ describe("signals policy (pure)", () => {
   });
   it("season dates come from policy.js; start is inclusive; clock is injectable", () => {
     expect(POLICY.seasonStart).toBe("2026-11-25T18:00:00-05:00");
-    expect(POLICY.seasonEnd).toBe("2026-12-09T12:00:00-05:00");
+    expect(POLICY.seasonEnd).toBe("2026-12-16T18:00:00-05:00");
+    expect(END_MS).toBe(Date.parse("2026-12-16T23:00:00Z"));
+    expect(END_MS - START_MS).toBe(21 * 864e5);
     expect(START_MS).toBe(toInstantMs(POLICY.seasonStart));
     expect(START_MS).toBe(Date.parse("2026-11-25T23:00:00Z"));
     expect(isSeasonStarted(START_MS - 1)).toBe(false);
@@ -446,14 +448,35 @@ describe("launch date guard", () => {
     expect((await ledger(r.json.playerId)).length).toBe(0);
   });
 
-  it("after the season end, approval still grants points (no end-of-season block today)", async () => {
+  it("season-end guard: at/after Dec 16 6 PM ET submissions, approvals, bonuses and referral grants are refused (409 season_ended); 1 ms before still works", async () => {
+    clock.nowMs = START_MS;
+    const top = await register("end_top");
+    const r = await register("end_player", top.json.refCode);
+    const s1 = await submit(r.json.playerKey, "end_player");
+    const s2 = await submit(r.json.playerKey, "end_player");
+    const s3 = await submit(r.json.playerKey, "end_player");
+    // last millisecond of the season: approval still grants (incl. referral share)
+    const last = await call(`/v1/admin/signals/${s1.json.id}/approve`, { method: "POST", headers: admin, body: { tier: "accepted" }, nowMs: END_MS - 1 });
+    expect(last.status).toBe(200);
+    expect(last.json.referral.grants.map((g) => g.credits)).toEqual([0.25]);
     clock.nowMs = END_MS;
-    const r = await register("guard_afterend");
-    const s = await submit(r.json.playerKey, "guard_afterend");
-    const ap = await approve(s.json.id);
-    expect(ap.status).toBe(200);
-    expect(ap.json.status).toBe("approved");
-    expect(ap.json.baseCredits).toBe(5);
+    const ap = await approve(s2.json.id);
+    expect(ap.status).toBe(409);
+    expect(ap.json).toEqual({ ok: false, error: "season_ended", endedAt: "2026-12-16T18:00:00-05:00" });
+    const row = await env.DB.prepare(`SELECT status, base_credits FROM signals WHERE id = ?`).bind(s2.json.id).first();
+    expect(row).toEqual({ status: "pending", base_credits: 0 });
+    const sub = await submit(r.json.playerKey, "end_player");
+    expect(sub.status).toBe(409);
+    expect(sub.json.error).toBe("season_ended");
+    const out = await call(`/v1/admin/signals/${s1.json.id}/outcomes`, { method: "POST", headers: admin, body: { outcomes: { kolReplied: true } } });
+    expect(out.status).toBe(409);
+    expect(out.json.error).toBe("season_ended");
+    const direct = await grantReferralShares(envAt(END_MS), r.json.playerId, s3.json.id, 1, 5, new Date(END_MS).toISOString());
+    expect(direct).toEqual({ status: "season_ended", grants: [] });
     expect((await ledger(r.json.playerId)).map((x) => [x.kind, x.credits])).toEqual([["signal", 5]]);
+    expect((await ledger(top.json.playerId)).map((x) => [x.kind, x.credits])).toEqual([["referral_l1", 0.25]]);
+    // rejects stay allowed after the end (they grant nothing)
+    const rj = await call(`/v1/admin/signals/${s3.json.id}/reject`, { method: "POST", headers: admin, body: { reason: "season over" } });
+    expect(rj.status).toBe(200);
   });
 });

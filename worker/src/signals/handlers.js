@@ -4,7 +4,7 @@
  * - Credits are written ONLY by reviewer approval (admin token). Players can never self-award.
  * - While SIGNALS_OPEN !== "1", player endpoints require a valid admin preview header (owner preview / smoke tests).
  */
-import { SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, capReferralGrant, canonHandle, validateSubmission, cleanOutcomes, signalBaseCredits, signalBonusCredits, currentTimeMs, isSeasonStarted, seasonNotStartedBody } from "./policy.js";
+import { SIGNAL_POLICY, REFERRAL_POLICY, referralL1Points, referralL2Points, capReferralGrant, canonHandle, validateSubmission, cleanOutcomes, signalBaseCredits, signalBonusCredits, currentTimeMs, isSeasonStarted, seasonNotStartedBody, isSeasonEnded, seasonEndedBody } from "./policy.js";
 import { randomId, randomBytes, sha256Hex, timingSafeEqual } from "../lib/crypto.js";
 import { rateLimit } from "../lib/rate.js";
 import { verifyRefToken, readCookie, REF_COOKIE } from "./referral-link.js";
@@ -25,10 +25,15 @@ function season(env) {
   return Number.isFinite(n) && n > 0 ? n : 1;
 }
 
-/** 409 + season_not_started before SEASON start; otherwise null. Signal is left untouched. */
-function seasonGuard(env) {
-  if (isSeasonStarted(currentTimeMs(env))) return null;
-  return [409, seasonNotStartedBody()];
+/**
+ * 409 season_not_started before the SEASON start, 409 season_ended at/after the end (for that season's signals);
+ * otherwise null. The signal is left untouched either way.
+ */
+function seasonGuard(env, seasonNum = null) {
+  const now = currentTimeMs(env);
+  if (!isSeasonStarted(now)) return [409, seasonNotStartedBody()];
+  if (isSeasonEnded(now, seasonNum == null ? season(env) : seasonNum)) return [409, seasonEndedBody()];
+  return null;
 }
 
 function newRefCode() {
@@ -241,6 +246,7 @@ export async function handleSubmit(env, request, body) {
   if (!gate.ok) return [gate.status, { ok: false, error: gate.error }];
   const p = await loadPlayerByKey(env, request);
   if (!p) return [401, { ok: false, error: "player_unauthorized" }];
+  if (isSeasonEnded(currentTimeMs(env), season(env))) return [409, seasonEndedBody()];
   const v = validateSubmission(body, p.handle);
   if (!v.ok) return [400, { ok: false, error: v.error }];
   const day = new Date().toISOString().slice(0, 10);
@@ -332,6 +338,7 @@ export async function adminList(env, url) {
  */
 export async function grantReferralShares(env, recruitId, signalId, s, points, now) {
   if (!isSeasonStarted(currentTimeMs(env))) return { status: "season_not_started", grants: [] };
+  if (isSeasonEnded(currentTimeMs(env), s)) return { status: "season_ended", grants: [] };
   const recruit = await env.DB.prepare(`SELECT id, handle, referrer_id FROM signal_players WHERE id = ?`).bind(recruitId).first();
   const stmts = [env.DB.prepare(`DELETE FROM credit_ledger WHERE source_id = ? AND kind IN ('referral_l1','referral_l2')`).bind(signalId)];
   if (!recruit || !recruit.referrer_id) {
@@ -370,7 +377,7 @@ export async function adminApprove(env, id, body) {
   const row = await env.DB.prepare(`SELECT s.*, p.handle FROM signals s JOIN signal_players p ON p.id = s.player_id WHERE s.id = ?`).bind(id).first();
   if (!row) return [404, { ok: false, error: "not_found" }];
   if (row.status !== "pending") return [409, { ok: false, error: "not_pending", status: row.status }];
-  const blocked = seasonGuard(env);
+  const blocked = seasonGuard(env, row.season);
   if (blocked) return blocked;
   const outcomes = cleanOutcomes(body.outcomes || {});
   const base = signalBaseCredits(row.signal_type, tier);
@@ -415,7 +422,7 @@ export async function adminOutcomes(env, id, body) {
   const row = await env.DB.prepare(`SELECT * FROM signals WHERE id = ?`).bind(id).first();
   if (!row) return [404, { ok: false, error: "not_found" }];
   if (row.status !== "approved") return [409, { ok: false, error: "not_approved" }];
-  const blocked = seasonGuard(env);
+  const blocked = seasonGuard(env, row.season);
   if (blocked) return blocked;
   const outcomes = cleanOutcomes(body.outcomes || {});
   const bonus = signalBonusCredits(outcomes);

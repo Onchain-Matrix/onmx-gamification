@@ -214,7 +214,7 @@ label.inl{display:inline-flex;gap:8px;align-items:center;text-transform:none;let
 </div>
 </div>
 <script type="module">
-const ASSET_V = "20261118-refpct1";
+const ASSET_V = "20261118-nov25launch1";
 const ASSET_BASE = "/onmx-gamification/";
 async function __onmxMain() {
 try {
@@ -255,7 +255,7 @@ function fmtSeasonInstant(iso) {
 const launchLabel = fmtSeasonInstant(LIFETIME_START);
 const seasonStartLabel = fmtSeasonInstant(SEASON.start);
 const seasonEndLabel = fmtSeasonInstant(SEASON.end);
-// Friendly short form, e.g. "Wednesday, Nov 18 at 6:00 PM ET" (season time zone is America/New_York ⇒ "ET").
+// Friendly short form, e.g. "Wednesday, Nov 25 at 6:00 PM ET" (season time zone is America/New_York ⇒ "ET").
 function fmtShort(iso, withTime = true) {
   const dt = new Date(toInstantMs(iso));
   const day = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: SEASON.timeZone }).format(dt);
@@ -263,10 +263,10 @@ function fmtShort(iso, withTime = true) {
   return withTime ? `${day} at ${time} ET` : day;
 }
 const seasonStartShort = fmtShort(SEASON.start);
-const seasonEndShort = fmtShort(SEASON.end, false);
+const seasonEndShort = fmtShort(SEASON.end);
 const seasonWeeks = Math.round((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / (7 * 864e5));
 const weeksWord = ["zero","one","two","three","four","five","six","seven","eight"][seasonWeeks] || String(seasonWeeks);
-// e.g. "Season 1 starts Wednesday, Nov 18 at 6:00 PM ET and runs three weeks, through Wednesday, Dec 9."
+// e.g. "Season 1 starts Wednesday, Nov 25 at 6:00 PM ET and runs three weeks, through Wednesday, Dec 16."
 const windowCopy = (subject = `Season ${CURRENT_SEASON}`) => `${subject} starts ${seasonStartShort} and runs ${weeksWord} week${seasonWeeks === 1 ? "" : "s"}, through ${seasonEndShort}.`;
 const SEASON_WINDOW_COPY = windowCopy();
 

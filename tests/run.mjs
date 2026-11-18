@@ -118,7 +118,7 @@ t("season vs lifetime: prelaunch fixture => both 0; no NaN; lifetimeStart exclud
   }
   eq(seaPos, 0, "no sample tasks inside Season 1 window");
   eq(lifePos, 0, "sample tasks are all prelaunch — lifetime from Nov 18 also 0");
-  ok(SEASON.lifetimeStart === "2026-11-18T18:00:00-05:00");
+  ok(SEASON.lifetimeStart === "2026-11-25T18:00:00-05:00");
   ok(html.includes("LIFETIME_START"));
 });
 t("season/lifetime boundaries: prelaunch excluded from both; launch included; season end excluded from season but in lifetime; lifetimeStart fixed if season moves", () => {
@@ -137,7 +137,7 @@ t("season/lifetime boundaries: prelaunch excluded from both; launch included; se
   ok(!life.get("@u") || !tk.some(() => false));
   ok(!(E.baseEnergy(tk, { from: lifetimeStart, to: "2026-11-09" }).get("@u"))); // empty if asOf==start
   // future season bump moves season start; lifetimeStart stays fixed in HTML config
-  ok(SEASON.lifetimeStart === "2026-11-18T18:00:00-05:00");
+  ok(SEASON.lifetimeStart === "2026-11-25T18:00:00-05:00");
   const bumpedSeasonStart = "2026-12-07";
   const sea2 = E.baseEnergy(tk, { from: bumpedSeasonStart, to: "2026-12-21" });
   eq(sea2.get("@u"), undefined, "Dec 1 task is before a bumped Season 2 start");
@@ -148,34 +148,35 @@ t("season/lifetime boundaries: prelaunch excluded from both; launch included; se
   ok(lifeLater.get("@u") > life.get("@u"));
 });
 
-t("SEASON config: prize $600 paid in BNB, 300/200/100; Nov 18 6 PM ET–Dec 9 noon ET; tasks drive TASK_WEIGHTS; offsets -05:00", () => {
+t("SEASON config: prize $600 paid in BNB, 300/200/100; Nov 25 6 PM ET–Dec 16 6 PM ET; tasks drive TASK_WEIGHTS; offsets -05:00", () => {
   eq(SEASON.prizes.usdTotal, 600); eq(SEASON.prizes.usdSplit, [300,200,100]); eq(SEASON.prizes.payoutAsset, "BNB");
   eq(SEASON.prizes.usdSplit.reduce((a, b) => a + b, 0), SEASON.prizes.usdTotal);
   ok(!("bnbTotal" in SEASON.prizes) && !("usdIllustrativeBand" in SEASON.prizes), "no 1 BNB figure / $600–$700 band in config");
-  eq(SEASON.start, "2026-11-18T18:00:00-05:00"); eq(SEASON.end, "2026-12-09T12:00:00-05:00"); eq(SEASON.lifetimeStart, SEASON.start);
-  eq((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / 36e5, 21 * 24 - 6, "three weeks less 6 hours (6 PM start, noon end)");
-  eq(Math.round((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / (7 * 864e5)), 3, "copy still says three weeks");
+  eq(SEASON.start, "2026-11-25T18:00:00-05:00"); eq(SEASON.end, "2026-12-16T18:00:00-05:00"); eq(SEASON.lifetimeStart, SEASON.start);
+  eq((toInstantMs(SEASON.end) - toInstantMs(SEASON.start)) / 864e5, 21, "three weeks");
   ok(SEASON.start.endsWith("-05:00") && SEASON.end.endsWith("-05:00") && SEASON.lifetimeStart.endsWith("-05:00"));
   for (const t of SEASON.tasks) eq(CONFIG.TASK_WEIGHTS[t.id], t.points);
   eq(CONFIG.TASK_WEIGHTS.receipt_check, 10); eq(CONFIG.TASK_WEIGHTS.architect_ship, 60);
 });
 t("toInstantMs / inHalfOpenWindow: date-only=noon-05; exact 6 PM start; 17:59:59; end exclusive", () => {
-  const noon = toInstantMs("2026-11-18T12:00:00-05:00");
-  eq(toInstantMs("2026-11-18"), noon);
-  ok(inHalfOpenWindow("2026-11-18T18:00:00-05:00", SEASON.start, SEASON.end));
-  ok(inHalfOpenWindow("2026-11-18T11:59:59-05:00", "2026-11-18T11:59:59-05:00", SEASON.end));
-  ok(!inHalfOpenWindow("2026-11-18T17:59:59-05:00", SEASON.start, SEASON.end), "1 s before launch excluded from season");
-  ok(!inHalfOpenWindow("2026-11-18T12:00:00-05:00", SEASON.start, SEASON.end), "noon on launch day is before the 6 PM start");
-  ok(!inHalfOpenWindow("2026-11-18", SEASON.start, SEASON.end), "date-only launch day = noon, before the 6 PM start");
-  ok(!inHalfOpenWindow("2026-12-09T12:00:00-05:00", SEASON.start, SEASON.end), "end exclusive");
-  ok(inHalfOpenWindow("2026-12-09T11:59:59-05:00", SEASON.start, SEASON.end));
+  const noon = toInstantMs("2026-11-25T12:00:00-05:00");
+  eq(toInstantMs("2026-11-25"), noon);
+  ok(inHalfOpenWindow("2026-11-25T18:00:00-05:00", SEASON.start, SEASON.end));
+  ok(inHalfOpenWindow("2026-11-25T11:59:59-05:00", "2026-11-25T11:59:59-05:00", SEASON.end));
+  ok(!inHalfOpenWindow("2026-11-25T17:59:59-05:00", SEASON.start, SEASON.end), "1 s before launch excluded from season");
+  ok(!inHalfOpenWindow("2026-11-25T12:00:00-05:00", SEASON.start, SEASON.end), "noon on launch day is before the 6 PM start");
+  ok(!inHalfOpenWindow("2026-11-25", SEASON.start, SEASON.end), "date-only launch day = noon, before the 6 PM start");
+  ok(!inHalfOpenWindow("2026-11-18T18:00:00-05:00", SEASON.start, SEASON.end), "old Nov 18 start excluded");
+  ok(!inHalfOpenWindow("2026-12-16T18:00:00-05:00", SEASON.start, SEASON.end), "end exclusive");
+  ok(inHalfOpenWindow("2026-12-16T17:59:59-05:00", SEASON.start, SEASON.end));
+  ok(inHalfOpenWindow("2026-12-09T12:00:00-05:00", SEASON.start, SEASON.end), "old Dec 9 end is mid-season now");
   // engine uses same helper
   const a = [{ account: "@u", handle: "u", seedUsd: 0 }];
   const tk = [
-    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-18T17:59:59-05:00" },
-    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-18T18:00:00-05:00" },
-    { account: "@u", type: "receipt_check", effort: 1, date: "2026-12-09T11:59:59-05:00" },
-    { account: "@u", type: "receipt_check", effort: 1, date: "2026-12-09T12:00:00-05:00" }
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-25T17:59:59-05:00" },
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-11-25T18:00:00-05:00" },
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-12-16T17:59:59-05:00" },
+    { account: "@u", type: "receipt_check", effort: 1, date: "2026-12-16T18:00:00-05:00" }
   ];
   const sea = E.baseEnergy(tk, { from: SEASON.start, to: SEASON.end });
   eq(sea.get("@u"), 20); // two tasks × 10
@@ -211,7 +212,7 @@ t("LEGACY referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; 
   const pre = Ref.registerReferral({ referrerRaw: "@sample_syn_0103", newRaw: "fresh_user1", rosterAccounts: ["@sample_syn_0103"], cfg, now: "2026-11-08T12:00:00-05:00", storeApi: store });
   eq(pre.ok, true); eq(pre.status, "pending"); eq(pre.referrerCredits, 10); eq(pre.welcomeCredits, 5);
   eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 0);
-  eq(Ref.activatePending({ cfg, now: "2026-11-18T18:00:00-05:00", storeApi: store }).activated, 1);
+  eq(Ref.activatePending({ cfg, now: "2026-11-25T18:00:00-05:00", storeApi: store }).activated, 1);
   eq(Ref.statsFor("@sample_syn_0103", store).bonusCredits, 10);
   eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 1000);
   eq(Ref.lifetimeReferralRaw("@fresh_user1", store, 100), 500);
@@ -223,12 +224,13 @@ t("LEGACY referral prototype: canon/link, reject self/dup/unknown/roster; 10/5; 
 
 t("season status boundaries + completed list only configured", () => {
   const s1 = SEASON_HISTORY[0];
-  eq(seasonStatus(s1, toInstantMs("2026-11-18T17:59:59-05:00")), "upcoming");
-  eq(seasonStatus(s1, toInstantMs("2026-11-18T18:00:00-05:00")), "active");
-  eq(seasonStatus(s1, toInstantMs("2026-12-09T11:59:59-05:00")), "active");
-  eq(seasonStatus(s1, toInstantMs("2026-12-09T12:00:00-05:00")), "completed");
+  eq(seasonStatus(s1, toInstantMs("2026-11-25T17:59:59-05:00")), "upcoming");
+  eq(seasonStatus(s1, toInstantMs("2026-11-25T18:00:00-05:00")), "active");
+  eq(seasonStatus(s1, toInstantMs("2026-12-16T17:59:59-05:00")), "active");
+  eq(seasonStatus(s1, toInstantMs("2026-12-16T18:00:00-05:00")), "completed");
   eq(completedSeasons(SEASON_HISTORY, toInstantMs("2026-11-05T12:00:00-05:00")).length, 0);
-  eq(completedSeasons(SEASON_HISTORY, toInstantMs("2026-12-09T12:00:00-05:00")).map(s => s.number), [1]);
+  eq(completedSeasons(SEASON_HISTORY, toInstantMs("2026-12-09T12:00:00-05:00")).length, 0, "Dec 9 is mid-season now");
+  eq(completedSeasons(SEASON_HISTORY, toInstantMs("2026-12-16T18:00:00-05:00")).map(s => s.number), [1]);
   ok(SEASON_HISTORY.every(s => s.number === 1), "no invented future seasons in config");
 });
 t("cumulative championship: S1=20 skip S2 => 20; S3 adds; empty fixtures ignored; referral excluded", () => {
@@ -316,8 +318,8 @@ t("referral pending welcome on stats; launch activate 10/5 idempotent", () => {
   eq(pre.status, "pending");
   eq(Ref.statsFor("@onmx_test_1105b", store).asReferred.welcomeCredits, 5);
   eq(Ref.lifetimeReferralRaw("@onmx_test_1105b", store, 100), 0);
-  eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-18T18:00:00-05:00", storeApi: store }).activated, 1);
-  eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-19T12:00:00-05:00", storeApi: store }).activated, 0);
+  eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-25T18:00:00-05:00", storeApi: store }).activated, 1);
+  eq(Ref.activatePending({ cfg: LEGACY_REF_SEASON, now: "2026-11-26T12:00:00-05:00", storeApi: store }).activated, 0);
   eq(Ref.lifetimeReferralRaw("@sample_syn_0103", store, 100), 1000);
   eq(Ref.lifetimeReferralRaw("@onmx_test_1105b", store, 100), 500);
 });
@@ -373,9 +375,9 @@ t("signalCredits: type × tier + capped outcome bonus; unknown/rejected = 0", ()
 });
 t("signalToTask feeds the existing engine: approved strong reply = 1000 pts = 10 Credits; pending/rejected ignored", () => {
   const rows = [
-    signalToTask({ account: "@a", type: "reply", tier: "strong", date: "2026-11-19T10:00:00-05:00", status: "approved" }),
-    signalToTask({ account: "@a", type: "quote", tier: "accepted", date: "2026-11-19T11:00:00-05:00", status: "pending" }),
-    signalToTask({ account: "@b", type: "standalone", tier: "accepted", date: "2026-11-19T11:00:00-05:00", status: "rejected" })
+    signalToTask({ account: "@a", type: "reply", tier: "strong", date: "2026-11-26T10:00:00-05:00", status: "approved" }),
+    signalToTask({ account: "@a", type: "quote", tier: "accepted", date: "2026-11-26T11:00:00-05:00", status: "pending" }),
+    signalToTask({ account: "@b", type: "standalone", tier: "accepted", date: "2026-11-26T11:00:00-05:00", status: "rejected" })
   ].filter(Boolean);
   eq(rows.length, 1);
   const b = E.baseEnergy(rows, { from: SEASON.start, to: SEASON.end });
@@ -433,6 +435,12 @@ t("S9 wiring: season board/search use /v1/leaderboard only when signals flag or 
   ok(!/headStart|HEADSTART/.test(ui), "head-start rules stay back-end only");
 });
 
+t("season dates: Nov 25 6 PM ET → Dec 16 6 PM ET; no leftover Nov 18 / Dec 9 in page copy", () => {
+  const h = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const ui = readFileSync(new URL("../src/signals-ui.js", import.meta.url), "utf8");
+  ok(!/Nov(ember)? 18|Dec(ember)? 9\b|2026-11-18|2026-12-09/.test(h + ui), "no old dates in page/UI");
+  ok(/const seasonEndShort = fmtShort\(SEASON\.end\)/.test(h), "end shown with its 6:00 PM ET time");
+});
 const SG = await import("../src/signals-ui.js");
 t("page referral link handoff: /referral/<handle> share link; rt token kept 30 days in localStorage; expired dropped; ?ref= still read", () => {
   eq(SG.referralShareLink(SIGNALS.referralLinkBase, "@Alice_1"), "https://onmx-gamification-claims.onmx.workers.dev/referral/Alice_1");
