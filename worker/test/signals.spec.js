@@ -72,10 +72,10 @@ describe("signals policy (pure)", () => {
     expect(referralL2Points(1)).toBe(0.5);
   });
   it("season dates come from policy.js; start is inclusive; clock is injectable", () => {
-    expect(POLICY.seasonStart).toBe("2026-11-18T12:00:00-05:00");
+    expect(POLICY.seasonStart).toBe("2026-11-18T18:00:00-05:00");
     expect(POLICY.seasonEnd).toBe("2026-12-09T12:00:00-05:00");
     expect(START_MS).toBe(toInstantMs(POLICY.seasonStart));
-    expect(START_MS).toBe(Date.parse("2026-11-18T17:00:00Z"));
+    expect(START_MS).toBe(Date.parse("2026-11-18T23:00:00Z"));
     expect(isSeasonStarted(START_MS - 1)).toBe(false);
     expect(isSeasonStarted(START_MS)).toBe(true);
     expect(isSeasonStarted(START_MS + 1)).toBe(true);
