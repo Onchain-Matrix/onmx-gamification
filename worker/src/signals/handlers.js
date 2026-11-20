@@ -562,6 +562,7 @@ function deletePlayerStmts(env, id) {
   return [
     env.DB.prepare(`DELETE FROM credit_ledger WHERE player_id = ? OR source_id = ? OR source_id IN (SELECT id FROM signals WHERE player_id = ?)`).bind(id, id, id),
     env.DB.prepare(`DELETE FROM referrals WHERE referred_id = ? OR referrer_id = ?`).bind(id, id),
+    env.DB.prepare(`DELETE FROM signal_scores WHERE signal_id IN (SELECT id FROM signals WHERE player_id = ?)`).bind(id),
     env.DB.prepare(`DELETE FROM signals WHERE player_id = ?`).bind(id),
     env.DB.prepare(`UPDATE signal_players SET referrer_id = NULL WHERE referrer_id = ?`).bind(id),
     env.DB.prepare(`DELETE FROM signal_players WHERE id = ?`).bind(id),

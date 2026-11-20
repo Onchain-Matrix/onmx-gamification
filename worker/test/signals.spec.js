@@ -357,6 +357,10 @@ describe("signals API", () => {
     expect(b.score).toBeNull();
     expect(a.status).toBe("pending");
     expect((await ledger(r.json.playerId)).length).toBe(0);
+    // admin delete also removes the score row (signal_scores references signals)
+    const d = await call(`/v1/admin/players/${r.json.playerId}/delete`, { method: "POST", headers: admin, body: {} });
+    expect(d.status).toBe(200);
+    expect((await env.DB.prepare(`SELECT COUNT(*) AS n FROM signal_scores WHERE signal_id = ?`).bind(s1.json.id).first()).n).toBe(0);
   });
 
   it("admin delete removes a test player and all rows", async () => {
