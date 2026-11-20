@@ -342,6 +342,23 @@ describe("signals API", () => {
     expect(again.status).toBe(409);
   });
 
+  it("reviewer list shows a Referee score read-only when a signal_scores row exists; none otherwise; nothing is approved", async () => {
+    const r = await register("score_view");
+    const s1 = await submit(r.json.playerKey, "score_view");
+    const s2 = await submit(r.json.playerKey, "score_view");
+    await env.DB.prepare(`INSERT INTO signal_scores (signal_id, status, prescreen_verdict, model, prompt_version, substance, confidence, suggested_tier, reasons_json, flags_json, would_auto_approve, scored_at)
+      VALUES (?, 'scored', 'pass', 'm', 'substance-v1', 82, 0.9, 'strong', ?, ?, 1, ?)`).bind(s1.json.id, JSON.stringify(["Adds a concrete treasury question"]), JSON.stringify(["mentions_onmx"]), new Date().toISOString()).run();
+    const list = await call("/v1/admin/signals?status=pending&limit=500", { headers: admin });
+    expect(list.status).toBe(200);
+    const a = list.json.signals.find((x) => x.id === s1.json.id);
+    const b = list.json.signals.find((x) => x.id === s2.json.id);
+    expect(a.score).toMatchObject({ status: "scored", substance: 82, confidence: 0.9, suggestedTier: "strong", reasons: ["Adds a concrete treasury question"], flags: ["mentions_onmx"], prescreenVerdict: "pass" });
+    expect("wouldAutoApprove" in a.score).toBe(false);
+    expect(b.score).toBeNull();
+    expect(a.status).toBe("pending");
+    expect((await ledger(r.json.playerId)).length).toBe(0);
+  });
+
   it("admin delete removes a test player and all rows", async () => {
     const p = await register("tmp_del");
     await submit(p.json.playerKey, "tmp_del");

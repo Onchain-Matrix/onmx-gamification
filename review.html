@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
+<meta name="onmx-review-version" content="20261120-referee1">
 <title>Signals review</title>
 <style>
 :root{--bg:#030612;--card:#081121;--line:rgba(7,233,251,.18);--txt:#F4FBFF;--mute:#8FA3BF;--cyan:#07E9FB;--violet:#8B4FF5;--mint:#00ff88;--red:#ff8a8a}
@@ -13,13 +14,14 @@ button{cursor:pointer;background:linear-gradient(135deg,var(--violet),#6f5fe0);c
 button.ghost{background:transparent;border:1px solid var(--line)}button.danger{background:#7a2433}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.mute{color:var(--mute);font-size:12px}a{color:var(--cyan)}
 .flag{display:inline-block;font-size:11px;border-radius:99px;padding:1px 7px;border:1px solid var(--line);color:var(--mute);margin-right:4px}.flag.warn{color:#ffd27a;border-color:#ffd27a66}
+.scorebox{background:#050b17;border-radius:8px;padding:8px;margin:6px 0;font-size:12px;color:var(--mute)}.scorebox strong{color:var(--txt)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-top:8px}
 .why{white-space:pre-wrap;background:#050b17;border-radius:8px;padding:8px;margin:6px 0}
 .tabs button{background:transparent;border:1px solid var(--line)}.tabs button.on{background:linear-gradient(135deg,var(--cyan),#5887F4);color:#030612}
 #msg{min-height:1.4em}
 </style></head><body><div class="wrap">
 <h1>Matrix Signals — reviewer console</h1>
-<p class="mute">Private, unlisted. The admin token stays in this tab (sessionStorage) and is only sent to the claims Worker. Approving a signal writes Credits to the ledger; rejecting writes none.</p>
+<p class="mute">Private, unlisted. The admin token stays in this tab (sessionStorage) and is only sent to the claims Worker. Approving a signal writes points to the ledger; rejecting writes none. Referee scores are advice only — nothing is approved automatically.</p>
 <div class="card row" id="auth">
   <input id="tok" type="password" placeholder="Admin token" size="40" autocomplete="off" aria-label="Admin token">
   <button id="tokSave">Unlock</button><button class="ghost" id="tokClear">Forget token</button><span id="who" class="mute"></span>
@@ -37,6 +39,8 @@ button.ghost{background:transparent;border:1px solid var(--line)}button.danger{b
 <script type="module">
 const API = "https://onmx-gamification-claims.onmx.workers.dev";
 const KEY = "onmx_admin_token";
+const REVIEW_V = "20261120-referee1";
+const TIER_LABEL = { accepted: "Accepted", strong: "Strong", outstanding: "Outstanding" };
 const BASE = { reply: 5, quote: 4, connect: 6, discover: 6, standalone: 2 };
 const MULT = { accepted: 1, strong: 2, outstanding: 4 };
 const BONUS = { kolReplied: 5, kolFollowed: 3, directInterest: 5, introduction: 15 };
@@ -60,6 +64,23 @@ async function unlock() {
   $("#ctl").hidden = false; load();
 }
 function credits(type, tier, o) { let b = 0; for (const k in BONUS) if (o[k]) b += BONUS[k]; return (BASE[type] || 0) * (MULT[tier] || 0) + Math.min(25, b); }
+function scoreBox(s) {
+  const sc = s.score;
+  if (!sc) return `<div class="scorebox" data-score="none">No Referee score yet</div>`;
+  const flags = [...(sc.flags || []), ...(sc.prescreenVerdict === "reject" ? ["prescreen: reject" + (sc.rejectReason ? " (" + sc.rejectReason + ")" : "")] : [])]
+    .map(x => `<span class="flag warn">${esc(x)}</span>`).join(" ");
+  const reason = (sc.reasons || [])[0] || "";
+  if (sc.status !== "scored" || sc.substance == null) {
+    return `<div class="scorebox" data-score="${esc(sc.status)}"><strong>Referee:</strong> not scored (${esc(sc.status)}${sc.rejectReason && sc.prescreenVerdict !== "reject" ? " · " + esc(sc.rejectReason) : ""}) ${flags}</div>`;
+  }
+  const tier = sc.suggestedTier;
+  const pay = tier ? credits(s.type, tier, s.outcomes || {}) : null;
+  const conf = sc.confidence == null ? "—" : Number(sc.confidence).toFixed(2);
+  return `<div class="scorebox" data-score="scored"><strong>Referee: substance ${esc(sc.substance)}/100</strong> · confidence ${esc(conf)}${tier ? ` · suggests <strong>${esc(TIER_LABEL[tier] || tier)}</strong> = ${pay} points` : ""}
+    <div>${reason ? "Reason: " + esc(reason) : "Reason: —"}</div>
+    <div>Rule flags: ${flags || "none"}</div>
+    <div class="mute">Advice only — you choose the tier and approve or reject.</div></div>`;
+}
 function card(s) {
   const f = s.flags || {};
   const flags = [s.preview ? `<span class="flag">preview</span>` : "", f.firstApproval && s.status === "pending" ? `<span class="flag">first signal</span>` : "",
@@ -72,16 +93,16 @@ function card(s) {
     <label class="mute">Likes <input data-m="likes" type="number" min="0" value="${o.likes ?? ""}" style="width:100%"></label></div>
     <input data-m="notes" placeholder="Outcome / notes" value="${esc(o.notes || "")}" style="width:100%;margin-top:6px">`;
   const actions = s.status === "pending" ? `${outcomeInputs}
-      <div class="row" style="margin-top:8px"><select data-tier><option value="accepted">Accepted</option><option value="strong">Strong</option><option value="outstanding">Outstanding</option></select>
+      <div class="row" style="margin-top:8px"><select data-tier>${Object.keys(TIER_LABEL).map(t => `<option value="${t}"${s.score && s.score.status === "scored" && s.score.suggestedTier === t ? " selected" : ""}>${TIER_LABEL[t]}${s.score && s.score.status === "scored" && s.score.suggestedTier === t ? " (Referee)" : ""}</option>`).join("")}</select>
       <span class="mute" data-calc></span><button data-act="approve">Approve</button>
       <input data-reason placeholder="Reject reason (shown to player)" size="34"><button class="danger" data-act="reject">Reject</button></div>`
     : s.status === "approved" ? `${outcomeInputs}<div class="row" style="margin-top:8px"><button class="ghost" data-act="outcomes">Save outcomes (recalculate bonus)</button>
       <input data-reason placeholder="Revoke reason" size="30"><button class="danger" data-act="revoke">Revoke</button></div>` : "";
   return `<div class="card" data-id="${esc(s.id)}" data-type="${esc(s.type)}">
     <div class="row"><h2>${esc(s.handle)} · ${esc(s.type)} · ${esc(s.topic)}</h2><span class="mute">${esc(s.submittedAt)}</span>
-      <span class="flag">${esc(s.status)}${s.status === "approved" ? " · " + esc(s.tier) + " · " + s.credits + " Credits" : ""}</span>${flags}</div>
+      <span class="flag">${esc(s.status)}${s.status === "approved" ? " · " + esc(s.tier) + " · " + s.credits + " points" : ""}</span>${flags}</div>
     <div class="mute">Signal: ${xLink(s.signalUrl)} · Target: ${xLink(s.targetUrl)} ${s.targetHandle ? "(" + esc(s.targetHandle) + ")" : ""} · ONMX mentioned: ${s.onmxMentioned ? "yes" : "no"}</div>
-    <div class="why">${esc(s.why)}</div>${s.rejectReason ? `<div class="mute">Reason: ${esc(s.rejectReason)}</div>` : ""}${actions}</div>`;
+    <div class="why">${esc(s.why)}</div>${s.status === "pending" ? scoreBox(s) : ""}${s.rejectReason ? `<div class="mute">Reason: ${esc(s.rejectReason)}</div>` : ""}${actions}</div>`;
 }
 function readOutcomes(el) {
   const o = {}; el.querySelectorAll("[data-o]").forEach(i => o[i.dataset.o] = i.checked);
@@ -95,7 +116,7 @@ async function load() {
   $("#list").innerHTML = r.json.signals.length ? r.json.signals.map(card).join("") : `<div class="card mute">Nothing here.</div>`;
   msg(r.json.signals.length + " signal(s)");
   document.querySelectorAll("#list .card[data-id]").forEach(el => {
-    const calc = () => { const c = el.querySelector("[data-calc]"); const t = el.querySelector("[data-tier]"); if (c && t) c.textContent = "= " + credits(el.dataset.type, t.value, readOutcomes(el)) + " Credits"; };
+    const calc = () => { const c = el.querySelector("[data-calc]"); const t = el.querySelector("[data-tier]"); if (c && t) c.textContent = "= " + credits(el.dataset.type, t.value, readOutcomes(el)) + " points"; };
     el.querySelectorAll("input,select").forEach(i => i.addEventListener("input", calc)); calc();
     el.querySelectorAll("[data-act]").forEach(b => b.onclick = async () => {
       const id = el.dataset.id, act = b.dataset.act;

@@ -327,7 +327,49 @@ export async function adminList(env, url) {
   const where = ["pending", "approved", "rejected"].includes(status) ? `WHERE s.status = ?` : "";
   const stmt = env.DB.prepare(`${ADMIN_SELECT} ${where} ORDER BY s.submitted_at ${status === "pending" ? "ASC" : "DESC"} LIMIT ${limit}`);
   const rows = where ? await stmt.bind(status).all() : await stmt.all();
-  return [200, { ok: true, status, signals: (rows.results || []).map(adminRow) }];
+  const signals = (rows.results || []).map(adminRow);
+  const scores = await loadRefereeScores(env, signals.map((x) => x.id));
+  for (const sig of signals) sig.score = scores.get(sig.id) || null;
+  return [200, { ok: true, status, signals }];
+}
+
+/**
+ * Referee (AI review) scores for the reviewer console — READ ONLY, display only.
+ * Rows live in signal_scores (migration 0004, written only by the shadow-mode reviewer on branch ai-review-v1).
+ * Nothing on main writes scores, changes status, or approves from a score. Missing table/rows → no score.
+ */
+function parseJsonArr(v) {
+  try { const a = JSON.parse(v || "[]"); return Array.isArray(a) ? a.map((x) => String(x)).slice(0, 20) : []; } catch { return []; }
+}
+export function scoreRowToPublic(r) {
+  if (!r) return null;
+  return {
+    status: r.status,
+    prescreenVerdict: r.prescreen_verdict || null,
+    rejectReason: r.reject_reason || null,
+    model: r.model || null,
+    promptVersion: r.prompt_version || null,
+    substance: r.substance == null ? null : Number(r.substance),
+    confidence: r.confidence == null ? null : Number(r.confidence),
+    suggestedTier: ["accepted", "strong", "outstanding"].includes(r.suggested_tier) ? r.suggested_tier : null,
+    reasons: parseJsonArr(r.reasons_json),
+    flags: parseJsonArr(r.flags_json),
+    scoredAt: r.scored_at || null,
+  };
+}
+async function loadRefereeScores(env, ids) {
+  const out = new Map();
+  if (!ids.length) return out;
+  try {
+    for (let i = 0; i < ids.length; i += 90) {
+      const chunk = ids.slice(i, i + 90);
+      const res = await env.DB.prepare(`SELECT * FROM signal_scores WHERE signal_id IN (${chunk.map(() => "?").join(",")})`).bind(...chunk).all();
+      for (const r of res.results || []) out.set(r.signal_id, scoreRowToPublic(r));
+    }
+  } catch {
+    // signal_scores not present (migration 0004 not applied) → show no scores; never fail the list.
+  }
+  return out;
 }
 
 /**

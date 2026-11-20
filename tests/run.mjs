@@ -441,6 +441,14 @@ t("season dates: Nov 25 6 PM ET → Dec 16 6 PM ET; no leftover Nov 18 / Dec 9 i
   ok(!/Nov(ember)? 18|Dec(ember)? 9\b|2026-11-18|2026-12-09/.test(h + ui), "no old dates in page/UI");
   ok(/const seasonEndShort = fmtShort\(SEASON\.end\)/.test(h), "end shown with its 6:00 PM ET time");
 });
+t("review.html: points wording; Referee score display-only with preselected tier; no auto-approve", () => {
+  const r = readFileSync(new URL("../review.html", import.meta.url), "utf8");
+  ok(/writes points to the ledger/.test(r) && /" points" : ""/.test(r) && /\) \+ " points"; \};/.test(r), "points labels");
+  ok(!/Credits/.test(r), "no Credits wording on the reviewer page");
+  ok(/No Referee score yet/.test(r) && /substance \$\{esc\(sc\.substance\)\}\/100/.test(r) && /Rule flags/.test(r), "score box");
+  ok(/suggestedTier === t \? " selected"/.test(r), "suggested tier preselected");
+  ok(!/auto-approve"|\/score"|scorePending/.test(r), "no auto-approve or scoring trigger on main");
+});
 const SG = await import("../src/signals-ui.js");
 t("page referral link handoff: /referral/<handle> share link; rt token kept 30 days in localStorage; expired dropped; ?ref= still read", () => {
   eq(SG.referralShareLink(SIGNALS.referralLinkBase, "@Alice_1"), "https://onmx-gamification-claims.onmx.workers.dev/referral/Alice_1");

@@ -1,7 +1,7 @@
 {
  "summary": {
-  "total": 61,
-  "passed": 61,
+  "total": 62,
+  "passed": 62,
   "failed": 0,
   "engine": "provisional-0.1 (UNAPPROVED)"
  },
@@ -244,6 +244,10 @@
   },
   {
    "name": "season dates: Nov 25 6 PM ET → Dec 16 6 PM ET; no leftover Nov 18 / Dec 9 in page copy",
+   "pass": true
+  },
+  {
+   "name": "review.html: points wording; Referee score display-only with preselected tier; no auto-approve",
    "pass": true
   },
   {
