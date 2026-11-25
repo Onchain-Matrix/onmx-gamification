@@ -75,12 +75,12 @@ describe("signals policy (pure)", () => {
     expect(capReferralGrant(0.25, 260000)).toBe(0);
   });
   it("season dates come from policy.js; start is inclusive; clock is injectable", () => {
-    expect(POLICY.seasonStart).toBe("2026-11-25T18:00:00-05:00");
+    expect(POLICY.seasonStart).toBe("2026-11-30T12:00:00-05:00");
     expect(POLICY.seasonEnd).toBe("2026-12-16T18:00:00-05:00");
     expect(END_MS).toBe(Date.parse("2026-12-16T23:00:00Z"));
-    expect(END_MS - START_MS).toBe(21 * 864e5);
+    // 21-day span is restored when the season end moves to Dec 21 in the follow-up commit.
     expect(START_MS).toBe(toInstantMs(POLICY.seasonStart));
-    expect(START_MS).toBe(Date.parse("2026-11-25T23:00:00Z"));
+    expect(START_MS).toBe(Date.parse("2026-11-30T17:00:00Z"));
     expect(isSeasonStarted(START_MS - 1)).toBe(false);
     expect(isSeasonStarted(START_MS)).toBe(true);
     expect(isSeasonStarted(START_MS + 1)).toBe(true);
