@@ -8,13 +8,13 @@ export { REFERRAL_POLICY, REFERRAL_TIERS, capReferralGrant, referralL1Points, re
 /** Single editable season/campaign block. Bump number/start/end for Season 2+; never retie lifetimeStart. */
 export const SEASON = Object.freeze({
   number: 1,
-  // Owner-approved schedule: Wed Nov 25 6:00 PM ET → Wed Dec 16 6:00 PM ET (owner postponement Nov 18 2026; was Nov 18 → Dec 9).
+  // Owner-approved schedule: Mon Nov 30 12:00 PM ET → Mon Dec 21 12:00 PM ET (owner postponement Nov 25 2026; was Nov 25 6 PM → Dec 16 6 PM).
   // Explicit -05:00 (EST) so browsers in any TZ parse Eastern times correctly.
-  start: "2026-11-25T18:00:00-05:00",
-  end: "2026-12-16T18:00:00-05:00",
+  start: "2026-11-30T12:00:00-05:00",
+  end: "2026-12-21T12:00:00-05:00",
   timeZone: "America/New_York",
   // FIXED campaign launch — both season/lifetime credit bars count from here; do not change when bumping SEASON.number.
-  lifetimeStart: "2026-11-25T18:00:00-05:00",
+  lifetimeStart: "2026-11-30T12:00:00-05:00",
   // Season 1 prize (owner decision Nov 13 2026). Visible copy lives in PRIZE_COPY below.
   prizes: Object.freeze({
     // Owner decision (Nov 13 2026): $600 total, paid in BNB — $300 / $200 / $100 for places 1–3.

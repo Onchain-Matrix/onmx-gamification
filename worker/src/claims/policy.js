@@ -9,9 +9,9 @@ export const POLICY = Object.freeze({
   capPoints: 250,
   scaleUsd: 1000,
   seasonNumber: 1,
-  // Owner-approved Season 1 schedule: Mon Nov 30 12:00 PM ET (owner postponement Nov 25 2026) → Wed Dec 16 6:00 PM ET (end updated in the follow-up commit). Matches src/config.js SEASON.
+  // Owner-approved Season 1 schedule: Mon Nov 30 12:00 PM ET → Mon Dec 21 12:00 PM ET (owner postponement Nov 25 2026; was Nov 25 6 PM → Dec 16 6 PM). Matches src/config.js SEASON.
   seasonStart: "2026-11-30T12:00:00-05:00",
-  seasonEnd: "2026-12-16T18:00:00-05:00",
+  seasonEnd: "2026-12-21T12:00:00-05:00",
   lifetimeStart: "2026-11-30T12:00:00-05:00",
   // Pre-launch purchases stay UNASSIGNED until owner instruction — never silently backdated.
   prelaunchAssignment: "unassigned",

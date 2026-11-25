@@ -76,9 +76,9 @@ describe("signals policy (pure)", () => {
   });
   it("season dates come from policy.js; start is inclusive; clock is injectable", () => {
     expect(POLICY.seasonStart).toBe("2026-11-30T12:00:00-05:00");
-    expect(POLICY.seasonEnd).toBe("2026-12-16T18:00:00-05:00");
-    expect(END_MS).toBe(Date.parse("2026-12-16T23:00:00Z"));
-    // 21-day span is restored when the season end moves to Dec 21 in the follow-up commit.
+    expect(POLICY.seasonEnd).toBe("2026-12-21T12:00:00-05:00");
+    expect(END_MS).toBe(Date.parse("2026-12-21T17:00:00Z"));
+    expect(END_MS - START_MS).toBe(21 * 864e5);
     expect(START_MS).toBe(toInstantMs(POLICY.seasonStart));
     expect(START_MS).toBe(Date.parse("2026-11-30T17:00:00Z"));
     expect(isSeasonStarted(START_MS - 1)).toBe(false);
@@ -469,7 +469,7 @@ describe("launch date guard", () => {
     expect((await ledger(r.json.playerId)).length).toBe(0);
   });
 
-  it("season-end guard: at/after Dec 16 6 PM ET submissions, approvals, bonuses and referral grants are refused (409 season_ended); 1 ms before still works", async () => {
+  it("season-end guard: at/after Dec 21 12:00 PM ET submissions, approvals, bonuses and referral grants are refused (409 season_ended); 1 ms before still works", async () => {
     clock.nowMs = START_MS;
     const top = await register("end_top");
     const r = await register("end_player", top.json.refCode);
@@ -483,7 +483,7 @@ describe("launch date guard", () => {
     clock.nowMs = END_MS;
     const ap = await approve(s2.json.id);
     expect(ap.status).toBe(409);
-    expect(ap.json).toEqual({ ok: false, error: "season_ended", endedAt: "2026-12-16T18:00:00-05:00" });
+    expect(ap.json).toEqual({ ok: false, error: "season_ended", endedAt: "2026-12-21T12:00:00-05:00" });
     const row = await env.DB.prepare(`SELECT status, base_credits FROM signals WHERE id = ?`).bind(s2.json.id).first();
     expect(row).toEqual({ status: "pending", base_credits: 0 });
     const sub = await submit(r.json.playerKey, "end_player");

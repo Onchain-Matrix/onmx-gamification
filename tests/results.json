@@ -159,11 +159,11 @@
    "pass": true
   },
   {
-   "name": "SEASON config: prize $600 paid in BNB, 300/200/100; Nov 25 6 PM ET–Dec 16 6 PM ET; tasks drive TASK_WEIGHTS; offsets -05:00",
+   "name": "SEASON config: prize $600 paid in BNB, 300/200/100; Nov 30 12:00 PM ET–Dec 21 12:00 PM ET; tasks drive TASK_WEIGHTS; offsets -05:00",
    "pass": true
   },
   {
-   "name": "toInstantMs / inHalfOpenWindow: date-only=noon-05; exact 6 PM start; 17:59:59; end exclusive",
+   "name": "toInstantMs / inHalfOpenWindow: date-only=noon-05; exact noon start; 11:59:59; end exclusive",
    "pass": true
   },
   {
@@ -243,7 +243,7 @@
    "pass": true
   },
   {
-   "name": "season dates: Nov 25 6 PM ET → Dec 16 6 PM ET; no leftover Nov 18 / Dec 9 in page copy",
+   "name": "season dates: Nov 30 12:00 PM ET → Dec 21 12:00 PM ET; no leftover Nov 25 / Dec 16 / 6:00 PM in page copy",
    "pass": true
   },
   {
